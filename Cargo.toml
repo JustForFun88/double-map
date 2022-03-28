@@ -6,7 +6,7 @@ description = "A HashMap with double key to single data/value"
 edition = "2021"
 license = "Apache-2.0"
 repository = "https://github.com/JustForFun88/double-map"
-keywords = ["hashtable", "hashmap", "hashset", "doble key", "two key"]
+keywords = ["hashtable", "hashmap", "hashset", "double_key", "two_key"]
 categories = ["data-structures"]
 
 [dependencies]

@@ -1,38 +1,36 @@
 //! double-map
 //!
 //! `DHashMap` is like a `std::collection::HashMap`, but allow to use double key to single data/value
-//! 
+//!
 
+use core::hash::{BuildHasher, Hash};
+use std::borrow::Borrow;
 use std::collections::hash_map;
 use std::collections::HashMap;
 use std::collections::TryReserveError;
-use core::hash::{BuildHasher, Hash};
-use std::borrow::Borrow;
-use std::mem;
 use std::fmt::{self, Debug};
+use std::mem;
 
 #[derive(Clone)]
-pub struct DHashMap<K1, K2, V, S = hash_map::RandomState>
-{
+pub struct DHashMap<K1, K2, V, S = hash_map::RandomState> {
     value_map: HashMap<K1, (K2, V), S>,
     key_map: HashMap<K2, K1, S>,
 }
 
-impl<K1, K2, V> DHashMap<K1, K2, V, hash_map::RandomState>
-{
+impl<K1, K2, V> DHashMap<K1, K2, V, hash_map::RandomState> {
     /// Creates a new empty [`DHashMap`] with [`RandomState`](std::collections::hash_map::RandomState)
     /// type of hash builder to hash keys.
-    /// 
+    ///
     /// The primary key is of type `K1` and the secondary key is of type `K2`.
     /// The value is of type `V`.
-    /// 
+    ///
     /// Internally, two [`HashMap`](`std::collections::HashMap`) are created. One of type
     /// `HashMap<K1, (K2, V)>` to hold the `(K2, V)` tuple, and second one of type
     /// `HashMap<K2, K1>` just for holding the primary key of type `K1`.
     /// We hold the `(K2, V)` tuple inside first `Hashmap` for synchronization purpose,
     /// so that we can organize checking that both primary key of type `K1` and the
     /// secondary key is of type `K2` refers to the same value, and so on.
-    /// 
+    ///
     /// The hash map is initially created with a capacity of 0, so it will not allocate until
     /// it is first inserted into.
     ///
@@ -41,13 +39,13 @@ impl<K1, K2, V> DHashMap<K1, K2, V, hash_map::RandomState>
     /// ```
     /// use double_map::DHashMap;
     /// let mut map: DHashMap<u32, &str, i32> = DHashMap::new();
-    /// 
+    ///
     /// // The created DHashMap hold none elements
     /// assert_eq!(map.len(), 0);
-    /// 
+    ///
     /// // The created DHashMap also didn't allocate memory
     /// assert_eq!(map.capacity(), 0);
-    /// 
+    ///
     /// // Now we insert elements inside created DHashMap
     /// map.insert(1, "One", 1);
     /// // We can see that the DHashMap hold 1 element
@@ -74,20 +72,20 @@ impl<K1, K2, V> DHashMap<K1, K2, V, hash_map::RandomState>
     /// ```
     /// use double_map::DHashMap;
     /// let mut map: DHashMap<&str, i32, &str> = DHashMap::with_capacity(5);
-    /// 
+    ///
     /// // The created DHashMap hold none elements
     /// assert_eq!(map.len(), 0);
     /// // But it can hold at least 5 elements without reallocating
     /// let empty_map_capacity = map.capacity();
     /// assert!(empty_map_capacity >= 5);
-    /// 
+    ///
     /// // Now we insert some 5 elements inside created DHashMap
     /// map.insert("One",   1, "a");
     /// map.insert("Two",   2, "b");
     /// map.insert("Three", 3, "c");
     /// map.insert("Four",  4, "d");
     /// map.insert("Five",  5, "e");
-    /// 
+    ///
     /// // We can see that the DHashMap hold 5 elements
     /// assert_eq!(map.len(), 5);
     /// // But it capacity dosn't changed
@@ -105,7 +103,7 @@ impl<K1, K2, V> DHashMap<K1, K2, V, hash_map::RandomState>
 
 impl<K1, K2, V, S> DHashMap<K1, K2, V, S>
 where
-    S: Clone
+    S: Clone,
 {
     /// Creates an empty [`DHashMap`] which will use the given hash builder to hash
     /// keys.
@@ -133,13 +131,13 @@ where
     ///
     /// let s = RandomState::new();
     /// let mut map = DHashMap::with_hasher(s);
-    /// 
+    ///
     /// // The created DHashMap hold none elements
     /// assert_eq!(map.len(), 0);
-    /// 
+    ///
     /// // The created DHashMap also didn't allocate memory
     /// assert_eq!(map.capacity(), 0);
-    /// 
+    ///
     /// // Now we insert elements inside created DHashMap
     /// map.insert("One", 1, 2);
     /// // We can see that the DHashMap hold 1 element
@@ -181,20 +179,20 @@ where
     ///
     /// let s = RandomState::new();
     /// let mut map = DHashMap::with_capacity_and_hasher(5, s);
-    /// 
+    ///
     /// // The created DHashMap hold none elements
     /// assert_eq!(map.len(), 0);
     /// // But it can hold at least 5 elements without reallocating
     /// let empty_map_capacity = map.capacity();
     /// assert!(empty_map_capacity >= 5);
-    /// 
+    ///
     /// // Now we insert some 5 elements inside created DHashMap
     /// map.insert("One",   1, "a");
     /// map.insert("Two",   2, "b");
     /// map.insert("Three", 3, "c");
     /// map.insert("Four",  4, "d");
     /// map.insert("Five",  5, "e");
-    /// 
+    ///
     /// // We can see that the DHashMap hold 5 elements
     /// assert_eq!(map.len(), 5);
     /// // But it capacity dosn't changed
@@ -209,8 +207,7 @@ where
     }
 }
 
-impl<K1, K2, V, S> DHashMap<K1, K2, V, S>
-{
+impl<K1, K2, V, S> DHashMap<K1, K2, V, S> {
     /// Returns the number of elements the map can hold without reallocating.
     ///
     /// This number is a lower bound; the `DHashMap<K1, K2, V>` collection might
@@ -224,7 +221,7 @@ impl<K1, K2, V, S> DHashMap<K1, K2, V, S>
     ///
     /// // The created DHashMap can hold at least 16 elements
     /// assert!(map.capacity() >= 16);
-    /// // But for not it dosn't hold any element 
+    /// // But for not it dosn't hold any element
     /// assert_eq!(map.len(), 0);
     /// ```
     #[inline]
@@ -234,6 +231,27 @@ impl<K1, K2, V, S> DHashMap<K1, K2, V, S>
         self.value_map.capacity()
     }
 
+    /// Returns the number of elements in the map.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// let mut a = DHashMap::new();
+    /// // The created DHashMap didn't hold any element
+    /// assert_eq!(a.len(), 0);
+    /// // We insert one element
+    /// a.insert(1, "Breakfast", "Pancakes");
+    /// // And can be sure that DHashMap hold one element
+    /// assert_eq!(a.len(), 1);
+    ///
+    /// let map = dhashmap![
+    ///    1, "Breakfast" => "Pancakes",
+    ///    2, "Lunch" => "Sandwich",
+    /// ];
+    /// assert_eq!(map.len(), 2);
+    /// ```
     #[inline]
     pub fn len(&self) -> usize {
         // we only take into account because it contain the most important part of
@@ -263,6 +281,30 @@ impl<K1, K2, V, S> DHashMap<K1, K2, V, S>
         self.value_map.is_empty()
     }
 
+    /// Clears the map, removing all keys-value tuples.
+    /// Keeps the allocated memory for reuse.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// let mut a = dhashmap![
+    ///    1, "Breakfast" => "Pancakes",
+    ///    2, "Lunch" => "Sandwich",
+    /// ];
+    ///
+    /// // We can that see DHashMap hold two elements
+    /// assert_eq!(a.len(), 2);
+    /// let capacity_before_clearing = a.capacity();
+    ///
+    /// a.clear();
+    ///
+    /// // And now the map is empty and contain no element
+    /// assert!(a.is_empty() && a.len() == 0);
+    /// // But map capacity is equal to old one
+    /// assert!(a.capacity() == capacity_before_clearing);
+    /// ```
     #[inline]
     pub fn clear(&mut self) {
         self.value_map.clear();
@@ -309,8 +351,8 @@ where
     /// a.insert("apple",  1, "a");
     /// a.insert("banana", 2, "b");
     /// a.insert("Cherry", 3, "c");
-    /// 
-    /// // We reserve space for additional 10 elements 
+    ///
+    /// // We reserve space for additional 10 elements
     /// a.reserve(10);
     /// // And can see that created DHashMap can hold at least 13 elements
     /// assert!(a.capacity() >= 13);
@@ -357,21 +399,21 @@ where
     /// ```
     /// use double_map::DHashMap;
     /// let mut a = DHashMap::<i32, &str, &str>::with_capacity(16);
-    /// 
+    ///
     /// // This DHashMap can hold at least 16 element
     /// let capacity_before_shrink = a.capacity();
     /// assert!(capacity_before_shrink >= 16);
-    /// 
+    ///
     /// // And after shrink it capacity is less that before
     /// a.shrink_to_fit();
     /// assert!(a.capacity() < capacity_before_shrink);
-    /// 
+    ///
     /// // If we reserve some memory and insert some elements
     /// a.reserve(100);
     /// a.insert(1, "a", "One");
     /// a.insert(1, "b", "Two");
     /// assert!(a.capacity() >= 100);
-    /// 
+    ///
     /// // After shrink_to_fit method the capacity If we reserve some memory and insert some elements
     /// a.shrink_to_fit();
     /// assert!(a.capacity() >= 2 && a.capacity() < 100);
@@ -409,15 +451,136 @@ where
         self.key_map.shrink_to(min_capacity);
     }
 
-    /// Tries to gets the given keys' corresponding entry in the map for in-place manipulation.
+    /// Returns a reference to the value corresponding to the given primary key (key #1).
+    ///
+    /// The key may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the key type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map = DHashMap::new();
+    /// map.insert(1, "a", "One");
+    /// assert_eq!(map.get_key1(&1), Some(&"One"));
+    /// assert_eq!(map.get_key1(&2), None);
+    /// ```
+    #[inline]
+    pub fn get_key1<Q: ?Sized>(&self, k1: &Q) -> Option<&V>
+    where
+        K1: Borrow<Q>,
+        Q: Hash + Eq,
+    {
+        let (_, value) = self.value_map.get(k1)?;
+        Some(value)
+    }
+
+    /// Returns a reference to the value corresponding to the given secondary key (key #2).
+    ///
+    /// The key may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the key type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map = DHashMap::new();
+    /// map.insert(1, "a", "One");
+    /// assert_eq!(map.get_key2(&"a"), Some(&"One"));
+    /// assert_eq!(map.get_key2(&"b"), None);
+    /// ```
+    #[inline]
+    pub fn get_key2<Q: ?Sized>(&self, k2: &Q) -> Option<&V>
+    where
+        K2: Borrow<Q>,
+        Q: Hash + Eq,
+    {
+        let key = self.key_map.get(k2)?;
+        let (_, value) = self.value_map.get(key)?;
+        Some(value)
+    }
+
+    /// Returns a mutable reference to the value corresponding to
+    /// the given primary key `(key #1)`.
+    ///
+    /// The key may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the key type.
+    ///
+    /// # Examples
+    ///
+    /// ```
     /// 
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map = DHashMap::new();
+    /// map.insert(1, "a", "One");
+    /// if let Some(x) = map.get_mut_key1(&1) {
+    ///     *x = "First";
+    /// }
+    /// assert_eq!(map.get_key1(&1), Some(&"First"));
+    /// ```
+    #[inline]
+    pub fn get_mut_key1<Q: ?Sized>(&mut self, k1: &Q) -> Option<&mut V>
+    where
+        K1: Borrow<Q>,
+        Q: Hash + Eq,
+    {
+        let (_, value) = self.value_map.get_mut(k1)?;
+        Some(value)
+    }
+
+    /// Returns a mutable reference to the value corresponding to
+    /// the given secondary key `(key #2)`.
+    ///
+    /// The key may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the key type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// 
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map = DHashMap::new();
+    /// map.insert(1, "a", "One");
+    /// if let Some(x) = map.get_mut_key2(&"a") {
+    ///     *x = "First";
+    /// }
+    /// assert_eq!(map.get_key2(&"a"), Some(&"First"));
+    /// ```
+    #[inline]
+    pub fn get_mut_key2<Q: ?Sized>(&mut self, k2: &Q) -> Option<&mut V>
+    where
+        K2: Borrow<Q>,
+        Q: Hash + Eq,
+    {
+        let key = self.key_map.get(k2)?;
+        let (_, value) = self.value_map.get_mut(key)?;
+        Some(value)
+    }
+}
+
+impl<K1, K2, V, S> DHashMap<K1, K2, V, S>
+where
+    K1: Eq + Hash + Clone,
+    K2: Eq + Hash + Clone,
+    S: BuildHasher,
+{
+    /// Tries to gets the given keys' corresponding entry in the map for in-place manipulation.
+    ///
     /// Returns [`Entry`] enum if `all` of the following is `true`:
     /// - Both key #1 and key #2 are vacant or already exists with some value.
     /// - Both key #1 and key #2 refer to the same value.
-    /// 
+    ///
     /// When the above statements is `false`, [`entry`](DHashMap::entry) method return [`EntryError`] structure
     /// which contains the [`ErrorKind`] enum, and the values of provided keys (that can be used for another purpose).
-    /// 
+    ///
     /// Depending on the points below, different [`ErrorKind`] variants may be returned:
     /// - When key #1 is vacant, but key #2 is already exists with some value the returned [`ErrorKind`] variant
     /// is [`ErrorKind::VacantK1AndOccupiedK2`].
@@ -425,7 +588,7 @@ where
     /// is [`ErrorKind::OccupiedK1AndVacantK2`].
     /// - When both key #1 and key #2 is already exists with some values, but points to different entries (values)
     /// the returned [`ErrorKind`] variant is [`ErrorKind::KeysPointsToDiffEntries`].
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -439,14 +602,14 @@ where
     ///         *counter += 1;
     ///     }
     /// }
-    /// 
+    ///
     /// // Return [`ErrorKind::OccupiedK1AndVacantK2`] if key #1 is already exists with some value, but key #2 is vacant.
     /// let error_kind = letters.entry('s', 'y').unwrap_err().error;
-    /// assert_eq!(error_kind, ErrorKind::OccupiedK1AndVacantK2); 
+    /// assert_eq!(error_kind, ErrorKind::OccupiedK1AndVacantK2);
     /// // Return [`ErrorKind::VacantK1AndOccupiedK2`] if key #1 is vacant, but key #2 is already exists with some value.
     /// let error_kind = letters.entry('y', 's').unwrap_err().error;
     /// assert_eq!(error_kind, ErrorKind::VacantK1AndOccupiedK2);
-    /// 
+    ///
     /// // Return [`ErrorKind::KeysPointsToDiffEntries`] if both key #1 and key #2 are already exists with some values,
     /// // but points to different entries (values).
     /// let error_kind = letters.entry('s', 't').unwrap_err().error;
@@ -512,87 +675,6 @@ where
         }
     }
 
-    /// Returns a reference to the value corresponding to the given primary key (key #1).
-    ///
-    /// The key may be any borrowed form of the map's key type, but
-    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
-    /// the key type.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use double_map::DHashMap;
-    ///
-    /// let mut map = DHashMap::new();
-    /// map.insert(1, "a", "One");
-    /// assert_eq!(map.get_key1(&1), Some(&"One"));
-    /// assert_eq!(map.get_key1(&2), None);
-    /// ```
-    #[inline]
-    pub fn get_key1<Q: ?Sized>(&self, k1: &Q) -> Option<&V>
-    where
-        K1: Borrow<Q>,
-        Q: Hash + Eq,
-    {
-        let (_, value) = self.value_map.get(k1)?;
-        Some(value)
-    }
-
-    /// Returns a reference to the value corresponding to the given secondary key (key #2).
-    ///
-    /// The key may be any borrowed form of the map's key type, but
-    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
-    /// the key type.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use double_map::DHashMap;
-    ///
-    /// let mut map = DHashMap::new();
-    /// map.insert(1, "a", "One");
-    /// assert_eq!(map.get_key2(&"a"), Some(&"One"));
-    /// assert_eq!(map.get_key2(&"b"), None);
-    /// ```
-    #[inline]
-    pub fn get_key2<Q: ?Sized>(&self, k2: &Q) -> Option<&V>
-    where
-        K2: Borrow<Q>,
-        Q: Hash + Eq,
-    {
-        let key = self.key_map.get(k2)?;
-        let (_, value) = self.value_map.get(key)?;
-        Some(value)
-    }
-
-    #[inline]
-    pub fn get_mut_key1<Q: ?Sized>(&mut self, k1: &Q) -> Option<&mut V>
-    where
-        K1: Borrow<Q>,
-        Q: Hash + Eq,
-    {
-        let (_, value) = self.value_map.get_mut(k1)?;
-        Some(value)
-    }
-
-    #[inline]
-    pub fn get_mut_key2<Q: ?Sized>(&mut self, k2: &Q) -> Option<&mut V>
-    where
-        K2: Borrow<Q>,
-        Q: Hash + Eq,
-    {
-        let key = self.key_map.get(k2)?;
-        let (_, value) = self.value_map.get_mut(key)?;
-        Some(value)
-    }
-}
-
-impl<K1, K2, V, S> DHashMap<K1, K2, V, S>
-where
-    K1: Eq + Hash + Clone,
-    K2: Eq + Hash + Clone,
-    S: BuildHasher,
-{
     #[inline]
     pub fn insert_unchecked(&mut self, k1: K1, k2: K2, v: V) -> Option<V> {
         self.key_map.insert(k2.clone(), k1.clone());
@@ -643,6 +725,53 @@ where
         }
     }
 
+    /// Removes element from the map using a primary key `(key #1)`,
+    /// returning the value corresponding to the key if the key was
+    /// previously in the map. Keeps the allocated memory for reuse.
+    ///
+    /// The key may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the key type.
+    ///
+    /// # Note
+    /// 
+    /// This method removes not only value, but whole element includng
+    /// primary `K1` and secondary `K2` keys
+    /// 
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    /// 
+    /// // We create map with three elements
+    /// let mut map = dhashmap! {
+    ///     1, "One"   => String::from("Eins"),
+    ///     2, "Two"   => String::from("Zwei"),
+    ///     3, "Three" => String::from("Drei"),
+    /// };
+    /// 
+    /// // We can see that DHashMap hold three elements
+    /// assert!(map.len() == 3 && map.capacity() >= 3);
+    /// 
+    /// // Also we reserve memory for holdind additionally at least 20 elements,
+    /// // so that DHashMap can hold 23 elements or more
+    /// map.reserve(20);
+    /// let capacity_before_remove = map.capacity();
+    /// 
+    /// // We remove element with key #1 from the map and get corresponding value
+    /// assert_eq!(map.remove_key1(&1), Some("Eins".to_owned()));
+    /// // If we try remove the same element with key #1 twise we get None,
+    /// // because that element already removed
+    /// assert_eq!(map.remove_key1(&1), None);
+    /// 
+    /// // Now we remove all elements obe by one, and can see that map hold nothing
+    /// map.remove_key1(&2);
+    /// map.remove_key1(&3);
+    /// assert_eq!(map.len(), 0);
+    /// 
+    /// // But map capacity is equal to old one and can hold at least 23 elements
+    /// assert!(map.capacity() == capacity_before_remove && map.capacity() >= 23);
+    /// ```
     #[inline]
     pub fn remove_key1<Q: ?Sized>(&mut self, key: &Q) -> Option<V>
     where
@@ -654,6 +783,53 @@ where
         Some(value)
     }
 
+    /// Removes element from the map using a secondary key `(key #2)`,
+    /// returning the value corresponding to the key if the key was
+    /// previously in the map. Keeps the allocated memory for reuse.
+    ///
+    /// The key may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the key type.
+    ///
+    /// # Note
+    /// 
+    /// This method removes not only value, but whole element includng
+    /// primary `K1` and secondary `K2` keys
+    /// 
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    /// 
+    /// // We create map with three elements
+    /// let mut map = dhashmap! {
+    ///     1, "One"   => String::from("Eins"),
+    ///     2, "Two"   => String::from("Zwei"),
+    ///     3, "Three" => String::from("Drei"),
+    /// };
+    /// 
+    /// // We can see that DHashMap hold three elements
+    /// assert!(map.len() == 3 && map.capacity() >= 3);
+    /// 
+    /// // Also we reserve memory for holdind additionally at least 20 elements,
+    /// // so that DHashMap can hold 23 elements or more
+    /// map.reserve(20);
+    /// let capacity_before_remove = map.capacity();
+    /// 
+    /// // We remove element with key #1 from the map and get corresponding value
+    /// assert_eq!(map.remove_key2(&"One"), Some("Eins".to_owned()));
+    /// // If we try remove the same element with key #1 twise we get None,
+    /// // because that element already removed
+    /// assert_eq!(map.remove_key2(&"One"), None);
+    /// 
+    /// // Now we remove all elements obe by one, and can see that map hold nothing
+    /// map.remove_key2(&"Two");
+    /// map.remove_key2(&"Three");
+    /// assert_eq!(map.len(), 0);
+    /// 
+    /// // But map capacity is equal to old one and can hold at least 23 elements
+    /// assert!(map.capacity() == capacity_before_remove && map.capacity() >= 23);
+    /// ```
     #[inline]
     pub fn remove_key2<Q: ?Sized>(&mut self, key: &Q) -> Option<V>
     where
@@ -666,7 +842,88 @@ where
     }
 }
 
+/// Create a `DHashMap<K1, K2, V,` [`RandomState`](std::collections::hash_map::RandomState)`>`
+/// from a list of sequentially given keys and values.
+/// 
+/// Input data list must follow one of this rules:
+/// - `K1`, `K2` => `V`, `K1`, `K2` => `V` ... and so on;
+/// - (`K1`, `K2`) => `V`, (`K1`, `K2`) => `V` ... and so on.
+/// 
+/// Last comma separator can be ommited.
+/// 
+/// ## Example
+///
+/// ```
+/// use double_map::{DHashMap, dhashmap};
+///
+/// let map = dhashmap!{
+///     1, "a" => "One",
+///     2, "b" => "Two", // last comma separator can be ommited
+/// };
+///
+/// assert!(map.get_key1(&1)   == Some(&"One"));
+/// assert!(map.get_key1(&2)   == Some(&"Two"));
+/// assert!(map.get_key2(&"a") == Some(&"One"));
+/// assert!(map.get_key2(&"b") == Some(&"Two"));
+/// 
+/// let map2 = dhashmap!{
+///     (3, "c") => "Three",
+///     (4, "d") => "Four" // last comma separator can be ommited
+/// };
+///
+/// assert!(map2.get_key1(&3)   == Some(&"Three"));
+/// assert!(map2.get_key1(&4)   == Some(&"Four"));
+/// assert!(map2.get_key2(&"c") == Some(&"Three"));
+/// assert!(map2.get_key2(&"d") == Some(&"Four"));
+/// ```
+#[macro_export]
+macro_rules! dhashmap {
+    () => (DHashMap::new());
+    ($($key1:expr, $key2:expr => $value:expr),+ $(,)?) => (
+        DHashMap::<_, _, _, std::collections::hash_map::RandomState>::from_iter([$(($key1, $key2, $value)),+])
+    );
+    ($(($key1:expr, $key2:expr) => $value:expr),+ $(,)?) => (
+        DHashMap::<_, _, _, std::collections::hash_map::RandomState>::from_iter([$(($key1, $key2, $value)),+])
+    );
+}
 
+impl<K1, K2, V, S> FromIterator<(K1, K2, V)> for DHashMap<K1, K2, V, S>
+where
+    K1: Eq + Hash + Clone,
+    K2: Eq + Hash + Clone,
+    S: BuildHasher + Default + Clone,
+{
+    fn from_iter<T: IntoIterator<Item = (K1, K2, V)>>(iter: T) -> DHashMap<K1, K2, V, S> {
+        let mut map = DHashMap::with_hasher(Default::default());
+        map.extend(iter);
+        map
+    }
+}
+
+impl<K1, K2, V, S> Extend<(K1, K2, V)> for DHashMap<K1, K2, V, S>
+where
+    K1: Eq + Hash + Clone,
+    K2: Eq + Hash + Clone,
+    S: BuildHasher,
+{
+    #[inline]
+    fn extend<T: IntoIterator<Item = (K1, K2, V)>>(&mut self, iter: T) {
+        // Keys may be already present or show multiple times in the iterator.
+        // Reserve the entire hint lower bound if the map is empty.
+        // Otherwise reserve half the hint (rounded up), so the map
+        // will only resize twice in the worst case.
+        let iter = iter.into_iter();
+        let reserve = if self.is_empty() {
+            iter.size_hint().0
+        } else {
+            (iter.size_hint().0 + 1) / 2
+        };
+        self.reserve(reserve);
+        iter.for_each(move |(k1, k2, v)| {
+            self.insert(k1, k2, v);
+        });
+    }
+}
 
 /// A view into an occupied entry in a [`DHashMap`].
 /// It is part of the [`Entry`] enum and [`OccupiedError`] struct.
@@ -676,11 +933,7 @@ pub struct OccupiedEntry<'a, K1: 'a, K2: 'a, V: 'a> {
     base_k: hash_map::OccupiedEntry<'a, K2, K1>,
 }
 
-impl<'a, K1, K2, V> OccupiedEntry<'a, K1, K2, V>
-where
-    K1: Eq + Hash + Clone,
-    K2: Eq + Hash + Clone,
-{
+impl<'a, K1, K2, V> OccupiedEntry<'a, K1, K2, V> {
     /// Gets a reference to the key #1 in the entry.
     ///
     /// # Examples
@@ -755,8 +1008,8 @@ pub struct VacantEntry<'a, K1: 'a, K2: 'a, V: 'a> {
 
 impl<'a, K1: 'a, K2: 'a, V: 'a> VacantEntry<'a, K1, K2, V>
 where
-    K1: Eq + Hash + Clone,
-    K2: Eq + Hash + Clone,
+    K1: Clone,
+    K2: Clone,
 {
     #[inline]
     pub fn key1(&self) -> &K1 {

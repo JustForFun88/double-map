@@ -3,6 +3,9 @@
 //! `DHashMap` is like a `std::collection::HashMap`, but allow to use double key to single data/value
 //!
 
+#[cfg(test)]
+mod tests_double_map;
+
 use core::hash::{BuildHasher, Hash};
 use std::borrow::Borrow;
 use std::collections::hash_map;
@@ -303,7 +306,7 @@ impl<K1, K2, V, S> DHashMap<K1, K2, V, S> {
     /// // And now the map is empty and contain no element
     /// assert!(a.is_empty() && a.len() == 0);
     /// // But map capacity is equal to old one
-    /// assert!(a.capacity() == capacity_before_clearing);
+    /// assert_eq!(a.capacity(), capacity_before_clearing);
     /// ```
     #[inline]
     pub fn clear(&mut self) {
@@ -341,7 +344,7 @@ where
     ///
     /// # Panics
     ///
-    /// Panics if the new allocation size overflows [`usize::Max`] / 2.
+    /// Panics if the new allocation size overflows `usize::Max` / 2.
     ///
     /// # Examples
     ///
@@ -603,6 +606,11 @@ where
     ///     }
     /// }
     ///
+    /// assert_eq!(letters.get_key1(&'s'), Some(&2));
+    /// assert_eq!(letters.get_key1(&'t'), Some(&3));
+    /// assert_eq!(letters.get_key1(&'u'), Some(&1));
+    /// assert_eq!(letters.get_key1(&'y'), None);
+    ///
     /// // Return [`ErrorKind::OccupiedK1AndVacantK2`] if key #1 is already exists with some value, but key #2 is vacant.
     /// let error_kind = letters.entry('s', 'y').unwrap_err().error;
     /// assert_eq!(error_kind, ErrorKind::OccupiedK1AndVacantK2);
@@ -848,33 +856,42 @@ where
 /// Input data list must follow one of this rules:
 /// - `K1`, `K2` => `V`, `K1`, `K2` => `V` ... and so on;
 /// - (`K1`, `K2`) => `V`, (`K1`, `K2`) => `V` ... and so on.
-/// 
-/// Last comma separator can be ommited.
-/// 
+///
+/// Last comma separator can be omitted.
+/// If this macros called without arguments, i.e. like
+/// ```
+/// # use double_map::{DHashMap, dhashmap};
+/// let map: DHashMap<i32, String, String>  = dhashmap![];
+/// ```
+/// it equivalent to [`DHashMap::new()`] function
+///
 /// ## Example
 ///
 /// ```
 /// use double_map::{DHashMap, dhashmap};
 ///
+/// // Calling macros without arguments equivalent to DHashMap::new() function
+/// let _map0: DHashMap<i32, i32, i32> = dhashmap![];
+///
 /// let map = dhashmap!{
 ///     1, "a" => "One",
-///     2, "b" => "Two", // last comma separator can be ommited
+///     2, "b" => "Two", // last comma separator can be omitted
 /// };
 ///
-/// assert!(map.get_key1(&1)   == Some(&"One"));
-/// assert!(map.get_key1(&2)   == Some(&"Two"));
-/// assert!(map.get_key2(&"a") == Some(&"One"));
-/// assert!(map.get_key2(&"b") == Some(&"Two"));
-/// 
+/// assert_eq!(map.get_key1(&1),   Some(&"One"));
+/// assert_eq!(map.get_key1(&2),   Some(&"Two"));
+/// assert_eq!(map.get_key2(&"a"), Some(&"One"));
+/// assert_eq!(map.get_key2(&"b"), Some(&"Two"));
+///
 /// let map2 = dhashmap!{
 ///     (3, "c") => "Three",
-///     (4, "d") => "Four" // last comma separator can be ommited
+///     (4, "d") => "Four" // last comma separator can be omitted
 /// };
 ///
-/// assert!(map2.get_key1(&3)   == Some(&"Three"));
-/// assert!(map2.get_key1(&4)   == Some(&"Four"));
-/// assert!(map2.get_key2(&"c") == Some(&"Three"));
-/// assert!(map2.get_key2(&"d") == Some(&"Four"));
+/// assert_eq!(map2.get_key1(&3),   Some(&"Three"));
+/// assert_eq!(map2.get_key1(&4),   Some(&"Four"));
+/// assert_eq!(map2.get_key2(&"c"), Some(&"Three"));
+/// assert_eq!(map2.get_key2(&"d"), Some(&"Four"));
 /// ```
 #[macro_export]
 macro_rules! dhashmap {
@@ -934,32 +951,125 @@ pub struct OccupiedEntry<'a, K1: 'a, K2: 'a, V: 'a> {
 }
 
 impl<'a, K1, K2, V> OccupiedEntry<'a, K1, K2, V> {
-    /// Gets a reference to the key #1 in the entry.
+    /// Gets a reference to the key #1 of type `K1` in the entry.
     ///
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::{DHashMap, Entry};
     ///
     /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
-    /// map.entry("poneyland", 0).unwrap().or_insert(12);
-    /// assert_eq!(map.entry("poneyland", 0).unwrap().key1(), &"poneyland");
+    /// map.insert("poneyland", 0, 12);
+    ///
+    /// if let Ok(entry) = map.entry("poneyland", 0) {
+    ///     match entry {
+    ///         Entry::Occupied(oc_entry) => {
+    ///             assert_eq!(oc_entry.key1(), &"poneyland");
+    ///         }
+    ///         Entry::Vacant(_) => panic!("Something go wrong!!!")
+    ///     }
+    /// }
     /// ```
     #[inline]
     pub fn key1(&self) -> &K1 {
         self.base_v.key()
     }
 
+    /// Gets a reference to the key #2 of type `K2` in the entry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, Entry};
+    ///
+    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    /// map.insert("poneyland", 0, 12);
+    ///
+    /// if let Ok(entry) = map.entry("poneyland", 0) {
+    ///     match entry {
+    ///         Entry::Occupied(oc_entry) => {
+    ///             assert_eq!(oc_entry.key2(), &0);
+    ///         }
+    ///         Entry::Vacant(_) => panic!("Something go wrong!!!")
+    ///     }
+    /// }
+    /// ```
     #[inline]
     pub fn key2(&self) -> &K2 {
         self.base_k.key()
     }
 
+    /// Gets a reference to the keys of type `K1` and `K2` in the entry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, Entry};
+    ///
+    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    /// map.insert("poneyland", 0, 12);
+    ///
+    /// if let Ok(entry) = map.entry("poneyland", 0) {
+    ///     match entry {
+    ///         Entry::Occupied(oc_entry) => {
+    ///             assert_eq!(oc_entry.keys(), (&"poneyland", &0));
+    ///         }
+    ///         Entry::Vacant(_) => panic!("Something go wrong!!!")
+    ///     }
+    /// }
+    /// ```
     #[inline]
     pub fn keys(&self) -> (&K1, &K2) {
         (self.base_v.key(), self.base_k.key())
     }
 
+    /// Take the ownership of the keys and value from the map.
+    /// Keeps the allocated memory for reuse.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, Entry};
+    ///
+    /// // So lets create some map and insert some element
+    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    /// map.insert("poneyland", 0, 10);
+    /// map.insert("bearland",  1, 11);
+    ///
+    /// // And also reserve some space for additional elements
+    /// map.reserve(15);
+    /// // Now our map can hold at least 17 elements
+    /// let capacity_before_entries_remove = map.capacity();
+    /// assert!(capacity_before_entries_remove >= 17);
+    ///
+    /// assert!(map.get_key1("poneyland") == Some(&10) && map.get_key2(&0) == Some(&10));
+    /// if let Ok(entry) = map.entry("poneyland", 0) {
+    ///     match entry {
+    ///         Entry::Occupied(oc_entry) => {
+    ///             // We delete the entry from the map.
+    ///             oc_entry.remove_entry();
+    ///         }
+    ///         Entry::Vacant(_) => panic!("Something go wrong!!!")
+    ///     }
+    /// }
+    /// assert!(map.get_key1("poneyland") == None && map.get_key2(&0) == None);
+    ///
+    /// assert!(map.get_key1("bearland") == Some(&11) && map.get_key2(&1) == Some(&11));
+    /// if let Ok(entry) = map.entry("bearland", 1) {
+    ///     match entry {
+    ///         Entry::Occupied(oc_entry) => {
+    ///             // We delete the entry from the map.
+    ///             oc_entry.remove_entry();
+    ///         }
+    ///         Entry::Vacant(_) => panic!("Something go wrong!!!")
+    ///     }
+    /// }
+    /// assert!(map.get_key1("bearland") == None && map.get_key2(&1) == None);
+    ///
+    /// // But the capacity of our map didn't changed and still equal to the capacity before
+    /// // using `remove_entry` method
+    /// assert_eq!(map.capacity(), capacity_before_entries_remove);
+    /// ```
     #[inline]
     pub fn remove_entry(self) -> (K1, K2, V) {
         self.base_k.remove_entry();
@@ -967,18 +1077,98 @@ impl<'a, K1, K2, V> OccupiedEntry<'a, K1, K2, V> {
         (k1, k2, v)
     }
 
+    /// Gets a reference to the value of type `V` in the entry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, Entry};
+    ///
+    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    /// map.insert("poneyland", 0, 12);
+    ///
+    /// if let Ok(entry) = map.entry("poneyland", 0) {
+    ///     match entry {
+    ///         Entry::Occupied(oc_entry) => {
+    ///             assert_eq!(oc_entry.get(), &12);
+    ///         }
+    ///         Entry::Vacant(_) => panic!("Something go wrong!!!")
+    ///     }
+    /// }
+    /// ```
     #[inline]
     pub fn get(&self) -> &V {
         let (_, v) = self.base_v.get();
         v
     }
 
+    /// Gets a mutable reference to the value in the entry.
+    ///
+    /// If you need a reference to the `OccupiedEntry` which may outlive the
+    /// destruction of the `Entry` value, see [`into_mut`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, Entry};
+    ///
+    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    /// map.insert("poneyland", 0, 12);
+    /// assert_eq!(map.get_key1("poneyland"), Some(&12));
+    /// assert_eq!(map.get_key2(&0),          Some(&12));
+    ///
+    /// if let Ok(entry) = map.entry("poneyland", 0) {
+    ///     match entry {
+    ///         Entry::Occupied(mut oc_entry) => {
+    ///             *oc_entry.get_mut() += 10;
+    ///             assert_eq!(oc_entry.get(), &22);
+    ///
+    ///             // We can use the same Entry multiple times.
+    ///             *oc_entry.get_mut() += 2;
+    ///         }
+    ///         Entry::Vacant(_) => panic!("Something go wrong!!!")
+    ///     }
+    /// }
+    /// assert_eq!(map.get_key1("poneyland"), Some(&24));
+    /// assert_eq!(map.get_key2(&0),          Some(&24));
+    /// ```
     #[inline]
     pub fn get_mut(&mut self) -> &mut V {
         let (_, v) = self.base_v.get_mut();
         v
     }
 
+    /// Converts the `OccupiedEntry` into a mutable reference to the value in the entry
+    /// with a lifetime bound to the map itself.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, Entry};
+    ///
+    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    /// map.insert("poneyland", 0, 12);
+    /// assert_eq!(map.get_key1("poneyland"), Some(&12));
+    /// assert_eq!(map.get_key2(&0),          Some(&12));
+    ///
+    /// // Let's create a variable that outlive the OccupiedEntry (with some initial value)
+    /// let mut value: &mut i32 = &mut 0;
+    ///
+    /// if let Ok(entry) = map.entry("poneyland", 0) {
+    ///     match entry {
+    ///         Entry::Occupied(oc_entry) => {
+    ///             // So we can converts the OccupiedEntry into a mutable reference to the value.
+    ///             value = oc_entry.into_mut();
+    ///             *value += 10;
+    ///         }
+    ///         Entry::Vacant(_) => panic!("Something go wrong!!!")
+    ///     }
+    /// }
+    /// // We can use the same reference outside the created oc_entry (OccupiedEntry) scope.
+    /// *value += 2;
+    /// assert_eq!(map.get_key1("poneyland"), Some(&24));
+    /// assert_eq!(map.get_key2(&0),          Some(&24));
+    /// ```
     #[inline]
     pub fn into_mut(self) -> &'a mut V {
         let (_, v) = self.base_v.into_mut();

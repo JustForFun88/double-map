@@ -1047,7 +1047,8 @@ impl<'a, K1, K2, V> OccupiedEntry<'a, K1, K2, V> {
     ///     match entry {
     ///         Entry::Occupied(oc_entry) => {
     ///             // We delete the entry from the map.
-    ///             oc_entry.remove_entry();
+    ///             let tuple = oc_entry.remove_entry();
+    ///             assert_eq!(tuple, ("poneyland", 0, 10));
     ///         }
     ///         Entry::Vacant(_) => panic!("Something go wrong!!!")
     ///     }
@@ -1059,7 +1060,8 @@ impl<'a, K1, K2, V> OccupiedEntry<'a, K1, K2, V> {
     ///     match entry {
     ///         Entry::Occupied(oc_entry) => {
     ///             // We delete the entry from the map.
-    ///             oc_entry.remove_entry();
+    ///             let tuple = oc_entry.remove_entry();
+    ///             assert_eq!(tuple, ("bearland",  1, 11));
     ///         }
     ///         Entry::Vacant(_) => panic!("Something go wrong!!!")
     ///     }
@@ -1105,7 +1107,7 @@ impl<'a, K1, K2, V> OccupiedEntry<'a, K1, K2, V> {
     /// Gets a mutable reference to the value in the entry.
     ///
     /// If you need a reference to the `OccupiedEntry` which may outlive the
-    /// destruction of the `Entry` value, see [`into_mut`].
+    /// destruction of the `Entry` value, see [`into_mut`](`OccupiedEntry::into_mut`).
     ///
     /// # Examples
     ///
@@ -1165,9 +1167,9 @@ impl<'a, K1, K2, V> OccupiedEntry<'a, K1, K2, V> {
     ///     }
     /// }
     /// // We can use the same reference outside the created oc_entry (OccupiedEntry) scope.
-    /// *value += 2;
-    /// assert_eq!(map.get_key1("poneyland"), Some(&24));
-    /// assert_eq!(map.get_key2(&0),          Some(&24));
+    /// *value += 20;
+    /// assert_eq!(map.get_key1("poneyland"), Some(&42)); // 12 + 10 + 20
+    /// assert_eq!(map.get_key2(&0),          Some(&42));
     /// ```
     #[inline]
     pub fn into_mut(self) -> &'a mut V {
@@ -1175,6 +1177,34 @@ impl<'a, K1, K2, V> OccupiedEntry<'a, K1, K2, V> {
         v
     }
 
+    /// Sets the value of the entry, and returns the entry's old value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, Entry};
+    ///
+    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    /// map.insert("poneyland", 0, 12);
+    /// assert_eq!(map.get_key1("poneyland"), Some(&12));
+    /// assert_eq!(map.get_key2(&0),          Some(&12));
+    ///
+    /// // Let's create a variable that hold value
+    /// let mut owner: i32 = 100;
+    ///
+    /// if let Ok(entry) = map.entry("poneyland", 0) {
+    ///     match entry {
+    ///         Entry::Occupied(mut oc_entry) => {
+    ///             // So we can swap our created owner value with value inside the map.
+    ///             owner = oc_entry.insert(owner);
+    ///         }
+    ///         Entry::Vacant(_) => panic!("Something go wrong!!!")
+    ///     }
+    /// }
+    /// assert_eq!(owner, 12);
+    /// assert_eq!(map.get_key1("poneyland"), Some(&100));
+    /// assert_eq!(map.get_key2(&0),          Some(&100));
+    /// ```
     #[inline]
     pub fn insert(&mut self, mut value: V) -> V {
         let old_value = self.get_mut();
@@ -1182,6 +1212,55 @@ impl<'a, K1, K2, V> OccupiedEntry<'a, K1, K2, V> {
         value
     }
 
+    /// Take the value out of the entry (map), and return it.
+    /// Keeps the allocated memory for reuse.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, Entry};
+    ///
+    /// // So lets create some map and insert some element
+    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    /// map.insert("poneyland", 0, 10);
+    /// map.insert("bearland",  1, 11);
+    ///
+    /// // And also reserve some space for additional elements
+    /// map.reserve(15);
+    /// // Now our map can hold at least 17 elements
+    /// let capacity_before_entries_remove = map.capacity();
+    /// assert!(capacity_before_entries_remove >= 17);
+    ///
+    /// assert!(map.get_key1("poneyland") == Some(&10) && map.get_key2(&0) == Some(&10));
+    /// if let Ok(entry) = map.entry("poneyland", 0) {
+    ///     match entry {
+    ///         Entry::Occupied(oc_entry) => {
+    ///             // We delete the entry from the map.
+    ///             let value = oc_entry.remove();
+    ///             assert_eq!(value, 10);
+    ///         }
+    ///         Entry::Vacant(_) => panic!("Something go wrong!!!")
+    ///     }
+    /// }
+    /// assert!(map.get_key1("poneyland") == None && map.get_key2(&0) == None);
+    ///
+    /// assert!(map.get_key1("bearland") == Some(&11) && map.get_key2(&1) == Some(&11));
+    /// if let Ok(entry) = map.entry("bearland", 1) {
+    ///     match entry {
+    ///         Entry::Occupied(oc_entry) => {
+    ///             // We delete the entry from the map.
+    ///             let value = oc_entry.remove();
+    ///             assert_eq!(value, 11);
+    ///         }
+    ///         Entry::Vacant(_) => panic!("Something go wrong!!!")
+    ///     }
+    /// }
+    /// assert!(map.get_key1("bearland") == None && map.get_key2(&1) == None);
+    ///
+    /// // But the capacity of our map didn't changed and still equal to the capacity before
+    /// // using `remove_entry` method
+    /// assert_eq!(map.capacity(), capacity_before_entries_remove);
+    /// ```
     #[inline]
     pub fn remove(self) -> V {
         self.remove_entry().2

@@ -734,8 +734,9 @@ where
         Some(v)
     }
 
-    /// Tries to inserts given keys and value into the map with updating the value
-    /// if keys already presents and refers to the same value.
+    /// Tries to inserts given keys and value into the map. Update the value
+    /// if keys already present and refer to the same value with returning
+    /// old value.
     ///
     /// If the map did not have these keys present, [`None`] is returned.
     ///
@@ -752,7 +753,7 @@ where
     /// - when both key #1 and key #2 is already exists with some values, but
     /// points to different entries (values).
     /// The above mentioned error kinds can be matched through the [`ErrorKind`] enum.
-    /// Returned [`InsertError`] structure also contain provided keys and value
+    /// Returned [`InsertError`] structure also contains provided keys and value
     /// that were not inserted and can be used for another purpose.
     ///
     /// [std module-level documentation]: std::collections#insert-and-complex-keys
@@ -760,7 +761,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::{DHashMap, ErrorKind};
+    /// use double_map::{DHashMap, ErrorKind, InsertError};
     ///
     /// let mut map = DHashMap::new();
     ///
@@ -768,7 +769,7 @@ where
     /// assert_eq!(map.insert(1, "a", "One"), None);
     /// assert_eq!(map.is_empty(), false);
     ///
-    /// // If the map did have these key present, and **both keys refers to
+    /// // If the map did have these key present, and both keys refers to
     /// // the same value, the value is updated, and the old value is returned
     /// // inside `Some(Ok(V))` variants
     /// map.insert(2, "b", "Two");
@@ -776,9 +777,16 @@ where
     /// assert_eq!(map.get_key1(&2), Some(&"Second"));
     ///
     /// // Return `ErrorKind::OccupiedK1AndVacantK2` if key #1 is already
-    /// // exists with some value, but key #2 is vacant.
-    /// let error_kind = map.insert(1, "c", "value").unwrap().unwrap_err().error;
-    /// assert_eq!(error_kind, ErrorKind::OccupiedK1AndVacantK2);
+    /// // exists with some value, but key #2 is vacant. Error structure
+    /// // also contain provided keys and value
+    /// match map.insert(1, "c", "value") {
+    ///     Some(Err(InsertError{ error, keys, value })) => {
+    ///         assert_eq!(error, ErrorKind::OccupiedK1AndVacantK2);
+    ///         assert_eq!(keys, (1, "c"));
+    ///         assert_eq!(value, "value");
+    ///     }
+    ///     _ => unreachable!(),
+    /// }
     ///
     /// // Return `ErrorKind::VacantK1AndOccupiedK2` if key #1 is vacant,
     /// // but key #2 is already exists with some value.
@@ -812,6 +820,97 @@ where
         }
     }
 
+    /// Tries to inserts given keys and value into the map, and returns
+    /// a mutable reference to the value in the entry if the map did not
+    /// have these keys present.
+    ///
+    /// If the map did have these key **present**, and **both keys refers to
+    /// the same value**, ***nothing*** is updated, and a [`TryInsertError::Occupied`]
+    /// enum variant error containing [`OccupiedError`] structure is returned.
+    /// The [`OccupiedError`] contains the occupied entry [`OccupiedEntry`],
+    /// and the value that was not inserted.
+    ///
+    /// The [`try_insert`](DHashMap::try_insert) method return [`InsertError`] structure
+    /// (inside of [`TryInsertError::Insert`] variant):
+    /// - when key #1 is vacant, but key #2 is already exists with some value;
+    /// - when key #1 is already exists with some value, but key #2 is vacant;
+    /// - when both key #1 and key #2 is already exists with some values, but
+    /// points to different entries (values).
+    /// The above mentioned error kinds can be matched through the [`ErrorKind`] enum.
+    /// Returned [`InsertError`] structure also contain provided keys and value
+    /// that were not inserted and can be used for another purpose.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    ///  use double_map::{DHashMap, TryInsertError, ErrorKind, OccupiedEntry,
+    ///  OccupiedError, InsertError};
+    ///
+    /// let mut map = DHashMap::new();
+    ///
+    /// // Return mutable reference to the value if keys vacant
+    /// let value = map.try_insert(1, "a", "One").unwrap();
+    /// assert_eq!(value, &"One");
+    /// *value = "First";
+    /// assert_eq!(map.get_key1(&1), Some(&"First"));
+    ///
+    /// // If the map did have these key present, and both keys refers to
+    /// // the same value, nothing is updated, and the provided value
+    /// // is returned inside `Err(TryInsertError::Occupied(_))` variants
+    /// map.try_insert(2, "b", "Two");
+    /// match map.try_insert(2, "b", "Second") {
+    ///     Err(error) => match error {
+    ///         TryInsertError::Occupied(OccupiedError{ entry, value }) => {
+    ///             assert_eq!(entry.keys(), (&2, &"b"));
+    ///             assert_eq!(entry.get(), &"Two");
+    ///             assert_eq!(value, "Second");
+    ///         }
+    ///         _ => unreachable!(),
+    ///     }
+    ///     _ => unreachable!(),
+    /// }
+    /// assert_eq!(map.get_key1(&2), Some(&"Two"));
+    ///
+    /// // Return `ErrorKind::OccupiedK1AndVacantK2` if key #1 is already
+    /// // exists with some value, but key #2 is vacant. Error structure
+    /// // also contain provided keys and value
+    /// match map.try_insert(1, "c", "value") {
+    ///     Err(error) => match error {
+    ///         TryInsertError::Insert(InsertError{ error, keys, value }) => {
+    ///             assert_eq!(error, ErrorKind::OccupiedK1AndVacantK2);
+    ///             assert_eq!(keys, (1, "c"));
+    ///             assert_eq!(value, "value");
+    ///         }
+    ///         _ => unreachable!()
+    ///     }
+    ///     _ => unreachable!(),
+    /// }
+    ///
+    /// // Return `ErrorKind::VacantK1AndOccupiedK2` if key #1 is vacant,
+    /// // but key #2 is already exists with some value.
+    /// match map.try_insert(3, "a", "value") {
+    ///     Err(error) => match error {
+    ///         TryInsertError::Insert(InsertError{ error, .. }) => {
+    ///             assert_eq!(error, ErrorKind::VacantK1AndOccupiedK2);
+    ///         }
+    ///         _ => unreachable!()
+    ///     }
+    ///     _ => unreachable!(),
+    /// }
+    ///
+    /// // Return `ErrorKind::KeysPointsToDiffEntries` if both
+    /// // key #1 and key #2 are already exists with some values,
+    /// // but points to different entries (values).
+    /// match map.try_insert(1, "b", "value") {
+    ///     Err(error) => match error {
+    ///         TryInsertError::Insert(InsertError{ error, .. }) => {
+    ///             assert_eq!(error, ErrorKind::KeysPointsToDiffEntries);
+    ///         }
+    ///         _ => unreachable!()
+    ///     }
+    ///     _ => unreachable!(),
+    /// }
+    /// ```
     #[inline]
     pub fn try_insert(
         &mut self,
@@ -826,7 +925,7 @@ where
                 }
                 Entry::Vacant(entry) => Ok(entry.insert(v)),
             },
-            Err(EntryError { error, keys }) => Err(TryInsertError::Other(InsertError {
+            Err(EntryError { error, keys }) => Err(TryInsertError::Insert(InsertError {
                 error,
                 keys,
                 value: v,
@@ -1686,7 +1785,7 @@ impl std::error::Error for ErrorKind {}
 ///
 /// Contains the [`ErrorKind`] enum, and the values of provided keys (that can be used for another
 /// purpose).
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct EntryError<K1, K2> {
     /// A view into an error kind returned by [`entry`](DHashMap::entry),
     /// [`insert`](DHashMap::insert), [`try_insert`](DHashMap::try_insert) methods of the [`DHashMap`].
@@ -1730,7 +1829,7 @@ impl<K1: Debug, K2: Debug> std::error::Error for EntryError<K1, K2> {}
 ///
 /// Contains the [`ErrorKind`] enum, the provided keys and value that were not inserted.
 /// These returned keys and value can be used for another purpose.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct InsertError<K1, K2, V> {
     /// A view into an error kind returned by [`entry`](DHashMap::entry),
     /// [`insert`](DHashMap::insert), [`try_insert`](DHashMap::try_insert) methods of the [`DHashMap`].
@@ -1821,7 +1920,7 @@ where
 /// Depending of error kind, this enum can contain:
 /// - When there is [`TryInsertError::Occupied`] variant, it contains the occupied entry, and
 /// the value that was not inserted (through [`OccupiedError`] structure).
-/// - When there is [`TryInsertError::Other`] variant, it contains the [`ErrorKind`] enum,
+/// - When there is [`TryInsertError::Insert`] variant, it contains the [`ErrorKind`] enum,
 /// the provided keys and value that were not inserted (through [`InsertError`] structure).
 #[derive(Debug)]
 pub enum TryInsertError<'a, K1: 'a, K2: 'a, V: 'a> {
@@ -1833,7 +1932,7 @@ pub enum TryInsertError<'a, K1: 'a, K2: 'a, V: 'a> {
     /// information about error kinds look to [`InsertError`] structure and [`ErrorKind`] enum.
     ///
     /// Contains the [`InsertError`] structure.
-    Other(InsertError<K1, K2, V>),
+    Insert(InsertError<K1, K2, V>),
 }
 
 impl<'a, K1, K2, V> fmt::Display for TryInsertError<'a, K1, K2, V>
@@ -1845,7 +1944,7 @@ where
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let txt = match self {
             TryInsertError::Occupied(error) => error.to_string(),
-            TryInsertError::Other(error) => error.to_string(),
+            TryInsertError::Insert(error) => error.to_string(),
         };
         write!(f, "{}", txt)
     }

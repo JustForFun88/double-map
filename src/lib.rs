@@ -12,6 +12,7 @@ use std::collections::hash_map;
 use std::collections::HashMap;
 use std::collections::TryReserveError;
 use std::fmt::{self, Debug};
+use std::hint::unreachable_unchecked;
 use std::mem;
 
 #[derive(Clone)]
@@ -271,7 +272,7 @@ impl<K1, K2, V, S> DHashMap<K1, K2, V, S> {
     ///
     /// let mut a = DHashMap::new();
     /// // The created DHashMap didn't hold any element, so it's empty
-    /// assert!(a.is_empty()  && a.len() == 0);
+    /// assert!(a.is_empty() && a.len() == 0);
     /// // We insert one element
     /// a.insert(1, "a", "One");
     /// // And can be sure that DHashMap is not empty but hold one element
@@ -344,7 +345,7 @@ where
     ///
     /// # Panics
     ///
-    /// Panics if the new allocation size overflows `usize::Max` / 2.
+    /// Panics if the new allocation size overflows `usize::Max / 2`.
     ///
     /// # Examples
     ///
@@ -353,7 +354,7 @@ where
     /// let mut a = DHashMap::<&str, i128, &str>::new();
     /// a.insert("apple",  1, "a");
     /// a.insert("banana", 2, "b");
-    /// a.insert("Cherry", 3, "c");
+    /// a.insert("cherry", 3, "c");
     ///
     /// // We reserve space for additional 10 elements
     /// a.reserve(10);
@@ -378,11 +379,24 @@ where
     /// # Examples
     ///
     /// ```
+    /// use std::collections::TryReserveError;
     /// use double_map::DHashMap;
     ///
     /// let mut map: DHashMap<i32, &str, isize> = DHashMap::new();
-    /// map.try_reserve(10).expect("something go wrong");
-    /// assert!(map.capacity() >= 10);
+    /// map.try_reserve(20).expect("something go wrong");
+    ///
+    /// // So everything is Ok
+    /// let capacity = map.capacity();
+    /// assert!(capacity >= 20);
+    ///
+    /// // Let's check that it return error if can not reserve asked capacity
+    /// let result = map.try_reserve(usize::MAX);
+    /// match result {
+    ///     Err(_) => println!("It is ok, error was expected"),
+    ///     Ok(_) => unreachable!(),
+    /// }
+    /// // And capacity of the map didn't changed
+    /// assert_eq!(map.capacity(), capacity);
     /// ```
     #[inline]
     pub fn try_reserve(&mut self, additional: usize) -> Result<(), TryReserveError> {
@@ -407,19 +421,22 @@ where
     /// let capacity_before_shrink = a.capacity();
     /// assert!(capacity_before_shrink >= 16);
     ///
-    /// // And after shrink it capacity is less that before
+    /// // And after shrinking, map capacity is less that before
     /// a.shrink_to_fit();
     /// assert!(a.capacity() < capacity_before_shrink);
     ///
     /// // If we reserve some memory and insert some elements
-    /// a.reserve(100);
+    /// a.reserve(10);
     /// a.insert(1, "a", "One");
-    /// a.insert(1, "b", "Two");
-    /// assert!(a.capacity() >= 100);
+    /// a.insert(2, "b", "Two");
+    /// assert!(a.capacity() >= 10);
     ///
-    /// // After shrink_to_fit method the capacity If we reserve some memory and insert some elements
+    /// // After applying shrink_to_fit method, the capacity less than
+    /// // reserved before, but inserted elements still inside map
     /// a.shrink_to_fit();
-    /// assert!(a.capacity() >= 2 && a.capacity() < 100);
+    /// assert!(a.capacity() >= 2 && a.capacity() < 10);
+    /// assert_eq!(a.get_key1(&1), Some(&"One"));
+    /// assert_eq!(a.get_key1(&2), Some(&"Two"))
     /// ```
     #[inline]
     pub fn shrink_to_fit(&mut self) {
@@ -443,9 +460,15 @@ where
     /// map.insert(4, 5, 6);
     /// map.insert(7, 8, 9);
     /// assert!(map.capacity() >= 100);
+    ///
+    /// // We have only 3 elements inside map, so it work
     /// map.shrink_to(10);
     /// assert!(map.capacity() >= 10 && map.capacity() < 100);
+    ///
+    /// // If we try shrink_to the capacity, that less then elements quantity inside map
     /// map.shrink_to(0);
+    /// // So it work partially, but the resulting capacity not less than quantity
+    /// // of elements inside map
     /// assert!(map.capacity() >= 3  && map.capacity() < 10);
     /// ```
     #[inline]
@@ -517,7 +540,6 @@ where
     /// # Examples
     ///
     /// ```
-    /// 
     /// use double_map::DHashMap;
     ///
     /// let mut map = DHashMap::new();
@@ -547,7 +569,6 @@ where
     /// # Examples
     ///
     /// ```
-    /// 
     /// use double_map::DHashMap;
     ///
     /// let mut map = DHashMap::new();
@@ -578,8 +599,8 @@ where
     /// Tries to gets the given keys' corresponding entry in the map for in-place manipulation.
     ///
     /// Returns [`Entry`] enum if `all` of the following is `true`:
-    /// - Both key #1 and key #2 are vacant or already exists with some value.
-    /// - Both key #1 and key #2 refer to the same value.
+    /// - Both key #1 and key #2 are vacant.
+    /// - If both key #1 and key #2 exist, they refers to the same value.
     ///
     /// When the above statements is `false`, [`entry`](DHashMap::entry) method return [`EntryError`] structure
     /// which contains the [`ErrorKind`] enum, and the values of provided keys (that can be used for another purpose).
@@ -611,51 +632,67 @@ where
     /// assert_eq!(letters.get_key1(&'u'), Some(&1));
     /// assert_eq!(letters.get_key1(&'y'), None);
     ///
-    /// // Return [`ErrorKind::OccupiedK1AndVacantK2`] if key #1 is already exists with some value, but key #2 is vacant.
+    /// // Return `ErrorKind::OccupiedK1AndVacantK2` if key #1 is already
+    /// // exists with some value, but key #2 is vacant.
     /// let error_kind = letters.entry('s', 'y').unwrap_err().error;
     /// assert_eq!(error_kind, ErrorKind::OccupiedK1AndVacantK2);
-    /// // Return [`ErrorKind::VacantK1AndOccupiedK2`] if key #1 is vacant, but key #2 is already exists with some value.
+    ///
+    /// // Return `ErrorKind::VacantK1AndOccupiedK2` if key #1 is vacant,
+    /// // but key #2 is already exists with some value.
     /// let error_kind = letters.entry('y', 's').unwrap_err().error;
     /// assert_eq!(error_kind, ErrorKind::VacantK1AndOccupiedK2);
     ///
-    /// // Return [`ErrorKind::KeysPointsToDiffEntries`] if both key #1 and key #2 are already exists with some values,
+    /// // Return `ErrorKind::KeysPointsToDiffEntries` if both
+    /// // key #1 and key #2 are already exists with some values,
     /// // but points to different entries (values).
     /// let error_kind = letters.entry('s', 't').unwrap_err().error;
     /// assert_eq!(error_kind, ErrorKind::KeysPointsToDiffEntries);
     /// ```
     #[inline]
     pub fn entry(&mut self, k1: K1, k2: K2) -> Result<Entry<'_, K1, K2, V>, EntryError<K1, K2>> {
-        if let Some((key2_exist, _)) = self.value_map.get(&k1) {
-            if let Some(key1_exist) = self.key_map.get(&k2) {
-                return if k1 == *key1_exist && k2 == *key2_exist {
-                    Ok(self.map_occupied_entry(k1, k2))
-                } else {
-                    Err(EntryError {
-                        error: ErrorKind::KeysPointsToDiffEntries,
-                        keys: (k1, k2),
-                    })
-                };
-            } else {
-                Err(EntryError {
-                    error: ErrorKind::OccupiedK1AndVacantK2,
-                    keys: (k1, k2),
-                })
-            }
-        } else {
-            return if self.key_map.get(&k2).is_some() {
-                Err(EntryError {
+        // I don't like the way this function is done. But it looks like Hashmap::entry
+        // (which internally uses hashbrown::rustc_entry::HashMap::rustc_entry) calls
+        // self.reserve(1) when no key is found (vacant). It seems this one will lead
+        // to constant allocation and deallocation, given that value_map.entry and
+        // key_map.entry may not be vacant and occupied at the same time, so I'll
+        // leave this implementation this way for now
+        match self.value_map.get(&k1) {
+            None => match self.key_map.get(&k2) {
+                None => {
+                    // SAFETY: We already check that both key vacant
+                    Ok(unsafe { self.map_vacant_entry(k1, k2) })
+                }
+                // Error: Vacant key #1 of type K1 and occupied key # 2 of type K2
+                Some(_) => Err(EntryError {
                     error: ErrorKind::VacantK1AndOccupiedK2,
                     keys: (k1, k2),
-                })
-            } else {
-                Ok(self.map_vacant_entry(k1, k2))
-            };
+                }),
+            },
+            Some((key2_exist, _)) => match self.key_map.get(&k2) {
+                Some(key1_exist) => {
+                    return if k1 == *key1_exist && k2 == *key2_exist {
+                        // SAFETY: We already check that both key exist and refers to the same value
+                        Ok(unsafe { self.map_occupied_entry(k1, k2) })
+                    } else {
+                        // Error: key #1 and key # 2 refers to different entries / values
+                        Err(EntryError {
+                            error: ErrorKind::KeysPointsToDiffEntries,
+                            keys: (k1, k2),
+                        })
+                    };
+                }
+                None => Err(EntryError {
+                    error: ErrorKind::OccupiedK1AndVacantK2,
+                    keys: (k1, k2),
+                }),
+            },
         }
     }
 
-    // This function used only inside this crate. Both entry are occupied
+    // This function used only inside this crate. Return Entry::Occupied
+    // because we know exactly that both entry are occupied
     #[inline]
-    fn map_occupied_entry(&mut self, k1: K1, k2: K2) -> Entry<'_, K1, K2, V> {
+    unsafe fn map_occupied_entry(&mut self, k1: K1, k2: K2) -> Entry<'_, K1, K2, V> {
         let raw_v = self.value_map.entry(k1);
         let raw_k = self.key_map.entry(k2);
         match raw_v {
@@ -663,23 +700,26 @@ where
                 hash_map::Entry::Occupied(base_k) => {
                     Entry::Occupied(OccupiedEntry { base_v, base_k })
                 }
-                _ => unreachable!(),
+                _ => unreachable_unchecked(),
             },
-            _ => unreachable!(),
+            _ => unreachable_unchecked(),
         }
     }
 
-    // This function used only inside this crate. Both entry are vacant
+    // This function used only inside this crate. Return Entry::Vacant
+    // because we know exactly that both entry are vacant
     #[inline]
-    fn map_vacant_entry(&mut self, k1: K1, k2: K2) -> Entry<'_, K1, K2, V> {
+    unsafe fn map_vacant_entry(&mut self, k1: K1, k2: K2) -> Entry<'_, K1, K2, V> {
         let raw_v = self.value_map.entry(k1);
         let raw_k = self.key_map.entry(k2);
         match raw_v {
             hash_map::Entry::Vacant(base_v) => match raw_k {
-                hash_map::Entry::Vacant(base_k) => Entry::Vacant(VacantEntry { base_v, base_k }),
-                _ => unreachable!(),
+                hash_map::Entry::Vacant(base_k) => {
+                    Entry::Vacant(VacantEntry { base_v, base_k })
+                },
+                _ => unreachable_unchecked(),
             },
-            _ => unreachable!(),
+            _ => unreachable_unchecked(),
         }
     }
 
@@ -742,41 +782,41 @@ where
     /// the key type.
     ///
     /// # Note
-    /// 
+    ///
     /// This method removes not only value, but whole element includng
     /// primary `K1` and secondary `K2` keys
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
     /// use double_map::{DHashMap, dhashmap};
-    /// 
+    ///
     /// // We create map with three elements
     /// let mut map = dhashmap! {
     ///     1, "One"   => String::from("Eins"),
     ///     2, "Two"   => String::from("Zwei"),
     ///     3, "Three" => String::from("Drei"),
     /// };
-    /// 
+    ///
     /// // We can see that DHashMap hold three elements
     /// assert!(map.len() == 3 && map.capacity() >= 3);
-    /// 
+    ///
     /// // Also we reserve memory for holdind additionally at least 20 elements,
     /// // so that DHashMap can hold 23 elements or more
     /// map.reserve(20);
     /// let capacity_before_remove = map.capacity();
-    /// 
+    ///
     /// // We remove element with key #1 from the map and get corresponding value
     /// assert_eq!(map.remove_key1(&1), Some("Eins".to_owned()));
     /// // If we try remove the same element with key #1 twise we get None,
     /// // because that element already removed
     /// assert_eq!(map.remove_key1(&1), None);
-    /// 
-    /// // Now we remove all elements obe by one, and can see that map hold nothing
+    ///
+    /// // Now we remove all elements one by one, and can see that map hold nothing
     /// map.remove_key1(&2);
     /// map.remove_key1(&3);
     /// assert_eq!(map.len(), 0);
-    /// 
+    ///
     /// // But map capacity is equal to old one and can hold at least 23 elements
     /// assert!(map.capacity() == capacity_before_remove && map.capacity() >= 23);
     /// ```
@@ -800,41 +840,41 @@ where
     /// the key type.
     ///
     /// # Note
-    /// 
+    ///
     /// This method removes not only value, but whole element includng
     /// primary `K1` and secondary `K2` keys
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
     /// use double_map::{DHashMap, dhashmap};
-    /// 
+    ///
     /// // We create map with three elements
     /// let mut map = dhashmap! {
     ///     1, "One"   => String::from("Eins"),
     ///     2, "Two"   => String::from("Zwei"),
     ///     3, "Three" => String::from("Drei"),
     /// };
-    /// 
+    ///
     /// // We can see that DHashMap hold three elements
     /// assert!(map.len() == 3 && map.capacity() >= 3);
-    /// 
+    ///
     /// // Also we reserve memory for holdind additionally at least 20 elements,
     /// // so that DHashMap can hold 23 elements or more
     /// map.reserve(20);
     /// let capacity_before_remove = map.capacity();
-    /// 
+    ///
     /// // We remove element with key #1 from the map and get corresponding value
     /// assert_eq!(map.remove_key2(&"One"), Some("Eins".to_owned()));
     /// // If we try remove the same element with key #1 twise we get None,
     /// // because that element already removed
     /// assert_eq!(map.remove_key2(&"One"), None);
-    /// 
-    /// // Now we remove all elements obe by one, and can see that map hold nothing
+    ///
+    /// // Now we remove all elements one by one, and can see that map hold nothing
     /// map.remove_key2(&"Two");
     /// map.remove_key2(&"Three");
     /// assert_eq!(map.len(), 0);
-    /// 
+    ///
     /// // But map capacity is equal to old one and can hold at least 23 elements
     /// assert!(map.capacity() == capacity_before_remove && map.capacity() >= 23);
     /// ```
@@ -852,7 +892,7 @@ where
 
 /// Create a `DHashMap<K1, K2, V,` [`RandomState`](std::collections::hash_map::RandomState)`>`
 /// from a list of sequentially given keys and values.
-/// 
+///
 /// Input data list must follow one of this rules:
 /// - `K1`, `K2` => `V`, `K1`, `K2` => `V` ... and so on;
 /// - (`K1`, `K2`) => `V`, (`K1`, `K2`) => `V` ... and so on.
@@ -1001,7 +1041,7 @@ impl<'a, K1, K2, V> OccupiedEntry<'a, K1, K2, V> {
 
     /// Gets a reference to the keys of type `K1` and `K2` in the entry.
     /// Return tuple of type `(&'a K1, &'a K2)`.
-    /// 
+    ///
     /// # Examples
     ///
     /// ```

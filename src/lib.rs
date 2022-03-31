@@ -596,22 +596,26 @@ where
     K2: Eq + Hash + Clone,
     S: BuildHasher,
 {
-    /// Tries to gets the given keys' corresponding entry in the map for in-place manipulation.
+    /// Tries to gets the given keys' corresponding entry in the map for in-place
+    /// manipulation.
     ///
     /// Returns [`Entry`] enum if `all` of the following is `true`:
     /// - Both key #1 and key #2 are vacant.
     /// - If both key #1 and key #2 exist, they refers to the same value.
     ///
-    /// When the above statements is `false`, [`entry`](DHashMap::entry) method return [`EntryError`] structure
-    /// which contains the [`ErrorKind`] enum, and the values of provided keys (that can be used for another purpose).
+    /// When the above statements is `false`, [`entry`](DHashMap::entry) method return
+    /// [`EntryError`] structure which contains the [`ErrorKind`] enum, and the values
+    /// of provided keys that were not used for creation entry (that can be used for
+    /// another purpose).
     ///
     /// Depending on the points below, different [`ErrorKind`] variants may be returned:
-    /// - When key #1 is vacant, but key #2 is already exists with some value the returned [`ErrorKind`] variant
-    /// is [`ErrorKind::VacantK1AndOccupiedK2`].
-    /// - When key #1 is already exists with some value, but key #2 is vacant the returned [`ErrorKind`] variant
-    /// is [`ErrorKind::OccupiedK1AndVacantK2`].
-    /// - When both key #1 and key #2 is already exists with some values, but points to different entries (values)
-    /// the returned [`ErrorKind`] variant is [`ErrorKind::KeysPointsToDiffEntries`].
+    /// - When key #1 is vacant, but key #2 is already exists with some value the
+    /// returned [`ErrorKind`] variant is [`ErrorKind::VacantK1AndOccupiedK2`].
+    /// - When key #1 is already exists with some value, but key #2 is vacant the
+    /// returned [`ErrorKind`] variant is [`ErrorKind::OccupiedK1AndVacantK2`].
+    /// - When both key #1 and key #2 is already exists with some values, but points
+    /// to different entries (values) the returned [`ErrorKind`] variant is
+    /// [`ErrorKind::KeysPointsToDiffEntries`].
     ///
     /// # Examples
     ///
@@ -660,7 +664,7 @@ where
             None => match self.key_map.get(&k2) {
                 None => {
                     // SAFETY: We already check that both key vacant
-                    Ok(unsafe { self.map_vacant_entry(k1, k2) })
+                    Ok( unsafe { self.map_vacant_entry(k1, k2) } )
                 }
                 // Error: Vacant key #1 of type K1 and occupied key # 2 of type K2
                 Some(_) => Err(EntryError {
@@ -672,7 +676,7 @@ where
                 Some(key1_exist) => {
                     return if k1 == *key1_exist && k2 == *key2_exist {
                         // SAFETY: We already check that both key exist and refers to the same value
-                        Ok(unsafe { self.map_occupied_entry(k1, k2) })
+                        Ok( unsafe { self.map_occupied_entry(k1, k2) } )
                     } else {
                         // Error: key #1 and key # 2 refers to different entries / values
                         Err(EntryError {
@@ -691,7 +695,7 @@ where
 
     // This function used only inside this crate. Return Entry::Occupied
     // because we know exactly that both entry are occupied
-    #[inline]
+    #[inline(always)]
     unsafe fn map_occupied_entry(&mut self, k1: K1, k2: K2) -> Entry<'_, K1, K2, V> {
         let raw_v = self.value_map.entry(k1);
         let raw_k = self.key_map.entry(k2);
@@ -708,7 +712,7 @@ where
 
     // This function used only inside this crate. Return Entry::Vacant
     // because we know exactly that both entry are vacant
-    #[inline]
+    #[inline(always)]
     unsafe fn map_vacant_entry(&mut self, k1: K1, k2: K2) -> Entry<'_, K1, K2, V> {
         let raw_v = self.value_map.entry(k1);
         let raw_k = self.key_map.entry(k2);
@@ -730,6 +734,63 @@ where
         Some(v)
     }
 
+    /// Tries to inserts given keys and value into the map with updating the value
+    /// if keys already presents and refers to the same value.
+    ///
+    /// If the map did not have these keys present, [`None`] is returned.
+    ///
+    /// If the map did have these key **present**, and **both keys refers to
+    /// the same value**, the value is updated, and the old value is returned
+    /// inside `Some(Ok(V))` variants. The key is not updated, though; this
+    /// matters for types that can be `==` without being identical.
+    /// See the [std module-level documentation] for more.
+    ///
+    /// The [`insert`](DHashMap::insert) method return [`InsertError`] structure
+    /// (inside of `Some(Err(_))` variants):
+    /// - when key #1 is vacant, but key #2 is already exists with some value;
+    /// - when key #1 is already exists with some value, but key #2 is vacant;
+    /// - when both key #1 and key #2 is already exists with some values, but
+    /// points to different entries (values).
+    /// The above mentioned error kinds can be matched through the [`ErrorKind`] enum.
+    /// Returned [`InsertError`] structure also contain provided keys and value
+    /// that were not inserted and can be used for another purpose.
+    ///
+    /// [std module-level documentation]: std::collections#insert-and-complex-keys
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, ErrorKind};
+    ///
+    /// let mut map = DHashMap::new();
+    ///
+    /// // Return None if keys vacant
+    /// assert_eq!(map.insert(1, "a", "One"), None);
+    /// assert_eq!(map.is_empty(), false);
+    ///
+    /// // If the map did have these key present, and **both keys refers to
+    /// // the same value, the value is updated, and the old value is returned
+    /// // inside `Some(Ok(V))` variants
+    /// map.insert(2, "b", "Two");
+    /// assert_eq!(map.insert(2, "b", "Second"), Some(Ok("Two")));
+    /// assert_eq!(map.get_key1(&2), Some(&"Second"));
+    ///
+    /// // Return `ErrorKind::OccupiedK1AndVacantK2` if key #1 is already
+    /// // exists with some value, but key #2 is vacant.
+    /// let error_kind = map.insert(1, "c", "value").unwrap().unwrap_err().error;
+    /// assert_eq!(error_kind, ErrorKind::OccupiedK1AndVacantK2);
+    ///
+    /// // Return `ErrorKind::VacantK1AndOccupiedK2` if key #1 is vacant,
+    /// // but key #2 is already exists with some value.
+    /// let error_kind = map.insert(3, "a", "value").unwrap().unwrap_err().error;
+    /// assert_eq!(error_kind, ErrorKind::VacantK1AndOccupiedK2);
+    ///
+    /// // Return `ErrorKind::KeysPointsToDiffEntries` if both
+    /// // key #1 and key #2 are already exists with some values,
+    /// // but points to different entries (values).
+    /// let error_kind = map.insert(1, "b", "value").unwrap().unwrap_err().error;
+    /// assert_eq!(error_kind, ErrorKind::KeysPointsToDiffEntries);
+    /// ```
     #[inline]
     pub fn insert(&mut self, k1: K1, k2: K2, v: V) -> Option<Result<V, InsertError<K1, K2, V>>> {
         match self.entry(k1, k2) {

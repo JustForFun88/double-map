@@ -1000,7 +1000,8 @@ impl<'a, K1, K2, V> OccupiedEntry<'a, K1, K2, V> {
     }
 
     /// Gets a reference to the keys of type `K1` and `K2` in the entry.
-    ///
+    /// Return tuple of type `(&'a K1, &'a K2)`.
+    /// 
     /// # Examples
     ///
     /// ```
@@ -1280,26 +1281,142 @@ where
     K1: Clone,
     K2: Clone,
 {
+    /// Gets a reference to the key #1 of type `K1` that would be used
+    /// when inserting a value through the `VacantEntry`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, Entry};
+    ///
+    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    ///
+    /// if let Ok(entry) = map.entry("poneyland", 0) {
+    ///     match entry {
+    ///         Entry::Occupied(_) => panic!("Something go wrong!!!"),
+    ///         Entry::Vacant(vac_entry) => assert_eq!(vac_entry.key1(), &"poneyland"),
+    ///     }
+    /// }
+    /// ```
     #[inline]
     pub fn key1(&self) -> &K1 {
         self.base_v.key()
     }
 
+    /// Gets a reference to the key #2 of type `K2` that would be used
+    /// when inserting a value through the `VacantEntry`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, Entry};
+    ///
+    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    ///
+    /// if let Ok(entry) = map.entry("poneyland", 0) {
+    ///     match entry {
+    ///         Entry::Occupied(_) => panic!("Something go wrong!!!"),
+    ///         Entry::Vacant(vac_entry) => assert_eq!(vac_entry.key2(), &0),
+    ///     }
+    /// }
+    /// ```
     #[inline]
     pub fn key2(&self) -> &K2 {
         self.base_k.key()
     }
 
+    /// Gets a reference to the keys of type `K1` and `K2` that would be used
+    /// when inserting a value through the `VacantEntry`.
+    /// Return tuple of type `(&'a K1, &'a K2)`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, Entry};
+    ///
+    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    ///
+    /// if let Ok(entry) = map.entry("poneyland", 0) {
+    ///     match entry {
+    ///         Entry::Occupied(_) => panic!("Something go wrong!!!"),
+    ///         Entry::Vacant(vac_entry) => {
+    ///             assert_eq!(vac_entry.keys(), (&"poneyland", &0))
+    ///         }
+    ///     }
+    /// }
+    /// ```
     #[inline]
     pub fn keys(&self) -> (&K1, &K2) {
         (self.base_v.key(), self.base_k.key())
     }
 
+    /// Take the ownership of the keys from the entry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, Entry};
+    ///
+    /// // So lets create some map and also reserve some space for additional elements
+    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::with_capacity(3);
+    ///
+    /// let capacity_before_into_keys = map.capacity();
+    /// assert!(capacity_before_into_keys >= 3);
+    ///
+    /// if let Ok(entry) = map.entry("poneyland", 0) {
+    ///     match entry {
+    ///         Entry::Occupied(_) => panic!("Something go wrong!!!"),
+    ///         Entry::Vacant(vac_entry) => {
+    ///             // We take the keys from the entry.
+    ///             let tuple = vac_entry.into_keys();
+    ///             assert_eq!(tuple, ("poneyland", 0));
+    ///         }
+    ///     }
+    /// }
+    ///
+    /// if let Ok(entry) = map.entry("bearland", 1) {
+    ///     match entry {
+    ///         Entry::Occupied(_) => panic!("Something go wrong!!!"),
+    ///         Entry::Vacant(vac_entry) => {
+    ///             // We take the keys from the entry.
+    ///             let tuple = vac_entry.into_keys();
+    ///             assert_eq!(tuple, ("bearland", 1));
+    ///         }
+    ///     }
+    /// }
+    ///
+    /// map.entry("some_key", 2);
+    /// map.entry("another_key", 3);
+    ///
+    /// // The capacity of our map not changed
+    /// assert_eq!(map.capacity(), capacity_before_into_keys);
+    /// ```
     #[inline]
     pub fn into_keys(self) -> (K1, K2) {
         (self.base_v.into_key(), self.base_k.into_key())
     }
 
+    /// Sets the value of the entry with the `VacantEntry`'s keys,
+    /// and returns a mutable reference to it.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, Entry};
+    ///
+    /// // So lets create some map and also reserve some space for additional elements
+    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    ///
+    /// if let Ok(entry) = map.entry("poneyland", 0) {
+    ///     match entry {
+    ///         Entry::Occupied(_) => panic!("Something go wrong!!!"),
+    ///         Entry::Vacant(vac_entry) => {
+    ///             vac_entry.insert(37);
+    ///         }
+    ///     }
+    /// }
+    /// assert_eq!(map.get_key1(&"poneyland"), Some(&37));
+    /// ```
     #[inline]
     pub fn insert(self, value: V) -> &'a mut V {
         let k2 = self.base_k.key().clone();

@@ -18,6 +18,63 @@ use core::fmt::{self, Debug};
 use core::hint::unreachable_unchecked;
 use core::mem;
 
+/// A hash map with double keys implemented as wrapper above two
+/// [`HashMap`](`std::collections::HashMap`).
+///
+/// Internally, two [`HashMap`](`std::collections::HashMap`) are created. One of type
+/// `HashMap<K1, (K2, V)>` to hold the `(K2, V)` tuple, and second one of type
+/// `HashMap<K2, K1>` just for holding the primary key of type `K1`.
+/// We hold the `(K2, V)` tuple inside first `Hashmap` for synchronization purpose,
+/// so that we can organize checking that both primary key of type `K1` and the
+/// secondary key is of type `K2` refers to the same value, and so on.
+/// Keys may be the same or different type.
+///
+/// By default, [`DHashMap`] as [`HashMap`](`std::collections::HashMap`)
+/// uses a hashing algorithm selected to provide
+/// resistance against HashDoS attacks. The algorithm is randomly seeded, and a
+/// reasonable best-effort is made to generate this seed from a high quality,
+/// secure source of randomness provided by the host without blocking the
+/// program. Because of this, the randomness of the seed depends on the output
+/// quality of the system's random number generator when the seed is created.
+/// In particular, seeds generated when the system's entropy pool is abnormally
+/// low such as during system boot may be of a lower quality.
+///
+/// The default hashing algorithm, like in [`HashMap`](`std::collections::HashMap`),
+/// is currently SipHash 1-3, though this is
+/// subject to change at any point in the future. While its performance is very
+/// competitive for medium sized keys, other hashing algorithms will outperform
+/// it for small keys such as integers as well as large keys such as long
+/// strings, though those algorithms will typically *not* protect against
+/// attacks such as HashDoS.
+///
+/// The hashing algorithm can be replaced on a per-[`DHashMap`] basis using the
+/// [`default`](`std::default::Default::default`), [`with_hasher`](`DHashMap::with_hasher`),
+/// and [`with_capacity_and_hasher`](`DHashMap::with_capacity_and_hasher`) methods.
+/// There are many alternative [hashing algorithms available on crates.io].
+///
+/// It is required that the keys implement the [`Eq`] and
+/// [`Hash`](`core::hash::Hash`) traits, although
+/// this can frequently be achieved by using `#[derive(PartialEq, Eq, Hash)]`.
+/// If you implement these yourself, it is important that the following
+/// property holds:
+///
+/// ```text
+/// k1 == k2 -> hash(k1) == hash(k2)
+/// ```
+///
+/// In other words, if two keys are equal, their hashes must be equal.
+///
+/// It is a logic error for a key to be modified in such a way that the key's
+/// hash, as determined by the [`Hash`] trait, or its equality, as determined by
+/// the [`Eq`] trait, changes while it is in the map. This is normally only
+/// possible through [`Cell`](`std::cell::Cell`), [`RefCell`](`std::cell::RefCell`),
+/// global state, I/O, or unsafe code.
+/// The behavior resulting from such a logic error is not specified, but will
+/// not result in undefined behavior. This could include panics, incorrect results,
+/// aborts, memory leaks, and non-termination.
+///
+/// [hashing algorithms available on crates.io]: https://crates.io/keywords/hasher
+
 #[derive(Clone)]
 pub struct DHashMap<K1, K2, V, S = hash_map::RandomState> {
     value_map: HashMap<K1, (K2, V), S>,
@@ -730,6 +787,112 @@ where
         }
     }
 
+    /// Inserts given keys and value into the map **`without checking`**. Update the value
+    /// if key #1 of type `K1` already present with returning old value.
+    ///
+    /// If the map did not have these keys present, [`None`] is returned.
+    ///
+    /// # Warning
+    ///
+    /// **Using this method can lead to unsynchronization between key #1 and key #1,
+    /// so that they can refer to different values.** It also can lead to different
+    /// quantity of keys, so that quantity of keys #2 `K2` can be ***less**** than
+    /// quantity of keys #1 `K1`.
+    ///
+    /// If the map did have these keys vacant or **present** and **both keys refers to
+    /// the same value** it is ***Ok***, the value is updated, and the old value is
+    /// returned inside `Some(V)` variant.
+    ///
+    /// **But** for this method, it doesn't matter if key # 2 exist or not,
+    /// it return updated value also if the map contain only key #1.
+    /// It is ***because*** this method **don't check** that:
+    /// - key #1 is vacant, but key #2 is already exists with some value;
+    /// - key #1 is already exists with some value, but key #2 is vacant;
+    /// - both key #1 and key #2 is already exists with some values, but
+    /// points to different entries (values).
+    ///
+    /// The keys is not updated, though; this matters for types that can
+    /// be `==` without being identical. See the [std module-level documentation]
+    /// for more.
+    ///
+    /// # Note
+    ///
+    /// Using this method is cheaper that using another insertion
+    /// [`entry`](DHashMap::entry), [`insert`](DHashMap::insert) and
+    /// [`try_insert`](DHashMap::try_insert) methods.
+    ///
+    /// Links between keys #1 `K1` and the values that they refer are adequate.
+    /// **Unsynchronization** between key #1 and key #1, lead only to that the key # 2
+    /// may refer to unexpected value.
+    ///
+    /// It is recommended to use this method only if you are sure that
+    /// key #1 and key #2 are unique. For example if key #1 `K1` are generated automatically
+    /// and you check only that there is no key #2 `K2`.
+    ///
+    /// [std module-level documentation]: std::collections#insert-and-complex-keys
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, ErrorKind, InsertError};
+    /// use core::hash::Hash;
+    ///
+    /// let mut map = DHashMap::new();
+    ///
+    /// // Return None if keys vacant
+    /// assert_eq!(map.insert_unchecked(1, "a", "One"), None);
+    /// assert_eq!(map.is_empty(), false);
+    ///
+    /// // If the map did have these key present, the value is updated,
+    /// // and the old value is returned inside `Some(V)` variants
+    /// map.insert_unchecked(2, "b", "Two");
+    /// assert_eq!(map.insert_unchecked(2, "b", "Second"), Some("Two"));
+    /// assert_eq!(map.get_key1(&2), Some(&"Second"));
+    ///
+    /// // But methods does not care about key #2
+    /// assert_eq!(map.insert_unchecked(1, "b", "First"), Some("One"));
+    /// // So key # 2 refer to unexpected value, and now we have double second keys
+    /// // referring to the same value
+    /// assert_eq!(map.get_key2(&"a"), Some(&"First"));
+    /// assert_eq!(map.get_key2(&"b"), Some(&"First"));
+    ///
+    /// // But it can be safe if you generate one key automatically, and check
+    /// // existence only other key. It can be for example like that:
+    /// #[derive(Copy, Clone, PartialEq, Eq, Hash)]
+    /// pub struct PupilID(usize);
+    ///
+    /// pub struct Pupil {
+    ///     name: String
+    /// }
+    ///
+    /// pub struct Class {
+    ///     pupils: DHashMap<PupilID, String, Pupil>,
+    ///     len: usize,
+    /// }
+    ///
+    /// impl Class {
+    ///     pub fn new() -> Class {
+    ///         Self{
+    ///             pupils: DHashMap::new(),
+    ///             len: 0
+    ///         }
+    ///     }
+    ///     pub fn contains_name(&self, name: &String) -> bool {
+    ///         self.pupils.get_key2(name).is_some()
+    ///     }
+    ///     pub fn add_pupil(&mut self, name: String) -> Option<PupilID> {
+    ///         if !self.contains_name(&name) {
+    ///             let len = &mut self.len;
+    ///             let id = PupilID(*len);
+    ///             self.pupils.insert_unchecked( id, name.clone(), Pupil { name } );
+    ///             *len += 1;
+    ///             Some(id)
+    ///         } else {
+    ///             None
+    ///         }
+    ///     }
+    /// }
+    /// ```
     #[inline]
     pub fn insert_unchecked(&mut self, k1: K1, k2: K2, v: V) -> Option<V> {
         self.key_map.insert(k2.clone(), k1.clone());
@@ -755,6 +918,7 @@ where
     /// - when key #1 is already exists with some value, but key #2 is vacant;
     /// - when both key #1 and key #2 is already exists with some values, but
     /// points to different entries (values).
+    ///
     /// The above mentioned error kinds can be matched through the [`ErrorKind`] enum.
     /// Returned [`InsertError`] structure also contains provided keys and value
     /// that were not inserted and can be used for another purpose.
@@ -839,6 +1003,7 @@ where
     /// - when key #1 is already exists with some value, but key #2 is vacant;
     /// - when both key #1 and key #2 is already exists with some values, but
     /// points to different entries (values).
+    ///
     /// The above mentioned error kinds can be matched through the [`ErrorKind`] enum.
     /// Returned [`InsertError`] structure also contain provided keys and value
     /// that were not inserted and can be used for another purpose.
@@ -1987,6 +2152,21 @@ where
     K1: Eq + Hash + Clone,
     K2: Eq + Hash + Clone,
 {
+    /// Ensures a value is in the entry by inserting the default value if empty,
+    /// and returns a mutable reference to the value in the entry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # fn main() {
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map: DHashMap<&str, usize, Option<u32>> = DHashMap::new();
+    /// map.entry("poneyland", 1).map(|entry| entry.or_default());
+    ///
+    /// assert_eq!(map.get_key1(&"poneyland"), Option::<&Option<u32>>::Some(&None));
+    /// # }
+    /// ```
     #[inline]
     pub fn or_default(self) -> &'a mut V {
         match self {

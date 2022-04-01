@@ -3,17 +3,20 @@
 //! `DHashMap` is like a `std::collection::HashMap`, but allow to use double key to single data/value
 //!
 
+#![warn(rustdoc::broken_intra_doc_links)]
+#![warn(missing_docs)]
+
 #[cfg(test)]
 mod tests_double_map;
 
 use core::hash::{BuildHasher, Hash};
-use std::borrow::Borrow;
+use core::borrow::Borrow;
 use std::collections::hash_map;
 use std::collections::HashMap;
 use std::collections::TryReserveError;
-use std::fmt::{self, Debug};
-use std::hint::unreachable_unchecked;
-use std::mem;
+use core::fmt::{self, Debug};
+use core::hint::unreachable_unchecked;
+use core::mem;
 
 #[derive(Clone)]
 pub struct DHashMap<K1, K2, V, S = hash_map::RandomState> {
@@ -1429,8 +1432,8 @@ impl<'a, K1, K2, V> OccupiedEntry<'a, K1, K2, V> {
     /// // And also reserve some space for additional elements
     /// map.reserve(15);
     /// // Now our map can hold at least 17 elements
-    /// let capacity_before_entries_remove = map.capacity();
-    /// assert!(capacity_before_entries_remove >= 17);
+    /// let capacity_before_remove = map.capacity();
+    /// assert!(capacity_before_remove >= 17);
     ///
     /// assert!(map.get_key1("poneyland") == Some(&10) && map.get_key2(&0) == Some(&10));
     /// if let Ok(entry) = map.entry("poneyland", 0) {
@@ -1460,7 +1463,7 @@ impl<'a, K1, K2, V> OccupiedEntry<'a, K1, K2, V> {
     ///
     /// // But the capacity of our map didn't changed and still equal to the capacity before
     /// // using `remove_entry` method
-    /// assert_eq!(map.capacity(), capacity_before_entries_remove);
+    /// assert_eq!(map.capacity(), capacity_before_remove);
     /// ```
     #[inline]
     pub fn remove(self) -> V {
@@ -1604,7 +1607,7 @@ where
     /// ```
     /// use double_map::{DHashMap, Entry};
     ///
-    /// // So lets create some map and also reserve some space for additional elements
+    /// // So lets create some map
     /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
     ///
     /// if let Ok(entry) = map.entry("poneyland", 0) {
@@ -1644,6 +1647,27 @@ where
     K1: Eq + Hash + Clone,
     K2: Eq + Hash + Clone,
 {
+    /// Ensures a value is in the entry by inserting the default if empty, and returns
+    /// a mutable reference to the value in the entry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, Entry};
+    ///
+    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    ///
+    /// match map.entry("poneyland", 0) {
+    ///     Ok(entry) => {
+    ///         entry.or_insert(3);
+    ///     }
+    ///     Err(_) => unreachable!(),
+    /// }
+    /// assert_eq!(map.get_key1(&"poneyland"), Some(&3));
+    ///
+    /// map.entry("poneyland", 0).map(|entry| *entry.or_insert(10) *= 2);
+    /// assert_eq!(map.get_key1(&"poneyland"), Some(&6));
+    /// ```
     #[inline]
     pub fn or_insert(self, default: V) -> &'a mut V {
         match self {
@@ -1652,6 +1676,29 @@ where
         }
     }
 
+    /// Ensures a value is in the entry by inserting the result of the default function if empty,
+    /// and returns a mutable reference to the value in the entry.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, Entry};
+    ///
+    /// let mut map: DHashMap<&str, u32, String> = DHashMap::new();
+    /// let s = "hoho".to_owned();
+    ///
+    /// match map.entry("poneyland", 0) {
+    ///     Ok(entry) => {
+    ///         entry.or_insert_with(|| s);
+    ///     }
+    ///     Err(_) => unreachable!(),
+    /// }
+    /// assert_eq!(map.get_key1("poneyland"), Some(&"hoho".to_owned()));
+    ///
+    /// let k = "another string".to_owned();
+    /// map.entry("poneyland", 0).map(|entry| entry.or_insert_with(|| k).push_str("ho"));
+    /// assert_eq!(map.get_key1(&"poneyland"), Some(&"hohoho".to_owned()));
+    /// ```
     #[inline]
     pub fn or_insert_with<F: FnOnce() -> V>(self, default: F) -> &'a mut V {
         match self {
@@ -1660,6 +1707,34 @@ where
         }
     }
 
+    /// Ensures a value is in the entry by inserting, if empty, the result of the default function.
+    /// This method allows for generating key-derived (with using key # 1 `K1`) values for
+    /// insertion by providing the default function a reference to the key that was moved
+    /// during the `.entry(key)` method call.
+    ///
+    /// The reference to the moved key is provided so that cloning or copying the key is
+    /// unnecessary, unlike with `.or_insert_with(|| ... )`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, Entry};
+    ///
+    /// let mut map: DHashMap<&str, usize, u64> = DHashMap::new();
+    ///
+    ///  match map.entry("poneyland", 0) {
+    ///     Ok(entry) => {
+    ///         entry.or_insert_with_key1(|k1| k1.chars().count() as u64);
+    ///     },
+    ///     Err(_) => unreachable!(),
+    /// }
+    /// assert_eq!(map.get_key1(&"poneyland"), Some(&9));
+    ///
+    /// map.entry("bearland", 1).map(
+    ///     |ent| ent.or_insert_with_key1(|k1| (k1.chars().count() * 2) as u64)
+    /// );
+    /// assert_eq!(map.get_key1(&"bearland"), Some(&16));
+    /// ```
     #[inline]
     pub fn or_insert_with_key1<F: FnOnce(&K1) -> V>(self, default: F) -> &'a mut V {
         match self {
@@ -1671,6 +1746,34 @@ where
         }
     }
 
+    /// Ensures a value is in the entry by inserting, if empty, the result of the default function.
+    /// This method allows for generating key-derived (with using key # 2 `K2`) values for
+    /// insertion by providing the default function a reference to the key that was moved
+    /// during the `.entry(key)` method call.
+    ///
+    /// The reference to the moved key is provided so that cloning or copying the key is
+    /// unnecessary, unlike with `.or_insert_with(|| ... )`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, Entry};
+    ///
+    /// let mut map: DHashMap<&str, usize, u64> = DHashMap::new();
+    ///
+    ///  match map.entry("poneyland", 10) {
+    ///     Ok(entry) => {
+    ///         entry.or_insert_with_key2(|k2| (k2 + 10) as u64);
+    ///     },
+    ///     Err(_) => unreachable!(),
+    /// }
+    /// assert_eq!(map.get_key1(&"poneyland"), Some(&20));
+    ///
+    /// map.entry("bearland", 11).map(
+    ///     |ent| ent.or_insert_with_key2(|k1| (k1 * 3) as u64)
+    /// );
+    /// assert_eq!(map.get_key1(&"bearland"), Some(&33));
+    /// ```
     #[inline]
     pub fn or_insert_with_key2<F: FnOnce(&K2) -> V>(self, default: F) -> &'a mut V {
         match self {
@@ -1682,6 +1785,34 @@ where
         }
     }
 
+    /// Ensures a value is in the entry by inserting, if empty, the result of the default function.
+    /// This method allows for generating key-derived (with using key #1 `K1` and key # 2 `K2`)
+    /// values for insertion by providing the default function a reference to the keys that
+    /// were moved during the `.entry(key)` method call.
+    ///
+    /// The reference to the moved keys is provided so that cloning or copying the key is
+    /// unnecessary, unlike with `.or_insert_with(|| ... )`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, Entry};
+    ///
+    /// let mut map: DHashMap<&str, usize, u64> = DHashMap::new();
+    ///
+    ///  match map.entry("poneyland", 10) {
+    ///     Ok(entry) => {
+    ///         entry.or_insert_with_keys(|k1, k2| (k1.chars().count() + k2) as u64);
+    ///     },
+    ///     Err(_) => unreachable!(),
+    /// }
+    /// assert_eq!(map.get_key1(&"poneyland"), Some(&19));
+    ///
+    /// map.entry("bearland", 11).map(
+    ///     |ent| ent.or_insert_with_keys(|k1, k2| (k1.chars().count() + k2 * 3) as u64)
+    /// );
+    /// assert_eq!(map.get_key1(&"bearland"), Some(&41));
+    /// ```
     #[inline]
     pub fn or_insert_with_keys<F: FnOnce(&K1, &K2) -> V>(self, default: F) -> &'a mut V {
         match self {
@@ -1693,6 +1824,38 @@ where
         }
     }
 
+    /// Returns a reference to this entry's first key (key #1).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, Entry};
+    ///
+    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    ///
+    /// // It is VacantEntry
+    /// match map.entry("poneyland", 0) {
+    ///     Ok(entry) => {
+    ///         // key equal to provided one
+    ///         assert_eq!(entry.key1(), &"poneyland");
+    ///         // we insert some value
+    ///         entry.or_insert(25);
+    ///     },
+    ///     Err(_) => unreachable!(),
+    /// }
+    /// // As we can see, now this element exist
+    /// assert_eq!(map.get_key1(&"poneyland"), Some(&25));
+    ///
+    /// // So now it is OccupiedEntry
+    /// match map.entry("poneyland", 0) {
+    ///     Ok(entry) => {
+    ///         // And key equal to provided one too
+    ///         assert_eq!(entry.key1(), &"poneyland");
+    ///         entry.or_insert(25);
+    ///     },
+    ///     Err(_) => unreachable!(),
+    /// }
+    /// ```
     #[inline]
     pub fn key1(&self) -> &K1 {
         match *self {
@@ -1701,6 +1864,38 @@ where
         }
     }
 
+    /// Returns a reference to this entry's second key (key #2).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, Entry};
+    ///
+    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    ///
+    /// // It is VacantEntry
+    /// match map.entry("poneyland", 10) {
+    ///     Ok(entry) => {
+    ///         // key equal to provided one
+    ///         assert_eq!(entry.key2(), &10);
+    ///         // we insert some value
+    ///         entry.or_insert(25);
+    ///     },
+    ///     Err(_) => unreachable!(),
+    /// }
+    /// // As we can see, now this element exist
+    /// assert_eq!(map.get_key2(&10), Some(&25));
+    ///
+    /// // So now it is OccupiedEntry
+    /// match map.entry("poneyland", 10) {
+    ///     Ok(entry) => {
+    ///         // And key equal to provided one too
+    ///         assert_eq!(entry.key2(), &10);
+    ///         entry.or_insert(25);
+    ///     },
+    ///     Err(_) => unreachable!(),
+    /// }
+    /// ```
     #[inline]
     pub fn key2(&self) -> &K2 {
         match *self {
@@ -1709,6 +1904,39 @@ where
         }
     }
 
+    /// Returns a reference to this entry's keys.
+    /// Return tuple of type (&'a K1, &'a K2).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, Entry};
+    ///
+    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    ///
+    /// // It is VacantEntry
+    /// match map.entry("poneyland", 10) {
+    ///     Ok(entry) => {
+    ///         // keys equal to provided one
+    ///         assert_eq!(entry.keys(), (&"poneyland", &10));
+    ///         // we insert some value
+    ///         entry.or_insert(25);
+    ///     },
+    ///     Err(_) => unreachable!(),
+    /// }
+    /// // As we can see, now this element exist
+    /// assert_eq!(map.get_key1(&"poneyland"), Some(&25));
+    ///
+    /// // So now it is OccupiedEntry
+    /// match map.entry("poneyland", 10) {
+    ///     Ok(entry) => {
+    ///         // And keys equal to provided one too
+    ///         assert_eq!(entry.keys(), (&"poneyland", &10));
+    ///         entry.or_insert(25);
+    ///     },
+    ///     Err(_) => unreachable!(),
+    /// }
+    /// ```
     #[inline]
     pub fn keys(&self) -> (&K1, &K2) {
         match *self {
@@ -1717,6 +1945,28 @@ where
         }
     }
 
+    /// Provides in-place mutable access to an occupied entry before any
+    /// potential inserts into the map.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map: DHashMap<&str, u32, u32> = DHashMap::new();
+    ///
+    /// map.entry("poneyland", 1).map( |entry|
+    ///    entry.and_modify(|value| { *value += 100 })
+    ///    .or_insert(42)
+    /// );
+    /// assert_eq!(map.get_key1(&"poneyland"), Some(&42));
+    ///
+    /// map.entry("poneyland", 1).map( |entry|
+    ///    entry.and_modify(|value| { *value += 100 })
+    ///    .or_insert(42)
+    /// );
+    /// assert_eq!(map.get_key1(&"poneyland"), Some(&142));
+    /// ```
     #[inline]
     pub fn and_modify<F>(self, f: F) -> Self
     where

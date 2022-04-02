@@ -71,12 +71,12 @@ interface. Look at [Change log](CHANGELOG.md) for more information.
 - [ ] `raw_entry`: Under development 
  
 ### Trait Implementations
-- [ ] `Clone`: Under development
+- [x] `Clone`: Done sinse `v0.1.0`
 - [ ] `Debug`: Under development
 - [ ] `Default`: Under development
-- [ ] `Extend`: Under development
+- [x] `Extend`: Done sinse `v0.2.0`
 - [ ] `From`: Under development
-- [ ] `FromIterator`: Under development
+- [x] `FromIterator`: Done sinse `v0.2.0`
 - [ ] `Index`: Under development
 - [ ] `IntoIterator`: Under development
 - [ ] `PartialEq`: Under development

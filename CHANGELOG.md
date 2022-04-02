@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.2.0] - 2022-04-02
+
+### Added
+
+- [`Extend`](https://doc.rust-lang.org/core/iter/trait.Extend.html) trait implementation for `DHashMap`;
+- [`FromIterator`](https://doc.rust-lang.org/core/iter/trait.FromIterator.html) trait implementation for `DHashMap`;
+
+### Changed
+
+- Documentation was improved.
+- `DHashMap` was moved to separate module `dhash_map`.
+- `TryInsertError::Other` variant changed to the `TryInsertError::Insert` variant.
+
+### Removed
+
+Nothign
+
+### Fixed
+
+- `DHashMap::entry` method (and through this `DHashMap::try_insert`, `DHashMap::insert` methods) realizations
+was changed.
+
+### Compatibility
+
+- Because of moving `DHashMap` to the separate module `dhash_map`, `EntryError` structure, `InsertError` structure,
+`OccupiedEntry` structure, `OccupiedError` structure, `VacantEntry` structure, `Entry` enum,
+`ErrorKind` enum, `TryInsertError` enum can not be used directly from crate root like `use double_map::DHashMap`.
+You need change syntax to use submodule, like this `use double_map::dhash_map::EntryError`.
+- `TryInsertError::Other` variant changed to the `TryInsertError::Insert` variant.
+
 ## [v0.1.1] - 2022-03-29
 
 ### Added

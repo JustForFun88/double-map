@@ -293,7 +293,7 @@ impl<K1, K2, V, S> DHashMap<K1, K2, V, S> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::{DHashMap, dhashmap};
     ///
     /// let mut a = DHashMap::new();
     /// // The created DHashMap doesn't hold any elements
@@ -303,9 +303,10 @@ impl<K1, K2, V, S> DHashMap<K1, K2, V, S> {
     /// // And can be sure that DHashMap holds one element
     /// assert_eq!(a.len(), 1);
     ///
-    /// let mut map = DHashMap::new();
-    /// map.insert(1, "Breakfast", "Pancakes");
-    /// map.insert(2, "Lunch", "Sandwich");
+    /// let map = dhashmap![
+    ///    1, "Breakfast" => "Pancakes",
+    ///    2, "Lunch" => "Sandwich",
+    /// ];
     /// assert_eq!(map.len(), 2);
     /// ```
     #[inline]
@@ -343,11 +344,12 @@ impl<K1, K2, V, S> DHashMap<K1, K2, V, S> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::{DHashMap, dhashmap};
     ///
-    /// let mut a = DHashMap::new();
-    /// a.insert(1, "Breakfast", "Pancakes");
-    /// a.insert(2, "Lunch", "Sandwich");
+    /// let mut a = dhashmap![
+    ///    1, "Breakfast" => "Pancakes",
+    ///    2, "Lunch" => "Sandwich",
+    /// ];
     ///
     /// // We can that see DHashMap holds two elements
     /// assert_eq!(a.len(), 2);
@@ -656,13 +658,14 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::{DHashMap, dhashmap};
     ///
     /// // We create map with three elements
-    /// let mut map = DHashMap::new();
-    /// map.insert(1, "One", String::from("Eins"));
-    /// map.insert(2, "Two", String::from("Zwei"));
-    /// map.insert(3, "Three", String::from("Drei"));
+    /// let mut map = dhashmap! {
+    ///     1, "One"   => String::from("Eins"),
+    ///     2, "Two"   => String::from("Zwei"),
+    ///     3, "Three" => String::from("Drei"),
+    /// };
     ///
     /// // We can see that DHashMap holds three elements
     /// assert!(map.len() == 3 && map.capacity() >= 3);
@@ -713,13 +716,14 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::{DHashMap, dhashmap};
     ///
     /// // We create map with three elements
-    /// let mut map = DHashMap::new();
-    /// map.insert(1, "One", String::from("Eins"));
-    /// map.insert(2, "Two", String::from("Zwei"));
-    /// map.insert(3, "Three", String::from("Drei"));
+    /// let mut map = dhashmap! {
+    ///     1, "One"   => String::from("Eins"),
+    ///     2, "Two"   => String::from("Zwei"),
+    ///     3, "Three" => String::from("Drei"),
+    /// };
     ///
     /// // We can see that DHashMap holds three elements
     /// assert!(map.len() == 3 && map.capacity() >= 3);
@@ -1207,6 +1211,71 @@ where
             })),
         }
     }
+}
+
+impl<K1, K2, V, S> Default for DHashMap<K1, K2, V, S>
+where
+    S: Default + Clone,
+{
+    /// Creates an empty `DHashMap<K1, K2, V, S>`, with the `Default` value for the hasher.
+    #[inline]
+    fn default() -> DHashMap<K1, K2, V, S> {
+        DHashMap::with_hasher(Default::default())
+    }
+}
+
+/// Create a `DHashMap<K1, K2, V,` [`RandomState`](std::collections::hash_map::RandomState)`>`
+/// from a list of sequentially given keys and values.
+///
+/// Input data list must follow one of these rules:
+/// - `K1, K2 => V, K1, K2 => V` ... and so on;
+/// - `(K1, K2) => V, (K1, K2) => V` ... and so on.
+///
+/// Last comma separator can be omitted.
+/// If this macros is called without arguments, i.e. like
+/// ```
+/// # use double_map::{DHashMap, dhashmap};
+/// let map: DHashMap<i32, String, String>  = dhashmap![];
+/// ```
+/// it is equivalent to [`DHashMap::new()`] function
+///
+/// ## Example
+///
+/// ```
+/// use double_map::{DHashMap, dhashmap};
+///
+/// // Calling macros without arguments is equivalent to DHashMap::new() function
+/// let _map0: DHashMap<i32, i32, i32> = dhashmap![];
+///
+/// let map = dhashmap!{
+///     1, "a" => "One",
+///     2, "b" => "Two", // last comma separator can be omitted
+/// };
+///
+/// assert_eq!(map.get_key1(&1),   Some(&"One"));
+/// assert_eq!(map.get_key1(&2),   Some(&"Two"));
+/// assert_eq!(map.get_key2(&"a"), Some(&"One"));
+/// assert_eq!(map.get_key2(&"b"), Some(&"Two"));
+///
+/// let map2 = dhashmap!{
+///     (3, "c") => "Three",
+///     (4, "d") => "Four" // last comma separator can be omitted
+/// };
+///
+/// assert_eq!(map2.get_key1(&3),   Some(&"Three"));
+/// assert_eq!(map2.get_key1(&4),   Some(&"Four"));
+/// assert_eq!(map2.get_key2(&"c"), Some(&"Three"));
+/// assert_eq!(map2.get_key2(&"d"), Some(&"Four"));
+/// ```
+#[macro_export]
+macro_rules! dhashmap {
+    () => (DHashMap::new());
+    ($($key1:expr, $key2:expr => $value:expr),+ $(,)?) => (
+        DHashMap::<_, _, _, std::collections::hash_map::RandomState>::from_iter([$(($key1, $key2, $value)),+])
+    );
+    ($(($key1:expr, $key2:expr) => $value:expr),+ $(,)?) => (
+        DHashMap::<_, _, _, std::collections::hash_map::RandomState>::from_iter([$(($key1, $key2, $value)),+])
+    );
 }
 
 impl<K1, K2, V, S> FromIterator<(K1, K2, V)> for DHashMap<K1, K2, V, S>

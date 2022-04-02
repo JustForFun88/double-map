@@ -8,7 +8,7 @@ Double Map
 Like a [HashMap], but allows you to use two different keys to the same value/data.
 
 Sometimes during development, it may be necessary to have a data structure like
-a `HashMap` but with two different keys refiring to the same data.
+a `HashMap` but with two different keys referring to the same data.
 
 For example, if you have some data with a unique ID and a name, then you create
 a structure that contains the name, and store it in a ***normal*** `HashMap` using
@@ -31,7 +31,7 @@ because indexing by the second key of type `K2` requires two `HashMap` lookups.
 ## Current Status
 
 Double Map is in active development. The design goal is implementing the whole [HashMap]
-interface. Look at [Change log](CHANGELOG.md) for more infomation. 
+interface. Look at [Change log](CHANGELOG.md) for more information. 
 
 ### Methods
 

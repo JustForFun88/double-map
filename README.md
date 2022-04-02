@@ -15,12 +15,12 @@ a structure that contains the name, and store it in a ***normal*** `HashMap` usi
 the unique ID as the key. However, finding the element throughout the name will be
 performed with O(n) time. The same is true for the reverse case.
 
-This crate try to resolve this contradiction by providing a DHashMap structure -
-a map where you can add, lookup and remove elements using either the first key
+This crate tries to resolve this contradiction by providing a DHashMap structure -
+a map where you can add, look up and remove elements using either the first key
 of type `K1` or the second key of type `K2`.
 
 Internally, it uses two maps: the first is of type `HashMap<K1, (K2, V)>` and
-the second is of type `HashMap<K2, K1>`. Using two `HashMap`'s insides instead
+the second is of type `HashMap<K2, K1>`. Using two `HashMap`'s inside instead
 one brings to the performance and memory penalty.
 
 It is recommended to use the first key of type `K1` of quick access to the data,

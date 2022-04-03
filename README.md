@@ -35,11 +35,11 @@ interface. Look at [Change log](CHANGELOG.md) for more information.
 
 ### Methods
 
-- [x] `new`: Done sinse `v0.1.0` 
-- [x] `with_capacity`: Done sinse `v0.1.0` 
-- [x] `with_hasher`: Done sinse `v0.1.0` 
-- [x] `with_capacity_and_hasher`: Done sinse `v0.1.0` 
-- [x] `capacity`: Done sinse `v0.1.0` 
+- [x] `new`: Done since `v0.1.0` 
+- [x] `with_capacity`: Done since `v0.1.0` 
+- [x] `with_hasher`: Done since `v0.1.0` 
+- [x] `with_capacity_and_hasher`: Done since `v0.1.0` 
+- [x] `capacity`: Done since `v0.1.0` 
 - [ ] `keys`: Under development 
 - [ ] `into_keys`: Under development 
 - [ ] `values`: Under development 
@@ -47,36 +47,36 @@ interface. Look at [Change log](CHANGELOG.md) for more information.
 - [ ] `into_values`: Under development 
 - [ ] `iter Under`: development 
 - [ ] `iter_mut`: Under development 
-- [x] `len`: Done sinse `v0.1.0` 
-- [x] `is_empty`: Done sinse `v0.1.0` 
+- [x] `len`: Done since `v0.1.0` 
+- [x] `is_empty`: Done since `v0.1.0` 
 - [ ] `drain`: Under development 
 - [ ] `drain_filter`: Under development 
 - [ ] `retain`: Under development 
-- [x] `clear`: Done sinse `v0.1.0` 
-- [x] `hasher`: Done sinse `v0.1.0` 
-- [x] `reserve`: Done sinse `v0.1.0` 
-- [x] `try_reserve`: Done sinse `v0.1.0` 
-- [x] `shrink_to_fit`: Done sinse `v0.1.0` 
-- [x] `shrink_to`: Done sinse `v0.1.0` 
-- [x] `entry`: Done sinse `v0.1.0` 
-- [x] `get`: Done sinse `v0.1.0` (`get_key1` and `get_key2` methods) 
+- [x] `clear`: Done since `v0.1.0` 
+- [x] `hasher`: Done since `v0.1.0` 
+- [x] `reserve`: Done since `v0.1.0` 
+- [x] `try_reserve`: Done since `v0.1.0` 
+- [x] `shrink_to_fit`: Done since `v0.1.0` 
+- [x] `shrink_to`: Done since `v0.1.0` 
+- [x] `entry`: Done since `v0.1.0` 
+- [x] `get`: Done since `v0.1.0` (`get_key1` and `get_key2` methods) 
 - [ ] `get_key_value`: Under development 
 - [ ] `contains_key`: Under development 
-- [x] `get_mut`: Done sinse `v0.1.0` (`get_mut_key1` and `get_mut_key2` methods) 
-- [x] `insert`: Done sinse `v0.1.0` (`insert_unchecked` and `insert` methods) 
-- [x] `try_insert`: Done sinse `v0.1.0` 
-- [x] `remove`: Done sinse `v0.1.0` (`remove_key1` and `remove_key2` methods) 
+- [x] `get_mut`: Done since `v0.1.0` (`get_mut_key1` and `get_mut_key2` methods) 
+- [x] `insert`: Done since `v0.1.0` (`insert_unchecked` and `insert` methods) 
+- [x] `try_insert`: Done since `v0.1.0` 
+- [x] `remove`: Done since `v0.1.0` (`remove_key1` and `remove_key2` methods) 
 - [ ] `remove_entry`: Under development 
 - [ ] `raw_entry_mut`: Under development 
 - [ ] `raw_entry`: Under development 
  
 ### Trait Implementations
-- [x] `Clone`: Done sinse `v0.1.0`
+- [x] `Clone`: Done since `v0.1.0`
 - [ ] `Debug`: Under development
-- [ ] `Default`: Under development
-- [x] `Extend`: Done sinse `v0.2.0`
+- [x] `Default`: Done since `v0.3.0`
+- [x] `Extend`: Done since `v0.2.0`
 - [ ] `From`: Under development
-- [x] `FromIterator`: Done sinse `v0.2.0`
+- [x] `FromIterator`: Done since `v0.2.0`
 - [ ] `Index`: Under development
 - [ ] `IntoIterator`: Under development
 - [ ] `PartialEq`: Under development

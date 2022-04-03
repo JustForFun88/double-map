@@ -1,15 +1,16 @@
 #[cfg(test)]
 mod tests_double_map;
 
-use core::hash::{BuildHasher, Hash};
 use core::borrow::Borrow;
+use core::default::Default;
+use core::fmt::{self, Debug};
+use core::hash::{BuildHasher, Hash};
+use core::hint::unreachable_unchecked;
+use core::iter::{Extend, FromIterator};
+use core::mem;
 use std::collections::hash_map;
 use std::collections::HashMap;
 use std::collections::TryReserveError;
-use core::fmt::{self, Debug};
-use core::hint::unreachable_unchecked;
-use core::mem;
-use core::iter::{FromIterator, Extend};
 
 /// A hash map with double keys implemented as wrapper above two
 /// [`HashMaps`](`std::collections::HashMap`).
@@ -834,7 +835,7 @@ where
             None => match self.key_map.get(&k2) {
                 None => {
                     // SAFETY: We already check that both key vacant
-                    Ok( unsafe { self.map_vacant_entry(k1, k2) } )
+                    Ok(unsafe { self.map_vacant_entry(k1, k2) })
                 }
                 // Error: Vacant key #1 of type K1 and occupied key # 2 of type K2
                 Some(_) => Err(EntryError {
@@ -846,7 +847,7 @@ where
                 Some(key1_exist) => {
                     return if k1 == *key1_exist && k2 == *key2_exist {
                         // SAFETY: We already check that both key exist and refer to the same value
-                        Ok( unsafe { self.map_occupied_entry(k1, k2) } )
+                        Ok(unsafe { self.map_occupied_entry(k1, k2) })
                     } else {
                         // Error: key #1 and key # 2 refer to different entries / values
                         Err(EntryError {
@@ -888,9 +889,7 @@ where
         let raw_k = self.key_map.entry(k2);
         match raw_v {
             hash_map::Entry::Vacant(base_v) => match raw_k {
-                hash_map::Entry::Vacant(base_k) => {
-                    Entry::Vacant(VacantEntry { base_v, base_k })
-                },
+                hash_map::Entry::Vacant(base_k) => Entry::Vacant(VacantEntry { base_v, base_k }),
                 _ => unreachable_unchecked(),
             },
             _ => unreachable_unchecked(),
@@ -1213,18 +1212,7 @@ where
     }
 }
 
-impl<K1, K2, V, S> Default for DHashMap<K1, K2, V, S>
-where
-    S: Default + Clone,
-{
-    /// Creates an empty `DHashMap<K1, K2, V, S>`, with the `Default` value for the hasher.
-    #[inline]
-    fn default() -> DHashMap<K1, K2, V, S> {
-        DHashMap::with_hasher(Default::default())
-    }
-}
-
-/// Create a `DHashMap<K1, K2, V,` [`RandomState`](std::collections::hash_map::RandomState)`>`
+/// Create a `DHashMap<K1, K2, V, `[`RandomState`](std::collections::hash_map::RandomState)`>`
 /// from a list of sequentially given keys and values.
 ///
 /// Input data list must follow one of these rules:
@@ -1239,7 +1227,7 @@ where
 /// ```
 /// it is equivalent to [`DHashMap::new()`] function
 ///
-/// ## Example
+/// # Examples
 ///
 /// ```
 /// use double_map::{DHashMap, dhashmap};
@@ -1278,12 +1266,73 @@ macro_rules! dhashmap {
     );
 }
 
+/// Creates an empty `DHashMap<K1, K2, V, S>`, with the `Default` value for the hasher.
+impl<K1, K2, V, S> Default for DHashMap<K1, K2, V, S>
+where
+    S: Default + Clone,
+{
+    /// Creates an empty `DHashMap<K1, K2, V, S>`, with the `Default` value for the hasher.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    /// use std::collections::hash_map::RandomState;
+    ///
+    /// // You need to specify all types of DHashMap, including hasher.
+    /// // Created map is empty and don't allocate memory
+    /// let map: DHashMap<u32, String, String, RandomState> = Default::default();
+    /// assert_eq!(map.capacity(), 0);
+    /// let map: DHashMap<u32, String, String, RandomState> = DHashMap::default();
+    /// assert_eq!(map.capacity(), 0);
+    /// ```
+    #[inline]
+    fn default() -> DHashMap<K1, K2, V, S> {
+        DHashMap::with_hasher(Default::default())
+    }
+}
+
+/// Creates an new `DHashMap<K1, K2, V, S>`, with the `Default` value
+/// for the hasher from from an iterator.
 impl<K1, K2, V, S> FromIterator<(K1, K2, V)> for DHashMap<K1, K2, V, S>
 where
     K1: Eq + Hash + Clone,
     K2: Eq + Hash + Clone,
     S: BuildHasher + Default + Clone,
 {
+    /// Creates an new `DHashMap<K1, K2, V, S>`, with the `Default` value
+    /// for the hasher from from an iterator.
+    ///
+    /// You need to specify the type of `hasher`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    /// use std::collections::hash_map::RandomState;
+    ///
+    /// let mut number = 0;
+    /// let some_iter = std::iter::repeat_with(move || {
+    ///     number +=1;
+    ///     (number, number, number * 10)
+    /// }).take(5);
+    /// // You need to specify hasher
+    /// let map: DHashMap<_, _, _, RandomState> = DHashMap::from_iter(some_iter.clone());
+    /// assert_eq!(map.get_key1(&1), Some(&10));
+    /// assert_eq!(map.get_key1(&5), Some(&50));
+    /// assert_eq!(map.get_key1(&6), None);
+    ///
+    /// let some_vec: Vec<_> = some_iter.collect();
+    /// let map: DHashMap<_, _, _, RandomState> = DHashMap::from_iter(some_vec);
+    /// assert_eq!(map.get_key1(&1), Some(&10));
+    /// assert_eq!(map.get_key1(&5), Some(&50));
+    /// assert_eq!(map.get_key1(&6), None);
+    ///
+    /// let some_arr = [(1, 1, 10), (2, 2, 20), (3, 3, 30), (4, 4, 40), (5, 5, 50)];
+    /// let map: DHashMap<_, _, _, RandomState> = DHashMap::from_iter(some_arr);
+    /// assert_eq!(map.get_key1(&1), Some(&10));
+    /// assert_eq!(map.get_key1(&5), Some(&50));
+    /// assert_eq!(map.get_key1(&6), None);
     fn from_iter<T: IntoIterator<Item = (K1, K2, V)>>(iter: T) -> DHashMap<K1, K2, V, S> {
         let mut map = DHashMap::with_hasher(Default::default());
         map.extend(iter);
@@ -1291,14 +1340,61 @@ where
     }
 }
 
-/// Inserts all new keys and values from the iterator. Replace values with existing
-/// keys with new values returned from the iterator.
+/// Inserts all new keys and values from the iterator to existing `DHashMap<K1, K2, V, S>`.
 impl<K1, K2, V, S> Extend<(K1, K2, V)> for DHashMap<K1, K2, V, S>
 where
     K1: Eq + Hash + Clone,
     K2: Eq + Hash + Clone,
     S: BuildHasher,
 {
+    /// Inserts all new keys and values from the iterator to existing `DHashMap<K1, K2, V, S>`.
+    ///
+    /// Replace values with existing keys with new values returned from the iterator.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// // Let's create `DHashMap` with std::collections::hash_map::RandomState hasher
+    /// let mut map = DHashMap::new();
+    /// map.insert(1, 1, 999);
+    ///
+    /// let mut number = 0;
+    /// let some_iter = std::iter::repeat_with(move || {
+    ///     number +=1;
+    ///     (number, number, number * 10)
+    /// }).take(5);
+    ///
+    /// // You don't need to specify the hasher
+    /// map.extend(some_iter);
+    /// // Replace values with existing keys with new values returned from the iterator.
+    /// // So that the map.get_key1(&1) doesn't return Some(&999).
+    /// assert_eq!(map.get_key1(&1), Some(&10));
+    ///
+    /// let some_vec: Vec<_> = std::iter::repeat_with(move || {
+    ///     number +=100;
+    ///     (number, number, number * 10)
+    /// }).take(5).collect();
+    /// map.extend(some_vec);
+    ///
+    /// let some_arr = [(11, 11, 111), (22, 22, 222), (33, 33, 333), (44, 44, 4444), (55, 55, 555)];
+    /// map.extend(some_arr);
+    ///
+    /// // Keys and values from some_iter
+    /// assert_eq!(map.get_key1(&1), Some(&10));
+    /// assert_eq!(map.get_key1(&5), Some(&50));
+    /// assert_eq!(map.get_key1(&6), None);
+    ///
+    /// // Keys and values from some_vec
+    /// assert_eq!(map.get_key1(&100), Some(&1000));
+    /// assert_eq!(map.get_key1(&500), Some(&5000));
+    /// assert_eq!(map.get_key1(&600), None);
+    ///
+    /// // Keys and values from some_arr
+    /// assert_eq!(map.get_key1(&11), Some(&111));
+    /// assert_eq!(map.get_key1(&55), Some(&555));
+    /// assert_eq!(map.get_key1(&66), None);
     #[inline]
     fn extend<T: IntoIterator<Item = (K1, K2, V)>>(&mut self, iter: T) {
         // Keys may be already present or show multiple times in the iterator.
@@ -1318,9 +1414,7 @@ where
     }
 }
 
-/// Inserts all new keys and values from the iterator. Replace values with existing
-/// keys with new values returned from the iterator. The keys and values must
-/// implement [`Copy`] trait.
+/// Inserts all new keys and values from the iterator to existing `DHashMap<K1, K2, V, S>`.
 impl<'a, K1, K2, V, S> Extend<(&'a K1, &'a K2, &'a V)> for DHashMap<K1, K2, V, S>
 where
     K1: Eq + Hash + Copy,
@@ -1328,6 +1422,38 @@ where
     V: Copy,
     S: BuildHasher,
 {
+    /// Inserts all new keys and values from the iterator to existing `DHashMap<K1, K2, V, S>`.
+    ///
+    /// Replace values with existing keys with new values returned from the iterator.
+    /// The keys and values must implement [`Copy`] trait.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// // Let's create `DHashMap` with std::collections::hash_map::RandomState hasher
+    /// let mut map = DHashMap::new();
+    /// map.insert(1, 1, 999);
+    ///
+    /// let mut number = 0;
+    /// let some_vec: Vec<_> = std::iter::repeat_with(move || {
+    ///     number +=1;
+    ///     (number, number, number * 10)
+    /// }).take(5).collect();
+    ///
+    /// // You don't need to specify the hasher
+    /// let some_iter = some_vec.iter().map(|(k1, k2, v)| (k1, k2, v));
+    /// map.extend(some_iter);
+    ///
+    /// // Replace values with existing keys with new values returned from the iterator.
+    /// // So that the map.get_key1(&1) doesn't return Some(&999).
+    /// assert_eq!(map.get_key1(&1), Some(&10));
+    /// assert_eq!(map.get_key1(&5), Some(&50));
+    /// assert_eq!(map.get_key1(&6), None);
+    ///
+    /// // And created vector are still can be used.
+    /// assert_eq!(some_vec[4], (5, 5, 50));
     #[inline]
     fn extend<T: IntoIterator<Item = (&'a K1, &'a K2, &'a V)>>(&mut self, iter: T) {
         self.extend(iter.into_iter().map(|(&k1, &k2, &v)| (k1, k2, v)))

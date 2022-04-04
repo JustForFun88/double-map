@@ -320,6 +320,21 @@ impl<K1, K2, V, S> DHashMap<K1, K2, V, S> {
     /// An iterator visiting all keys-value tuples in arbitrary order.
     /// The iterator element is tuple of type `(&'a K1, &'a K2, &'a V)`.
     ///
+    /// # Note
+    ///
+    /// Internally [`DHashMap`] use two [`HashMap`]. One of type
+    /// `HashMap<K1, (K2, V)>` to hold the `(K2, V)` tuple, and second one of type
+    /// `HashMap<K2, K1>` just for holding the primary key of type `K1`.
+    ///
+    /// Created iterator iterate only through first [`HashMap`] of type `HashMap<K1, (K2, V)>`.
+    /// So that, if you previously used ['insert_unchecked'] method,
+    /// this method can return false second keys (key #2) in case of **unsynchronization**
+    /// between first keys of type `K1` and second keys of type `K2`. See ['insert_unchecked']
+    /// method documentation for more.
+    ///
+    /// [`HashMap`]: (`std::collections::HashMap`)
+    /// ['insert_unchecked']: (DHashMap::insert_unchecked)
+    ///
     /// # Examples
     ///
     /// ```

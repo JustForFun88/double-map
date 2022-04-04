@@ -1,6 +1,6 @@
 [package]
 name = "double-map"
-version = "0.4.0"
+version = "0.4.1"
 authors = ["Alisher Galiev <alishergaliev88@gmail.com>"]
 description = "A HashMap with double key to single data/value"
 edition = "2021"

@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.4.1] - 2022-04-04
+
+### Added
+
+Nothing
+
+### Changed
+
+Improved **`iter`** `DHashMap` method documentation.
+
+### Removed
+
+Nothign
+
+### Fixed
+
+Nothing
+
 ## [v0.4.0] - 2022-04-04
 
 ### Added

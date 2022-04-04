@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.5.0] - 2022-04-05
+
+### Added
+
+- **`iter_mut`** `DHashMap` method for creation a mutable iterator visiting all keys-value tuples in arbitrary order.
+
+### Changed
+
+Nothign
+
+### Removed
+
+Nothign
+
+### Fixed
+
+Nothing
+
 ## [v0.4.1] - 2022-04-04
 
 ### Added

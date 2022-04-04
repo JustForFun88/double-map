@@ -46,7 +46,7 @@ interface. Look at [Change log](CHANGELOG.md) for more information.
 - [ ] `values_mut`: Under development 
 - [ ] `into_values`: Under development 
 - [x] `iter`: Done since `v0.4.0`
-- [ ] `iter_mut`: Under development 
+- [x] `iter_mut`: Done since `v0.5.0`
 - [x] `len`: Done since `v0.1.0` 
 - [x] `is_empty`: Done since `v0.1.0` 
 - [ ] `drain`: Under development 

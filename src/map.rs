@@ -289,34 +289,6 @@ impl<K1, K2, V, S> DHashMap<K1, K2, V, S> {
         self.value_map.capacity()
     }
 
-    /// Returns the number of elements in the map.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use double_map::{DHashMap, dhashmap};
-    ///
-    /// let mut a = DHashMap::new();
-    /// // The created DHashMap doesn't hold any elements
-    /// assert_eq!(a.len(), 0);
-    /// // We insert one element
-    /// a.insert(1, "Breakfast", "Pancakes");
-    /// // And can be sure that DHashMap holds one element
-    /// assert_eq!(a.len(), 1);
-    ///
-    /// let map = dhashmap![
-    ///    1, "Breakfast" => "Pancakes",
-    ///    2, "Lunch" => "Sandwich",
-    /// ];
-    /// assert_eq!(map.len(), 2);
-    /// ```
-    #[inline]
-    pub fn len(&self) -> usize {
-        // we only take it into account because it contains the most important part of
-        // hashtable - the value
-        self.value_map.len()
-    }
-
     /// An iterator visiting all keys-value tuples in arbitrary order.
     /// The iterator element is tuple of type `(&'a K1, &'a K2, &'a V)`.
     ///
@@ -360,6 +332,85 @@ impl<K1, K2, V, S> DHashMap<K1, K2, V, S> {
         Iter {
             base: self.value_map.iter(),
         }
+    }
+
+    /// An iterator visiting all keys-value tuples in arbitrary order,
+    /// with mutable references to the values.
+    /// The iterator element is tuple of type`(&'a K1, &'a K2, &'a mut V)`.
+    ///
+    /// # Note
+    ///
+    /// Internally [`DHashMap`] use two [`HashMap`](`std::collections::HashMap`). One of type
+    /// `HashMap<K1, (K2, V)>` to hold the `(K2, V)` tuple, and second one of type
+    /// `HashMap<K2, K1>` just for holding the primary key of type `K1`.
+    ///
+    /// Created iterator iterate only through first [`HashMap`](`std::collections::HashMap`)
+    /// of type `HashMap<K1, (K2, V)>`.
+    /// So that, if you previously used [`insert_unchecked`](DHashMap::insert_unchecked) method,
+    /// this method can return false second keys (key #2) in case of **unsynchronization**
+    /// between first keys of type `K1` and second keys of type `K2`. See
+    /// [`insert_unchecked`](DHashMap::insert_unchecked) method documentation for more.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map = DHashMap::new();
+    /// map.insert("a", "One",   1);
+    /// map.insert("b", "Two",   2);
+    /// map.insert("c", "Three", 3);
+    ///
+    /// assert_eq!(map.len(), 3);
+    ///
+    /// // Update all values
+    /// for (_, _, value) in map.iter_mut() {
+    ///     *value *= 2;
+    /// }
+    ///
+    /// for (key1, key2, value) in map.iter() {
+    ///     println!("key1: {}, key2: {}, value: {}", key1, key2, value);
+    ///     assert!(
+    ///         (key1, key2, value) == (&"a", &"One",   &2) ||
+    ///         (key1, key2, value) == (&"b", &"Two",   &4) ||
+    ///         (key1, key2, value) == (&"c", &"Three", &6)
+    ///     );
+    /// }
+    ///
+    /// assert_eq!(map.len(), 3);
+    /// ```
+    pub fn iter_mut(&mut self) -> IterMut<'_, K1, K2, V> {
+        IterMut {
+            base: self.value_map.iter_mut(),
+        }
+    }
+
+    /// Returns the number of elements in the map.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// let mut a = DHashMap::new();
+    /// // The created DHashMap doesn't hold any elements
+    /// assert_eq!(a.len(), 0);
+    /// // We insert one element
+    /// a.insert(1, "Breakfast", "Pancakes");
+    /// // And can be sure that DHashMap holds one element
+    /// assert_eq!(a.len(), 1);
+    ///
+    /// let map = dhashmap![
+    ///    1, "Breakfast" => "Pancakes",
+    ///    2, "Lunch" => "Sandwich",
+    /// ];
+    /// assert_eq!(map.len(), 2);
+    /// ```
+    #[inline]
+    pub fn len(&self) -> usize {
+        // we only take it into account because it contains the most important part of
+        // hashtable - the value
+        self.value_map.len()
     }
 
     /// Returns `true` if the map contains no elements.
@@ -1554,10 +1605,11 @@ pub struct Iter<'a, K1: 'a, K2: 'a, V: 'a> {
 impl<'a, K1, K2, V> Iterator for Iter<'a, K1, K2, V> {
     type Item = (&'a K1, &'a K2, &'a V);
 
+    #[inline]
     fn next(&mut self) -> Option<(&'a K1, &'a K2, &'a V)> {
         // We do not use Option::map for performance purpose
         match self.base.next() {
-            Some((key_one, (key_two, value))) => Some((key_one, key_two, value)),
+            Some((k1, (k2, val))) => Some((k1, k2, val)),
             None => None,
         }
     }
@@ -1575,6 +1627,63 @@ impl<'a, K1, K2, V> ExactSizeIterator for Iter<'a, K1, K2, V> {
 }
 
 impl<K1, K2, V> FusedIterator for Iter<'_, K1, K2, V> {}
+
+/// A mutable iterator over the entries of a `DHashMap` in arbitrary order.
+/// The iterator element is tuple of type`(&'a K1, &'a K2, &'a mut V)`.
+///
+/// This `struct` is created by the [`iter_mut`](DHashMap::iter_mut) method
+/// on [`DHashMap`]. See its documentation for more.
+///
+/// # Example
+///
+/// ```
+/// use double_map::{DHashMap, dhashmap};
+///
+/// let mut map = dhashmap!{
+///     1, "a" => "One".to_owned(),
+///     2, "b" => "Two".to_owned(),
+///     3, "c" => "Three".to_owned(),
+/// };
+///
+/// let mut iter = map.iter_mut();
+/// iter.next().map(|(_, _, v)| v.push_str(" coin"));
+/// iter.next().map(|(_, _, v)| v.push_str(" coin"));
+/// iter.next().map(|(_, _, v)| v.push_str(" coin"));
+///
+/// assert_eq!(map.get_key1(&1).unwrap(), &"One coin".to_owned()  );
+/// assert_eq!(map.get_key1(&2).unwrap(), &"Two coin".to_owned()  );
+/// assert_eq!(map.get_key1(&3).unwrap(), &"Three coin".to_owned());
+/// ```
+#[derive(Debug)]
+pub struct IterMut<'a, K1: 'a, K2: 'a, V: 'a> {
+    base: hash_map::IterMut<'a, K1, (K2, V)>,
+}
+
+impl<'a, K1, K2, V> Iterator for IterMut<'a, K1, K2, V> {
+    type Item = (&'a K1, &'a K2, &'a mut V);
+
+    #[inline]
+    fn next(&mut self) -> Option<(&'a K1, &'a K2, &'a mut V)> {
+        // We do not use Option::map for performance purpose
+        match self.base.next() {
+            Some((k1, (ref k2, val))) => Some((k1, k2, val)),
+            None => None,
+        }
+    }
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.base.size_hint()
+    }
+}
+
+impl<'a, K1, K2, V> ExactSizeIterator for IterMut<'a, K1, K2, V> {
+    #[inline]
+    fn len(&self) -> usize {
+        self.base.len()
+    }
+}
+
+impl<K1, K2, V> FusedIterator for IterMut<'_, K1, K2, V> {}
 
 /// A view into an occupied entry in a [`DHashMap`].
 /// It is part of the [`Entry`] enum and [`OccupiedError`] struct.

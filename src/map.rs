@@ -6,12 +6,11 @@ use core::default::Default;
 use core::fmt::{self, Debug};
 use core::hash::{BuildHasher, Hash};
 use core::hint::unreachable_unchecked;
-use core::iter::{Extend, FromIterator};
+use core::iter::{Extend, FromIterator, FusedIterator};
 use core::mem;
 use std::collections::hash_map;
 use std::collections::HashMap;
 use std::collections::TryReserveError;
-use std::iter::FusedIterator;
 
 /// A hash map with double keys implemented as wrapper above two
 /// [`HashMaps`](`std::collections::HashMap`).
@@ -1493,13 +1492,11 @@ where
     }
 }
 
-/// An iterator over the entries of a `DHashMap`. The iterator element
-/// is tuple of type `(&'a K1, &'a K2, &'a V)`.
+/// An iterator over the entries of a `DHashMap` in arbitrary order.
+/// The iterator element is tuple of type `(&'a K1, &'a K2, &'a V)`.
 ///
-/// This `struct` is created by the [`iter`] method on [`DHashMap`]. See its
-/// documentation for more.
-///
-/// [`iter`]: DHashMap::iter
+/// This `struct` is created by the [`iter`](DHashMap::iter) method
+/// on [`DHashMap`]. See its documentation for more.
 ///
 /// # Example
 ///
@@ -1512,9 +1509,28 @@ where
 ///     3, "c" => "Three",
 /// };
 /// let mut  iter = map.iter();
-/// assert_eq!(iter.next(), Some((&1, &"a", &"One")));
-/// assert_eq!(iter.next(), Some((&2, &"b", &"Two")));
-/// assert_eq!(iter.next(), Some((&3, &"c", &"Three")));
+/// let item1 = iter.next();
+/// let item2 = iter.next();
+/// let item3 = iter.next();
+/// assert!(
+///     item1 == Some((&1, &"a", &"One"  )) ||
+///     item1 == Some((&2, &"b", &"Two"  )) ||
+///     item1 == Some((&3, &"c", &"Three"))
+/// );
+/// assert!(
+///     item2 == Some((&1, &"a", &"One"  )) ||
+///     item2 == Some((&2, &"b", &"Two"  )) ||
+///     item2 == Some((&3, &"c", &"Three"))
+/// );
+/// assert!(
+///     item3 == Some((&1, &"a", &"One"  )) ||
+///     item3 == Some((&2, &"b", &"Two"  )) ||
+///     item3 == Some((&3, &"c", &"Three"))
+/// );
+/// assert_eq!(iter.next(), None);
+///
+/// // It is fused iterator
+/// assert_eq!(iter.next(), None);
 /// assert_eq!(iter.next(), None);
 /// ```
 #[derive(Clone, Debug)]
@@ -1526,7 +1542,7 @@ impl<'a, K1, K2, V> Iterator for Iter<'a, K1, K2, V> {
     type Item = (&'a K1, &'a K2, &'a V);
 
     fn next(&mut self) -> Option<(&'a K1, &'a K2, &'a V)> {
-        // not use Option::map for performance purpose
+        // We do not use Option::map for performance purpose
         match self.base.next() {
             Some((key_one, (key_two, value))) => Some((key_one, key_two, value)),
             None => None,

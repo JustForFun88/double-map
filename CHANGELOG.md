@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.4.0] - 2022-04-04
+
+### Added
+
+- **`iter`** `DHashMap` method for creation an iterator visiting all keys-value tuples in arbitrary order.
+
+### Changed
+
+Nothign
+
+### Removed
+
+Nothign
+
+### Fixed
+
+Nothing
+
 ## [v0.3.0] - 2022-04-03
 
 ### Added

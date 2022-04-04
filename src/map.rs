@@ -11,6 +11,7 @@ use core::mem;
 use std::collections::hash_map;
 use std::collections::HashMap;
 use std::collections::TryReserveError;
+use std::iter::FusedIterator;
 
 /// A hash map with double keys implemented as wrapper above two
 /// [`HashMaps`](`std::collections::HashMap`).
@@ -315,6 +316,38 @@ impl<K1, K2, V, S> DHashMap<K1, K2, V, S> {
         // we only take it into account because it contains the most important part of
         // hashtable - the value
         self.value_map.len()
+    }
+
+    /// An iterator visiting all keys-value tuples in arbitrary order.
+    /// The iterator element is tuple of type `(&'a K1, &'a K2, &'a V)`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map = DHashMap::new();
+    /// map.insert("a", 1, "One");
+    /// map.insert("b", 2, "Two");
+    /// map.insert("c", 3, "Three");
+    ///
+    /// assert_eq!(map.len(), 3);
+    ///
+    /// for (key1, key2, value) in map.iter() {
+    ///     println!("key1: {}, key2: {}, value: {}", key1, key2, value);
+    ///     assert!(
+    ///         (key1, key2, value) == (&"a", &1, &"One") ||
+    ///         (key1, key2, value) == (&"b", &2, &"Two") ||
+    ///         (key1, key2, value) == (&"c", &3, &"Three")
+    ///     );
+    /// }
+    ///
+    /// assert_eq!(map.len(), 3);
+    /// ```
+    pub fn iter(&self) -> Iter<'_, K1, K2, V> {
+        Iter {
+            base: self.value_map.iter(),
+        }
     }
 
     /// Returns `true` if the map contains no elements.
@@ -1459,6 +1492,60 @@ where
         self.extend(iter.into_iter().map(|(&k1, &k2, &v)| (k1, k2, v)))
     }
 }
+
+/// An iterator over the entries of a `DHashMap`. The iterator element
+/// is tuple of type `(&'a K1, &'a K2, &'a V)`.
+///
+/// This `struct` is created by the [`iter`] method on [`DHashMap`]. See its
+/// documentation for more.
+///
+/// [`iter`]: DHashMap::iter
+///
+/// # Example
+///
+/// ```
+/// use double_map::{DHashMap, dhashmap};
+///
+/// let map = dhashmap!{
+///     1, "a" => "One",
+///     2, "b" => "Two",
+///     3, "c" => "Three",
+/// };
+/// let mut  iter = map.iter();
+/// assert_eq!(iter.next(), Some((&1, &"a", &"One")));
+/// assert_eq!(iter.next(), Some((&2, &"b", &"Two")));
+/// assert_eq!(iter.next(), Some((&3, &"c", &"Three")));
+/// assert_eq!(iter.next(), None);
+/// ```
+#[derive(Clone, Debug)]
+pub struct Iter<'a, K1: 'a, K2: 'a, V: 'a> {
+    base: hash_map::Iter<'a, K1, (K2, V)>,
+}
+
+impl<'a, K1, K2, V> Iterator for Iter<'a, K1, K2, V> {
+    type Item = (&'a K1, &'a K2, &'a V);
+
+    fn next(&mut self) -> Option<(&'a K1, &'a K2, &'a V)> {
+        // not use Option::map for performance purpose
+        match self.base.next() {
+            Some((key_one, (key_two, value))) => Some((key_one, key_two, value)),
+            None => None,
+        }
+    }
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.base.size_hint()
+    }
+}
+
+impl<'a, K1, K2, V> ExactSizeIterator for Iter<'a, K1, K2, V> {
+    #[inline]
+    fn len(&self) -> usize {
+        self.base.len()
+    }
+}
+
+impl<K1, K2, V> FusedIterator for Iter<'_, K1, K2, V> {}
 
 /// A view into an occupied entry in a [`DHashMap`].
 /// It is part of the [`Entry`] enum and [`OccupiedError`] struct.

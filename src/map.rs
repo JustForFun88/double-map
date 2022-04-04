@@ -1650,6 +1650,10 @@ impl<K1, K2, V> FusedIterator for Iter<'_, K1, K2, V> {}
 /// iter.next().map(|(_, _, v)| v.push_str(" coin"));
 /// iter.next().map(|(_, _, v)| v.push_str(" coin"));
 ///
+/// // It is fused iterator
+/// assert_eq!(iter.next(), None);
+/// assert_eq!(iter.next(), None);
+///
 /// assert_eq!(map.get_key1(&1).unwrap(), &"One coin".to_owned()  );
 /// assert_eq!(map.get_key1(&2).unwrap(), &"Two coin".to_owned()  );
 /// assert_eq!(map.get_key1(&3).unwrap(), &"Three coin".to_owned());

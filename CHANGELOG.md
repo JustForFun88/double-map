@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.7.0] - 2022-04-11
+
+### Added
+
+- **`contains_key1`** `DHashMap` method that returns true if the map contains a value for the specified primary
+key of type `K1`;
+- **`contains_key2`** `DHashMap` method that returns true if the map contains a value for the specified secondary
+key of type `K2`;
+- **`contains_keys`** `DHashMap` method that returns true if the map contains a value for the specified primary
+key of type `K1` and secondary key of type `K2` and also they both refer to the same value;
+
+### Changed
+
+Nothign
+
+### Removed
+
+Nothign
+
+### Fixed
+
+Nothing
+
 ## [v0.6.0] - 2022-04-10
 
 ### Added

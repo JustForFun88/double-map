@@ -782,6 +782,117 @@ where
         Some(value)
     }
 
+    /// Returns `true` if the map contains a value for the specified primary key `(key #1)`
+    /// of  type `K1`.
+    ///
+    /// The key may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the key type
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// let map = dhashmap! {
+    ///     1, "One" => String::from("Eins"),
+    ///     2, "Two" => String::from("Zwei"),
+    ///     3, "Three" => String::from("Drei"),
+    /// };
+    ///
+    /// assert!( map.contains_key1(&1));
+    /// assert!(!map.contains_key1(&4));
+    /// ```
+    #[inline]
+    pub fn contains_key1<Q: ?Sized>(&self, k1: &Q) -> bool
+    where
+        K1: Borrow<Q>,
+        Q: Hash + Eq,
+    {
+        self.value_map.contains_key(k1)
+    }
+
+    /// Returns `true` if the map contains a value for the specified secondary key `(key #2)`
+    /// of type `K2`.
+    ///
+    /// The key may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the key type
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// let map = dhashmap! {
+    ///     1, "One" => String::from("Eins"),
+    ///     2, "Two" => String::from("Zwei"),
+    ///     3, "Three" => String::from("Drei"),
+    /// };
+    ///
+    /// assert!( map.contains_key2(&"One") );
+    /// assert!(!map.contains_key2(&"Four"));
+    /// ```
+    #[inline]
+    pub fn contains_key2<Q: ?Sized>(&self, k2: &Q) -> bool
+    where
+        K2: Borrow<Q>,
+        Q: Hash + Eq,
+    {
+        self.key_map.contains_key(k2)
+    }
+
+    /// Returns `true` if the map contains a value for the specified primary key `(key #1)`
+    /// of type `K1` and secondary key `(key #2)` of type `K2` if they both refer to
+    /// the same value.
+    ///
+    /// The keys may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the keys type.
+    ///
+    /// # Note
+    /// Note that this [`contains_keys`](DHashMap::contains_keys) method return `true` only if two
+    /// keys exist and refer to the same `value`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// let map = dhashmap! {
+    ///     1, "One" => String::from("Eins"),
+    ///     2, "Two" => String::from("Zwei"),
+    ///     3, "Three" => String::from("Drei"),
+    /// };
+    ///
+    /// // two keys exist and refer to the same value ("Eins")
+    /// assert_eq!(map.contains_keys(&1, &"One" ), true );
+    ///
+    /// // Both keys don't exist
+    /// assert_eq!(map.contains_keys(&4, &"Four"), false);
+    ///
+    /// // Both keys exist but refer to the different value (key1: 1 refers to "Eins",
+    /// // key2: "Two" refers to "Zwei")
+    /// assert_eq!(map.contains_keys(&1, &"Two" ), false);
+    /// assert!(map.contains_key1(&1)     == true && map.get_key1(&1).unwrap()     == "Eins");
+    /// assert!(map.contains_key2(&"Two") == true && map.get_key2(&"Two").unwrap() == "Zwei");
+    /// ```
+    #[inline]
+    pub fn contains_keys<Q1: ?Sized, Q2: ?Sized>(&self, k1: &Q1, k2: &Q2) -> bool
+    where
+        K1: Borrow<Q1>,
+        K2: Borrow<Q2>,
+        Q1: Hash + Eq,
+        Q2: Hash + Eq,
+    {
+        if let Some((k2_exist, _)) = self.value_map.get(k1) {
+            if let Some(k1_exist) = self.key_map.get(k2) {
+                return k1_exist.borrow() == k1 && k2_exist.borrow() == k2;
+            }
+        }
+        false
+    }
+
     /// Returns a mutable reference to the value corresponding to
     /// the given primary key `(key #1)`.
     ///

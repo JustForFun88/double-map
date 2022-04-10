@@ -61,7 +61,7 @@ interface. Look at [Change log](CHANGELOG.md) for more information.
 - [x] `entry`: Done since `v0.1.0` 
 - [x] `get`: Done since `v0.1.0` (`get_key1` and `get_key2` methods) 
 - [ ] `get_key_value`: Under development 
-- [ ] `contains_key`: Under development 
+- [x] `contains_key`: Done since `v0.7.0` (`contains_key1`, `contains_key2` and `contains_keys` methods) 
 - [x] `get_mut`: Done since `v0.1.0` (`get_mut_key1` and `get_mut_key2` methods) 
 - [x] `insert`: Done since `v0.1.0` (`insert_unchecked` and `insert` methods) 
 - [x] `try_insert`: Done since `v0.1.0` 

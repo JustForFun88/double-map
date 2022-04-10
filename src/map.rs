@@ -289,6 +289,108 @@ impl<K1, K2, V, S> DHashMap<K1, K2, V, S> {
         self.value_map.capacity()
     }
 
+    /// An iterator visiting all keys in arbitrary order.
+    /// The iterator element is tuple of type `(&'a K1, &'a K2)`.
+    ///
+    /// # Note
+    ///
+    /// Internally [`DHashMap`] use two [`HashMap`](`std::collections::HashMap`). One of type
+    /// `HashMap<K1, (K2, V)>` to hold the `(K2, V)` tuple, and second one of type
+    /// `HashMap<K2, K1>` just for holding the primary key of type `K1`.
+    ///
+    /// Created iterator iterate only through first [`HashMap`](`std::collections::HashMap`)
+    /// of type `HashMap<K1, (K2, V)>`.
+    /// So that, if you previously used [`insert_unchecked`](DHashMap::insert_unchecked) method,
+    /// this method can return false second keys (key #2) in case of **unsynchronization**
+    /// between first keys of type `K1` and second keys of type `K2`. See
+    /// [`insert_unchecked`](DHashMap::insert_unchecked) method documentation for more.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map = DHashMap::new();
+    /// map.insert("a", 1, "One");
+    /// map.insert("b", 2, "Two");
+    /// map.insert("c", 3, "Three");
+    ///
+    /// assert_eq!(map.len(), 3);
+    ///
+    /// for (key1, key2) in map.keys() {
+    ///     println!("key1: {}, key2: {}", key1, key2);
+    ///     assert!(
+    ///         (key1, key2) == (&"a", &1) ||
+    ///         (key1, key2) == (&"b", &2) ||
+    ///         (key1, key2) == (&"c", &3)
+    ///     );
+    /// }
+    ///
+    /// assert_eq!(map.len(), 3);
+    /// ```
+    pub fn keys(&self) -> Keys<'_, K1, K2, V> {
+        Keys { inner: self.iter() }
+    }
+
+    /// An iterator visiting all values in arbitrary order.
+    /// The iterator element type is `&'a V`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map = DHashMap::new();
+    /// map.insert("a", 1, "One");
+    /// map.insert("b", 2, "Two");
+    /// map.insert("c", 3, "Three");
+    ///
+    /// assert_eq!(map.len(), 3);
+    ///
+    /// for value in map.values() {
+    ///     println!("value = {}", value);
+    ///     assert!(value == &"One" || value == &"Two" || value == &"Three");
+    /// }
+    ///
+    /// assert_eq!(map.len(), 3);
+    /// ```
+    pub fn values(&self) -> Values<'_, K1, K2, V> {
+        Values { inner: self.iter() }
+    }
+
+    /// An iterator visiting all values mutably in arbitrary order.
+    /// The iterator element type is `&'a mut V`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map = DHashMap::new();
+    ///
+    /// map.insert("a", "One",   1);
+    /// map.insert("b", "Two",   2);
+    /// map.insert("c", "Three", 3);
+    ///
+    /// assert_eq!(map.len(), 3);
+    ///
+    /// for value in map.values_mut() {
+    ///     *value = *value + 10;
+    /// }
+    ///
+    /// for value in map.values() {
+    ///     println!("value = {}", value);
+    ///     assert!(value == &11 || value == &12 || value == &13);
+    /// }
+    ///
+    /// assert_eq!(map.len(), 3);
+    /// ```
+    pub fn values_mut(&mut self) -> ValuesMut<'_, K1, K2, V> {
+        ValuesMut {
+            inner: self.iter_mut(),
+        }
+    }
+
     /// An iterator visiting all keys-value tuples in arbitrary order.
     /// The iterator element is tuple of type `(&'a K1, &'a K2, &'a V)`.
     ///
@@ -1628,6 +1730,150 @@ impl<'a, K1, K2, V> ExactSizeIterator for Iter<'a, K1, K2, V> {
 
 impl<K1, K2, V> FusedIterator for Iter<'_, K1, K2, V> {}
 
+/// An iterator over the keys of a `DHashMap` in arbitrary order.
+/// The iterator element is tuple of type `(&'a K1, &'a K2)`.
+///
+/// This `struct` is created by the [`keys`](DHashMap::keys) method
+/// on [`DHashMap`]. See its documentation for more.
+///
+/// # Example
+///
+/// ```
+/// use double_map::{DHashMap, dhashmap};
+///
+/// let map = dhashmap!{
+///     1, "a" => "One",
+///     2, "b" => "Two",
+///     3, "c" => "Three",
+/// };
+/// let mut keys = map.keys();
+/// let item1 = keys.next();
+/// let item2 = keys.next();
+/// let item3 = keys.next();
+/// assert!(
+///     item1 == Some((&1, &"a")) ||
+///     item1 == Some((&2, &"b")) ||
+///     item1 == Some((&3, &"c"))
+/// );
+/// assert!(
+///     item2 == Some((&1, &"a")) ||
+///     item2 == Some((&2, &"b")) ||
+///     item2 == Some((&3, &"c"))
+/// );
+/// assert!(
+///     item3 == Some((&1, &"a")) ||
+///     item3 == Some((&2, &"b")) ||
+///     item3 == Some((&3, &"c"))
+/// );
+/// assert_eq!(keys.next(), None);
+///
+/// // It is fused iterator
+/// assert_eq!(keys.next(), None);
+/// assert_eq!(keys.next(), None);
+/// ```
+#[derive(Clone, Debug)]
+pub struct Keys<'a, K1: 'a, K2: 'a, V: 'a> {
+    inner: Iter<'a, K1, K2, V>,
+}
+
+impl<'a, K1, K2, V> Iterator for Keys<'a, K1, K2, V> {
+    type Item = (&'a K1, &'a K2);
+
+    #[inline]
+    fn next(&mut self) -> Option<(&'a K1, &'a K2)> {
+        // We do not use Option::map for performance purpose
+        match self.inner.next() {
+            Some((k1, k2, _)) => Some((k1, k2)),
+            None => None
+        }
+    }
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.inner.size_hint()
+    }
+}
+
+impl<'a, K1, K2, V> ExactSizeIterator for Keys<'a, K1, K2, V> {
+    #[inline]
+    fn len(&self) -> usize {
+        self.inner.len()
+    }
+}
+
+impl<K1, K2, V> FusedIterator for Keys<'_, K1, K2, V> {}
+
+/// An iterator over the values of a `DHashMap` in arbitrary order.
+/// The iterator element is `&'a V`.
+///
+/// This `struct` is created by the [`values`](DHashMap::values) method
+/// on [`DHashMap`]. See its documentation for more.
+///
+/// # Example
+///
+/// ```
+/// use double_map::{DHashMap, dhashmap};
+///
+/// let map = dhashmap!{
+///     1, "a" => "One",
+///     2, "b" => "Two",
+///     3, "c" => "Three",
+/// };
+/// let mut values = map.values();
+/// let item1 = values.next();
+/// let item2 = values.next();
+/// let item3 = values.next();
+/// assert!(
+///     item1 == Some(&"One") ||
+///     item1 == Some(&"Two") ||
+///     item1 == Some(&"Three")
+/// );
+/// assert!(
+///     item2 == Some(&"One") ||
+///     item2 == Some(&"Two") ||
+///     item2 == Some(&"Three")
+/// );
+/// assert!(
+///     item3 == Some(&"One") ||
+///     item3 == Some(&"Two") ||
+///     item3 == Some(&"Three")
+/// );
+/// assert_eq!(values.next(), None);
+///
+/// // It is fused iterator
+/// assert_eq!(values.next(), None);
+/// assert_eq!(values.next(), None);
+/// ```
+#[derive(Clone, Debug)]
+pub struct Values<'a, K1: 'a, K2: 'a, V: 'a> {
+    inner: Iter<'a, K1, K2, V>,
+}
+
+impl<'a, K1, K2, V> Iterator for Values<'a, K1, K2, V> {
+    type Item = &'a V;
+
+    #[inline]
+    fn next(&mut self) -> Option<&'a V> {
+        // We do not use Option::map for performance purpose
+        match self.inner.next() {
+            Some((_, _, val)) => Some(val),
+            None => None
+        }
+    }
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.inner.size_hint()
+    }
+}
+
+impl<'a, K1, K2, V> ExactSizeIterator for Values<'a, K1, K2, V> {
+    #[inline]
+    fn len(&self) -> usize {
+        self.inner.len()
+    }
+}
+
+impl<K1, K2, V> FusedIterator for Values<'_, K1, K2, V> {}
+
 /// A mutable iterator over the entries of a `DHashMap` in arbitrary order.
 /// The iterator element is tuple of type`(&'a K1, &'a K2, &'a mut V)`.
 ///
@@ -1688,6 +1934,67 @@ impl<'a, K1, K2, V> ExactSizeIterator for IterMut<'a, K1, K2, V> {
 }
 
 impl<K1, K2, V> FusedIterator for IterMut<'_, K1, K2, V> {}
+
+/// A mutable iterator over the values of a `DHashMap` in arbitrary order.
+/// The iterator element is `&'a mut V`.
+///
+/// This `struct` is created by the [`values_mut`](DHashMap::values_mut) method
+/// on [`DHashMap`]. See its documentation for more.
+///
+/// # Example
+///
+/// ```
+/// use double_map::{DHashMap, dhashmap};
+///
+/// let mut map = dhashmap!{
+///     1, "a" => "One".to_owned(),
+///     2, "b" => "Two".to_owned(),
+///     3, "c" => "Three".to_owned(),
+/// };
+///
+/// let mut values = map.values_mut();
+/// values.next().map(|v| v.push_str(" coin"));
+/// values.next().map(|v| v.push_str(" coin"));
+/// values.next().map(|v| v.push_str(" coin"));
+///
+/// // It is fused iterator
+/// assert_eq!(values.next(), None);
+/// assert_eq!(values.next(), None);
+///
+/// assert_eq!(map.get_key1(&1).unwrap(), &"One coin".to_owned()  );
+/// assert_eq!(map.get_key1(&2).unwrap(), &"Two coin".to_owned()  );
+/// assert_eq!(map.get_key1(&3).unwrap(), &"Three coin".to_owned());
+/// ```
+#[derive(Debug)]
+pub struct ValuesMut<'a, K1: 'a, K2: 'a, V: 'a> {
+    inner: IterMut<'a, K1, K2, V>,
+}
+
+impl<'a, K1, K2, V> Iterator for ValuesMut<'a, K1, K2, V> {
+    type Item = &'a mut V;
+
+    #[inline]
+    fn next(&mut self) -> Option<&'a mut V> {
+        // We do not use Option::map for performance purpose
+        match self.inner.next() {
+            Some((_, _, val)) => Some(val),
+            None => None,
+        }
+    }
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.inner.size_hint()
+    }
+}
+
+impl<'a, K1, K2, V> ExactSizeIterator for ValuesMut<'a, K1, K2, V> {
+    #[inline]
+    fn len(&self) -> usize {
+        self.inner.len()
+    }
+}
+
+impl<K1, K2, V> FusedIterator for ValuesMut<'_, K1, K2, V> {}
 
 /// A view into an occupied entry in a [`DHashMap`].
 /// It is part of the [`Entry`] enum and [`OccupiedError`] struct.

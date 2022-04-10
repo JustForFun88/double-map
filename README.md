@@ -40,10 +40,10 @@ interface. Look at [Change log](CHANGELOG.md) for more information.
 - [x] `with_hasher`: Done since `v0.1.0` 
 - [x] `with_capacity_and_hasher`: Done since `v0.1.0` 
 - [x] `capacity`: Done since `v0.1.0` 
-- [ ] `keys`: Under development 
+- [x] `keys`: Done since `v0.6.0`
 - [ ] `into_keys`: Under development 
-- [ ] `values`: Under development 
-- [ ] `values_mut`: Under development 
+- [x] `values`: Done since `v0.6.0` 
+- [x] `values_mut`: Done since `v0.6.0` 
 - [ ] `into_values`: Under development 
 - [x] `iter`: Done since `v0.4.0`
 - [x] `iter_mut`: Done since `v0.5.0`

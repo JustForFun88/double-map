@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.7.1] - 2022-04-11
+
+### Added
+
+- **`get_keys`** `DHashMap` method that returns a reference to the value corresponding to the given primary
+key of type `K1`, secondary key of type `K2` and also if they both refer to the same value;
+
+### Changed
+
+Nothign
+
+### Removed
+
+Nothign
+
+### Fixed
+
+Nothing
+
 ## [v0.7.0] - 2022-04-11
 
 ### Added

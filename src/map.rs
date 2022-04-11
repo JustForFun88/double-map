@@ -782,6 +782,59 @@ where
         Some(value)
     }
 
+    /// Returns a reference to the value corresponding to the given primary key `(key #1)`
+    /// of type `K2` and secondary key `(key #2)` of type `K2` if they both refer to
+    /// the same value.
+    ///
+    /// The keys may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the keys type.
+    ///
+    /// # Note
+    /// Note that this [`get_keys`](DHashMap::get_keys) method return a reference to the value
+    /// only if two keys exist and refer to the same `value`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// let map = dhashmap! {
+    ///     1, "One" => String::from("Eins"),
+    ///     2, "Two" => String::from("Zwei"),
+    ///     3, "Three" => String::from("Drei"),
+    /// };
+    ///
+    /// // two keys exist and refer to the same value ("Eins")
+    /// assert_eq!(map.get_keys(&1, &"One" ), Some(&"Eins".to_owned()));
+    ///
+    /// // Both keys don't exist
+    /// assert_eq!(map.get_keys(&4, &"Four"), None);
+    ///
+    /// // Both keys exist but refer to the different value (key1: 1 refers to "Eins",
+    /// // key2: "Two" refers to "Zwei")
+    /// assert_eq!(map.get_keys(&1, &"Two" ), None);
+    /// assert_eq!(map.get_key1(&1).unwrap(),     "Eins");
+    /// assert_eq!(map.get_key2(&"Two").unwrap(), "Zwei");
+    /// ```
+    #[inline]
+    pub fn get_keys<Q1: ?Sized, Q2: ?Sized>(&self, k1: &Q1, k2: &Q2) -> Option<&V>
+    where
+        K1: Borrow<Q1>,
+        K2: Borrow<Q2>,
+        Q1: Hash + Eq,
+        Q2: Hash + Eq,
+    {
+        if let Some((k2_exist, val)) = self.value_map.get(k1) {
+            if let Some(k1_exist) = self.key_map.get(k2) {
+                if k1_exist.borrow() == k1 && k2_exist.borrow() == k2 {
+                    return Some(val);
+                }
+            }
+        }
+        None
+    }
+
     /// Returns `true` if the map contains a value for the specified primary key `(key #1)`
     /// of  type `K1`.
     ///

@@ -729,7 +729,7 @@ where
         self.key_map.shrink_to(min_capacity);
     }
 
-    /// Returns a reference to the value corresponding to the given primary key (key #1).
+    /// Returns a reference to the value corresponding to the given primary key `(key #1)`.
     ///
     /// The key may be any borrowed form of the map's key type, but
     /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
@@ -755,7 +755,7 @@ where
         Some(value)
     }
 
-    /// Returns a reference to the value corresponding to the given secondary key (key #2).
+    /// Returns a reference to the value corresponding to the given secondary key `(key #2)`.
     ///
     /// The key may be any borrowed form of the map's key type, but
     /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
@@ -783,10 +783,9 @@ where
     }
 
     /// Returns a reference to the value corresponding to the given primary key `(key #1)`
-    /// of type `K2` and secondary key `(key #2)` of type `K2` if they both refer to
-    /// the same value.
+    /// and secondary key `(key #2)` if they both exist and refer to the same value.
     ///
-    /// The keys may be any borrowed form of the map's key type, but
+    /// The keys may be any borrowed form of the map's keys type, but
     /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
     /// the keys type.
     ///
@@ -835,8 +834,117 @@ where
         None
     }
 
-    /// Returns `true` if the map contains a value for the specified primary key `(key #1)`
-    /// of  type `K1`.
+    /// Returns the key-value pair corresponding to the supplied primary key `(key #1)`.
+    /// Return the tuple of type `(&'a K1, &'a V)`.
+    ///
+    /// The supplied key may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the key type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map = DHashMap::new();
+    /// map.insert(1, 10, "a");
+    /// assert_eq!(map.get_key1_value(&1), Some((&1, &"a")));
+    /// assert_eq!(map.get_key1_value(&2), None);
+    /// ```
+    #[inline]
+    pub fn get_key1_value<Q: ?Sized>(&self, k1: &Q) -> Option<(&K1, &V)>
+    where
+        K1: Borrow<Q>,
+        Q: Hash + Eq,
+    {
+        let (key_one, (_, value)) = self.value_map.get_key_value(k1)?;
+        Some((key_one, value))
+    }
+
+    /// Returns the key-value pair corresponding to the supplied secondary key `(key #2)`.
+    /// Return the tuple of type `(&'a K2, &'a V)`.
+    ///
+    /// The supplied key may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the key type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map = DHashMap::new();
+    /// map.insert(1, 10, "a");
+    /// assert_eq!(map.get_key2_value(&10), Some((&10, &"a")));
+    /// assert_eq!(map.get_key2_value(&20), None);
+    /// ```
+    #[inline]
+    pub fn get_key2_value<Q: ?Sized>(&self, k2: &Q) -> Option<(&K2, &V)>
+    where
+        K2: Borrow<Q>,
+        Q: Hash + Eq,
+    {
+        let k1 = self.key_map.get(k2)?;
+        let (_, (key_two, value)) = self.value_map.get_key_value(k1)?;
+        Some((key_two, value))
+    }
+
+    /// Returns a reference to the keys-value tuple corresponding to the given primary
+    /// ans secondary keys if they both exist and refer to the same value.
+    /// Return tuple of type `(&'a K1, &'a K2, &'a V)`.
+    ///
+    /// The supplied keys may be any borrowed form of the map's keys type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the keys type.
+    ///
+    /// # Note
+    ///
+    /// Note that this [`get_keys_value`](DHashMap::get_keys_value) method return the
+    /// tuple of type`(&'a K1, &'a K2, &'a V)` only if two keys exist and refer to
+    /// the same `value`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// let map = dhashmap! {
+    ///     1, "One"   => "Eins",
+    ///     2, "Two"   => "Zwei",
+    ///     3, "Three" => "Drei",
+    /// };
+    ///
+    /// // two key exist and refer to the same value ("Eins")
+    /// assert_eq!(map.get_keys_value(&1, &"One").unwrap(), (&1, &"One", &"Eins"));
+    ///
+    /// // Both keys don't exist
+    /// assert_eq!(map.get_keys_value(&4, &"Four"), None);
+    ///
+    /// // Both keys exist but refer to the different value
+    /// // (key1: 1 refer to "Eins", key2: "Two" refer to "Zwei")
+    /// assert_eq!(map.get_keys_value(&1, &"Two" ), None);
+    /// assert_eq!(map.get_key1(&1).unwrap(),     &"Eins");
+    /// assert_eq!(map.get_key2(&"Two").unwrap(), &"Zwei");
+    /// ```
+    #[inline]
+    pub fn get_keys_value<Q1: ?Sized, Q2: ?Sized>(&self, k1: &Q1, k2: &Q2) -> Option<(&K1, &K2, &V)>
+    where
+        K1: Borrow<Q1>,
+        K2: Borrow<Q2>,
+        Q1: Hash + Eq,
+        Q2: Hash + Eq,
+    {
+        if let Some((k2_exist, val)) = self.value_map.get(k1) {
+            if let Some(k1_exist) = self.key_map.get(k2) {
+                if k1_exist.borrow() == k1 && k2_exist.borrow() == k2 {
+                    return Some((k1_exist, k2_exist, val));
+                }
+            }
+        }
+        None
+    }
+
+    /// Returns `true` if the map contains a value for the specified primary key `(key #1)`.
     ///
     /// The key may be any borrowed form of the map's key type, but
     /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
@@ -865,8 +973,7 @@ where
         self.value_map.contains_key(k1)
     }
 
-    /// Returns `true` if the map contains a value for the specified secondary key `(key #2)`
-    /// of type `K2`.
+    /// Returns `true` if the map contains a value for the specified secondary key `(key #2)`.
     ///
     /// The key may be any borrowed form of the map's key type, but
     /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
@@ -896,16 +1003,15 @@ where
     }
 
     /// Returns `true` if the map contains a value for the specified primary key `(key #1)`
-    /// of type `K1` and secondary key `(key #2)` of type `K2` if they both refer to
-    /// the same value.
+    /// and secondary key `(key #2)` and they both refer to the same value.
     ///
-    /// The keys may be any borrowed form of the map's key type, but
+    /// The keys may be any borrowed form of the map's keys type, but
     /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
     /// the keys type.
     ///
     /// # Note
-    /// Note that this [`contains_keys`](DHashMap::contains_keys) method return `true` only if two
-    /// keys exist and refer to the same `value`.
+    /// Note that this [`contains_keys`](DHashMap::contains_keys) method return `true` only
+    /// if two keys exist and refer to the same `value`.
     ///
     /// # Example
     ///
@@ -1015,8 +1121,8 @@ where
     ///
     /// # Note
     ///
-    /// This method removes not only value, but whole element includng
-    /// primary `K1` and secondary `K2` keys
+    /// This method removes not only value, but whole element including
+    /// primary `K1` and secondary `K2` keys.
     ///
     /// # Examples
     ///
@@ -1033,7 +1139,7 @@ where
     /// // We can see that DHashMap holds three elements
     /// assert!(map.len() == 3 && map.capacity() >= 3);
     ///
-    /// // Also we reserve memory for holdind additionally at least 20 elements,
+    /// // Also we reserve memory for holding additionally at least 20 elements,
     /// // so that DHashMap can hold 23 elements or more
     /// map.reserve(20);
     /// let capacity_before_remove = map.capacity();
@@ -1073,8 +1179,8 @@ where
     ///
     /// # Note
     ///
-    /// This method removes not only value, but whole element includng
-    /// primary `K1` and secondary `K2` keys
+    /// This method removes not only value, but whole element including
+    /// primary `K1` and secondary `K2` keys.
     ///
     /// # Examples
     ///
@@ -1091,7 +1197,7 @@ where
     /// // We can see that DHashMap holds three elements
     /// assert!(map.len() == 3 && map.capacity() >= 3);
     ///
-    /// // Also we reserve memory for holdind additionally at least 20 elements,
+    /// // Also we reserve memory for holding additionally at least 20 elements,
     /// // so that DHashMap can hold 23 elements or more
     /// map.reserve(20);
     /// let capacity_before_remove = map.capacity();

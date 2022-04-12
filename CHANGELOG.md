@@ -2,16 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
-## [v0.7.1] - 2022-04-11
+## [v0.8.0] - 2022-04-13
 
 ### Added
 
 - **`get_keys`** `DHashMap` method that returns a reference to the value corresponding to the given primary
-key of type `K1`, secondary key of type `K2` and also if they both refer to the same value;
+key and secondary key if they both exist and refer to the same value;
+- **`get_key1_value`** `DHashMap` method that returns a reference to the key-value pair corresponding
+to the given primary key: return the tuple of type `(&'a K1, &'a V)`;
+- **`get_key2_value`** `DHashMap` method that returns a reference to the key-value pair corresponding
+to the given secondary key: return the tuple of type `(&'a K2, &'a V)`;
+- **`get_keys_value`** `DHashMap` method that returns a reference to the keys-value tuple corresponding
+to the given primary key and secondary key if they both exist and refer to the same value: return
+the tuple of type `(&'a K1, &'a K2, &'a V)`;
 
 ### Changed
 
-Nothign
+Fixed several typos in previous documentation.
 
 ### Removed
 
@@ -26,11 +33,11 @@ Nothing
 ### Added
 
 - **`contains_key1`** `DHashMap` method that returns true if the map contains a value for the specified primary
-key of type `K1`;
+key;
 - **`contains_key2`** `DHashMap` method that returns true if the map contains a value for the specified secondary
-key of type `K2`;
+key;
 - **`contains_keys`** `DHashMap` method that returns true if the map contains a value for the specified primary
-key of type `K1` and secondary key of type `K2` and also they both refer to the same value;
+key and secondary key and also they both refer to the same value;
 
 ### Changed
 

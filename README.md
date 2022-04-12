@@ -59,8 +59,8 @@ interface. Look at [Change log](CHANGELOG.md) for more information.
 - [x] `shrink_to_fit`: Done since `v0.1.0` 
 - [x] `shrink_to`: Done since `v0.1.0` 
 - [x] `entry`: Done since `v0.1.0` 
-- [x] `get`: Done since `v0.1.0` and `v0.7.1` (`get_key1`, `get_key2`, `get_keys` methods) 
-- [ ] `get_key_value`: Under development 
+- [x] `get`: Done since `v0.1.0` and `v0.8.0` (`get_key1`, `get_key2`, `get_keys` methods) 
+- [x] `get_key_value`: Done since `v0.8.0` (`get_key1_value`, `get_key2_value`, `get_keys_value` methods)
 - [x] `contains_key`: Done since `v0.7.0` (`contains_key1`, `contains_key2` and `contains_keys` methods) 
 - [x] `get_mut`: Done since `v0.1.0` (`get_mut_key1` and `get_mut_key2` methods) 
 - [x] `insert`: Done since `v0.1.0` (`insert_unchecked` and `insert` methods) 

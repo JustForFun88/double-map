@@ -1734,6 +1734,29 @@ macro_rules! dhashmap {
     );
 }
 
+impl<K1, K2, V, S> PartialEq for DHashMap<K1, K2, V, S>
+where
+    K1: Eq + Hash,
+    K2: Eq + Hash,
+    V: PartialEq,
+    S: BuildHasher,
+{
+    fn eq(&self, other: &DHashMap<K1, K2, V, S>) -> bool {
+        if self.value_map.len() != other.value_map.len()
+            && self.key_map.len() != other.key_map.len()
+        {
+            return false;
+        }
+        self.value_map
+            .iter()
+            .all(|(k1, tuple)| other.value_map.get(k1).map_or(false, |tup| *tuple == *tup))
+            && self
+                .key_map
+                .iter()
+                .all(|(k1, k2)| other.key_map.get(k1).map_or(false, |k| *k2 == *k))
+    }
+}
+
 /// Creates an empty `DHashMap<K1, K2, V, S>`, with the `Default` value for the hasher.
 impl<K1, K2, V, S> Default for DHashMap<K1, K2, V, S>
 where
@@ -2054,7 +2077,7 @@ impl<'a, K1, K2, V> Iterator for Keys<'a, K1, K2, V> {
         // We do not use Option::map for performance purpose
         match self.inner.next() {
             Some((k1, k2, _)) => Some((k1, k2)),
-            None => None
+            None => None,
         }
     }
     #[inline]
@@ -2126,7 +2149,7 @@ impl<'a, K1, K2, V> Iterator for Values<'a, K1, K2, V> {
         // We do not use Option::map for performance purpose
         match self.inner.next() {
             Some((_, _, val)) => Some(val),
-            None => None
+            None => None,
         }
     }
     #[inline]

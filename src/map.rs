@@ -69,7 +69,7 @@ use std::collections::TryReserveError;
 ///
 /// [hashing algorithms available on crates.io]: https://crates.io/keywords/hasher
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DHashMap<K1, K2, V, S = hash_map::RandomState> {
     value_map: HashMap<K1, (K2, V), S>,
     key_map: HashMap<K2, K1, S>,
@@ -1734,6 +1734,59 @@ macro_rules! dhashmap {
     );
 }
 
+/// Equality comparisons which are
+/// [partial equivalence relations](https://en.wikipedia.org/wiki/Partial_equivalence_relation).
+///
+/// `x.eq(y)` can also be written `x == y`, and `x.ne(y)` can be written `x != y`.
+///
+/// ## Note
+///
+/// Internally [`DHashMap`] use two [`HashMap`](`std::collections::HashMap`). One of type
+/// `HashMap<K1, (K2, V)>` to hold the `(K2, V)` tuple, and second one of type
+/// `HashMap<K2, K1>` just for holding the primary key of type `K1`.
+///
+/// Two maps `m: DHashMap<K1, K2, V, S>` and `n: DHashMap<K1, K2, V, S>` may be equal `m == n`
+/// only if (a) both `HashMap<K1, (K2, V)>` equal each other and (b) both `HashMap<K2, K1>`
+/// also equal each other.
+///
+/// This means that, if you previously used [`insert_unchecked`](DHashMap::insert_unchecked) method,
+/// this equality comparisons can return `false` in case of **unsynchronization**
+/// between first keys of type `K1` and second keys of type `K2`. See
+/// [`insert_unchecked`](DHashMap::insert_unchecked) method documentation for more.
+///
+/// # Examples
+///
+/// ```
+/// use double_map::{DHashMap, dhashmap};
+///
+/// let mut map1: DHashMap<i32, &str, &str> = dhashmap!{
+///     1, "a" => "One",
+///     2, "b" => "Two",
+///     3, "c" => "Three",
+/// };
+///
+/// let mut map2: DHashMap<i32, &str, &str> = dhashmap!{
+///     1, "a" => "One",
+///     2, "b" => "Two",
+///     3, "c" => "Three",
+/// };
+/// // Now map1 and map2 equal each other
+/// assert_eq!(map1, map2);
+///
+/// // But insert_unchecked method does not care that two keys refer to the same value,
+/// map2.insert_unchecked(1, "b", "One");
+/// // so key # 2 refers to unexpected value, and now we have double second keys
+/// // referring to the same value
+/// assert_eq!(map2.get_key2(&"a"), Some(&"One"));
+/// assert_eq!(map2.get_key2(&"b"), Some(&"One"));
+///
+/// // So that two map don't equal each other,
+/// assert_ne!(map1, map2);
+/// // even if all values and first keys equal each other
+/// assert_eq!(map1.get_key1(&1), map2.get_key1(&1));
+/// assert_eq!(map1.get_key1(&2), map2.get_key1(&2));
+/// assert_eq!(map1.get_key1(&3), map2.get_key1(&3));
+/// ```
 impl<K1, K2, V, S> PartialEq for DHashMap<K1, K2, V, S>
 where
     K1: Eq + Hash,

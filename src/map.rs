@@ -751,8 +751,10 @@ where
         K1: Borrow<Q>,
         Q: Hash + Eq,
     {
-        let (_, value) = self.value_map.get(k1)?;
-        Some(value)
+        match self.value_map.get(k1) {
+            Some((_, value)) => Some(value),
+            None => None,
+        }
     }
 
     /// Returns a reference to the value corresponding to the given secondary key `(key #2)`.
@@ -777,9 +779,13 @@ where
         K2: Borrow<Q>,
         Q: Hash + Eq,
     {
-        let key = self.key_map.get(k2)?;
-        let (_, value) = self.value_map.get(key)?;
-        Some(value)
+        match self.key_map.get(k2) {
+            Some(key) => match self.value_map.get(key) {
+                Some((_, value)) => Some(value),
+                None => None,
+            },
+            None => None,
+        }
     }
 
     /// Returns a reference to the value corresponding to the given primary key `(key #1)`
@@ -824,14 +830,13 @@ where
         Q1: Hash + Eq,
         Q2: Hash + Eq,
     {
-        if let Some((k2_exist, val)) = self.value_map.get(k1) {
-            if let Some(k1_exist) = self.key_map.get(k2) {
-                if k1_exist.borrow() == k1 && k2_exist.borrow() == k2 {
-                    return Some(val);
-                }
-            }
+        match self.value_map.get_key_value(k1) {
+            Some((k1_v, (k2_v, val))) => match self.key_map.get_key_value(k2) {
+                Some((k2_k, k1_k)) if k1_v == k1_k && k2_v == k2_k => Some(val),
+                _ => None,
+            },
+            None => None,
         }
-        None
     }
 
     /// Returns the key-value pair corresponding to the supplied primary key `(key #1)`.
@@ -857,8 +862,10 @@ where
         K1: Borrow<Q>,
         Q: Hash + Eq,
     {
-        let (key_one, (_, value)) = self.value_map.get_key_value(k1)?;
-        Some((key_one, value))
+        match self.value_map.get_key_value(k1) {
+            Some((key_one, (_, value))) => Some((key_one, value)),
+            None => None,
+        }
     }
 
     /// Returns the key-value pair corresponding to the supplied secondary key `(key #2)`.
@@ -884,9 +891,13 @@ where
         K2: Borrow<Q>,
         Q: Hash + Eq,
     {
-        let k1 = self.key_map.get(k2)?;
-        let (_, (key_two, value)) = self.value_map.get_key_value(k1)?;
-        Some((key_two, value))
+        match self.key_map.get_key_value(k2) {
+            Some((key_two, key_one)) => match self.value_map.get(key_one) {
+                Some((_, value)) => Some((key_two, value)),
+                None => None,
+            },
+            None => None,
+        }
     }
 
     /// Returns a reference to the keys-value tuple corresponding to the given primary
@@ -934,14 +945,13 @@ where
         Q1: Hash + Eq,
         Q2: Hash + Eq,
     {
-        if let Some((k2_exist, val)) = self.value_map.get(k1) {
-            if let Some(k1_exist) = self.key_map.get(k2) {
-                if k1_exist.borrow() == k1 && k2_exist.borrow() == k2 {
-                    return Some((k1_exist, k2_exist, val));
-                }
-            }
+        match self.value_map.get_key_value(k1) {
+            Some((k1_v, (k2_v, val))) => match self.key_map.get_key_value(k2) {
+                Some((k2_k, k1_k)) if k1_v == k1_k && k2_v == k2_k => Some((k1_v, k2_k, val)),
+                _ => None,
+            },
+            None => None,
         }
-        None
     }
 
     /// Returns `true` if the map contains a value for the specified primary key `(key #1)`.
@@ -1044,12 +1054,13 @@ where
         Q1: Hash + Eq,
         Q2: Hash + Eq,
     {
-        if let Some((k2_exist, _)) = self.value_map.get(k1) {
-            if let Some(k1_exist) = self.key_map.get(k2) {
-                return k1_exist.borrow() == k1 && k2_exist.borrow() == k2;
-            }
+        match self.value_map.get_key_value(k1) {
+            Some((k1_v, (k2_v, _))) => match self.key_map.get_key_value(k2) {
+                Some((k2_k, k1_k)) => k1_v == k1_k && k2_v == k2_k,
+                None => false,
+            },
+            None => false,
         }
-        false
     }
 
     /// Returns a mutable reference to the value corresponding to
@@ -1077,8 +1088,10 @@ where
         K1: Borrow<Q>,
         Q: Hash + Eq,
     {
-        let (_, value) = self.value_map.get_mut(k1)?;
-        Some(value)
+        match self.value_map.get_mut(k1) {
+            Some((_, value)) => Some(value),
+            None => None,
+        }
     }
 
     /// Returns a mutable reference to the value corresponding to
@@ -1106,9 +1119,13 @@ where
         K2: Borrow<Q>,
         Q: Hash + Eq,
     {
-        let key = self.key_map.get(k2)?;
-        let (_, value) = self.value_map.get_mut(key)?;
-        Some(value)
+        match self.key_map.get(k2) {
+            Some(key) => match self.value_map.get_mut(key) {
+                Some((_, value)) => Some(value),
+                None => None,
+            },
+            None => None,
+        }
     }
 
     /// Removes element from the map using a primary key `(key #1)`,
@@ -1159,14 +1176,18 @@ where
     /// assert!(map.capacity() == capacity_before_remove && map.capacity() >= 23);
     /// ```
     #[inline]
-    pub fn remove_key1<Q: ?Sized>(&mut self, key: &Q) -> Option<V>
+    pub fn remove_key1<Q: ?Sized>(&mut self, k1: &Q) -> Option<V>
     where
         K1: Borrow<Q>,
         Q: Hash + Eq,
     {
-        let (key, value) = self.value_map.remove(key)?;
-        self.key_map.remove(&key);
-        Some(value)
+        match self.value_map.remove(k1) {
+            Some((key, value)) => {
+                self.key_map.remove(&key);
+                Some(value)
+            }
+            None => None,
+        }
     }
 
     /// Removes element from the map using a secondary key `(key #2)`,
@@ -1217,14 +1238,18 @@ where
     /// assert!(map.capacity() == capacity_before_remove && map.capacity() >= 23);
     /// ```
     #[inline]
-    pub fn remove_key2<Q: ?Sized>(&mut self, key: &Q) -> Option<V>
+    pub fn remove_key2<Q: ?Sized>(&mut self, k2: &Q) -> Option<V>
     where
         K2: Borrow<Q>,
         Q: Hash + Eq,
     {
-        let key = self.key_map.remove(key)?;
-        let (_, value) = self.value_map.remove(&key)?;
-        Some(value)
+        match self.key_map.remove(k2) {
+            Some(key) => match self.value_map.remove(&key) {
+                Some((_, value)) => Some(value),
+                None => None,
+            },
+            None => None,
+        }
     }
 }
 
@@ -1473,8 +1498,10 @@ where
     #[inline]
     pub fn insert_unchecked(&mut self, k1: K1, k2: K2, v: V) -> Option<V> {
         self.key_map.insert(k2.clone(), k1.clone());
-        let (_, v) = self.value_map.insert(k1, (k2, v))?;
-        Some(v)
+        match self.value_map.insert(k1, (k2, v)) {
+            Some((_, v)) => Some(v),
+            None => None
+        }
     }
 
     /// Tries to insert given keys and value into the map. Update the value
@@ -1795,18 +1822,23 @@ where
     S: BuildHasher,
 {
     fn eq(&self, other: &DHashMap<K1, K2, V, S>) -> bool {
-        if self.value_map.len() != other.value_map.len()
-            && self.key_map.len() != other.key_map.len()
-        {
+        let DHashMap {
+            value_map: lv_map,
+            key_map: lk_map,
+        } = self;
+        let DHashMap {
+            value_map: rv_map,
+            key_map: rk_map,
+        } = other;
+        if lv_map.len() != rv_map.len() && lk_map.len() != rk_map.len() {
             return false;
         }
-        self.value_map
+        lv_map
             .iter()
-            .all(|(k1, tuple)| other.value_map.get(k1).map_or(false, |tup| *tuple == *tup))
-            && self
-                .key_map
+            .all(|(k1, tuple)| rv_map.get(k1).map_or(false, |tup| *tuple == *tup))
+            && lk_map
                 .iter()
-                .all(|(k1, k2)| other.key_map.get(k1).map_or(false, |k| *k2 == *k))
+                .all(|(k1, k2)| rk_map.get(k1).map_or(false, |k| *k2 == *k))
     }
 }
 

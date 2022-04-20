@@ -780,7 +780,7 @@ where
         Q: Hash + Eq,
     {
         match self.key_map.get(k2) {
-            Some(key) => match self.value_map.get(key) {
+            Some(k1) => match self.value_map.get(k1) {
                 Some((_, value)) => Some(value),
                 None => None,
             },
@@ -1500,7 +1500,7 @@ where
         self.key_map.insert(k2.clone(), k1.clone());
         match self.value_map.insert(k1, (k2, v)) {
             Some((_, v)) => Some(v),
-            None => None
+            None => None,
         }
     }
 
@@ -2099,7 +2099,7 @@ impl<'a, K1, K2, V> Iterator for Iter<'a, K1, K2, V> {
     }
 }
 
-impl<'a, K1, K2, V> ExactSizeIterator for Iter<'a, K1, K2, V> {
+impl<K1, K2, V> ExactSizeIterator for Iter<'_, K1, K2, V> {
     #[inline]
     fn len(&self) -> usize {
         self.base.len()
@@ -2171,7 +2171,7 @@ impl<'a, K1, K2, V> Iterator for Keys<'a, K1, K2, V> {
     }
 }
 
-impl<'a, K1, K2, V> ExactSizeIterator for Keys<'a, K1, K2, V> {
+impl<K1, K2, V> ExactSizeIterator for Keys<'_, K1, K2, V> {
     #[inline]
     fn len(&self) -> usize {
         self.inner.len()
@@ -2243,7 +2243,7 @@ impl<'a, K1, K2, V> Iterator for Values<'a, K1, K2, V> {
     }
 }
 
-impl<'a, K1, K2, V> ExactSizeIterator for Values<'a, K1, K2, V> {
+impl<K1, K2, V> ExactSizeIterator for Values<'_, K1, K2, V> {
     #[inline]
     fn len(&self) -> usize {
         self.inner.len()
@@ -2304,7 +2304,7 @@ impl<'a, K1, K2, V> Iterator for IterMut<'a, K1, K2, V> {
     }
 }
 
-impl<'a, K1, K2, V> ExactSizeIterator for IterMut<'a, K1, K2, V> {
+impl<K1, K2, V> ExactSizeIterator for IterMut<'_, K1, K2, V> {
     #[inline]
     fn len(&self) -> usize {
         self.base.len()
@@ -2365,7 +2365,7 @@ impl<'a, K1, K2, V> Iterator for ValuesMut<'a, K1, K2, V> {
     }
 }
 
-impl<'a, K1, K2, V> ExactSizeIterator for ValuesMut<'a, K1, K2, V> {
+impl<K1, K2, V> ExactSizeIterator for ValuesMut<'_, K1, K2, V> {
     #[inline]
     fn len(&self) -> usize {
         self.inner.len()
@@ -2717,11 +2717,7 @@ pub struct VacantEntry<'a, K1: 'a, K2: 'a, V: 'a> {
     base_k: hash_map::VacantEntry<'a, K2, K1>,
 }
 
-impl<'a, K1: 'a, K2: 'a, V: 'a> VacantEntry<'a, K1, K2, V>
-where
-    K1: Clone,
-    K2: Clone,
-{
+impl<'a, K1: 'a, K2: 'a, V: 'a> VacantEntry<'a, K1, K2, V> {
     /// Gets a reference to the key #1 of type `K1` that would be used
     /// when inserting a value through the `VacantEntry`.
     ///
@@ -2840,7 +2836,9 @@ where
     pub fn into_keys(self) -> (K1, K2) {
         (self.base_v.into_key(), self.base_k.into_key())
     }
+}
 
+impl<'a, K1: 'a + Clone, K2: 'a + Clone, V: 'a> VacantEntry<'a, K1, K2, V> {
     /// Sets the value of the entry with the `VacantEntry`'s keys,
     /// and returns a mutable reference to it.
     ///
@@ -2885,11 +2883,7 @@ pub enum Entry<'a, K1: 'a, K2: 'a, V: 'a> {
     Vacant(VacantEntry<'a, K1, K2, V>),
 }
 
-impl<'a, K1, K2, V> Entry<'a, K1, K2, V>
-where
-    K1: Eq + Hash + Clone,
-    K2: Eq + Hash + Clone,
-{
+impl<'a, K1: Clone, K2: Clone, V> Entry<'a, K1, K2, V> {
     /// Ensures a value is in the entry by inserting the default if empty, and returns
     /// a mutable reference to the value in the entry.
     ///
@@ -3066,7 +3060,9 @@ where
             }
         }
     }
+}
 
+impl<'a, K1, K2, V> Entry<'a, K1, K2, V> {
     /// Returns a reference to this entry's first key (key #1).
     ///
     /// # Examples
@@ -3225,11 +3221,7 @@ where
     }
 }
 
-impl<'a, K1, K2, V: Default> Entry<'a, K1, K2, V>
-where
-    K1: Eq + Hash + Clone,
-    K2: Eq + Hash + Clone,
-{
+impl<'a, K1: Clone, K2: Clone, V: Default> Entry<'a, K1, K2, V> {
     /// Ensures a value is in the entry by inserting the default value if empty,
     /// and returns a mutable reference to the value in the entry.
     ///
@@ -3394,12 +3386,7 @@ pub struct OccupiedError<'a, K1: 'a, K2: 'a, V: 'a> {
     pub value: V,
 }
 
-impl<'a, K1, K2, V> fmt::Display for OccupiedError<'a, K1, K2, V>
-where
-    K1: Eq + Hash + Clone + Debug,
-    K2: Eq + Hash + Clone + Debug,
-    V: Debug,
-{
+impl<'a, K1: Debug, K2: Debug, V: Debug> fmt::Display for OccupiedError<'a, K1, K2, V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -3412,13 +3399,7 @@ where
     }
 }
 
-impl<'a, K1, K2, V> std::error::Error for OccupiedError<'a, K1, K2, V>
-where
-    K1: Eq + Hash + Clone + Debug,
-    K2: Eq + Hash + Clone + Debug,
-    V: Debug,
-{
-}
+impl<'a, K1: Debug, K2: Debug, V: Debug> std::error::Error for OccupiedError<'a, K1, K2, V> {}
 
 /// The error returned by [`try_insert`](DHashMap::try_insert) method when the keys already exist
 /// and point to the same value (look at [`OccupiedError`]) or there is no way to distinguish how
@@ -3443,12 +3424,7 @@ pub enum TryInsertError<'a, K1: 'a, K2: 'a, V: 'a> {
     Insert(InsertError<K1, K2, V>),
 }
 
-impl<'a, K1, K2, V> fmt::Display for TryInsertError<'a, K1, K2, V>
-where
-    K1: Eq + Hash + Clone + Debug,
-    K2: Eq + Hash + Clone + Debug,
-    V: Debug,
-{
+impl<'a, K1: Debug, K2: Debug, V: Debug> fmt::Display for TryInsertError<'a, K1, K2, V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let txt = match self {
             TryInsertError::Occupied(error) => error.to_string(),
@@ -3458,10 +3434,4 @@ where
     }
 }
 
-impl<'a, K1, K2, V> std::error::Error for TryInsertError<'a, K1, K2, V>
-where
-    K1: Eq + Hash + Clone + Debug,
-    K2: Eq + Hash + Clone + Debug,
-    V: Debug,
-{
-}
+impl<'a, K1: Debug, K2: Debug, V: Debug> std::error::Error for TryInsertError<'a, K1, K2, V> {}

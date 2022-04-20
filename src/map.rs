@@ -271,6 +271,20 @@ impl<K1, K2, V, S> DHashMap<K1, K2, V, S> {
     /// This number is a lower bound; the `DHashMap<K1, K2, V>` collection might
     /// be able to hold more, but is guaranteed to be able to hold at least this many.
     ///
+    /// # Note
+    ///
+    /// Internally [`DHashMap`] use two [`HashMap`](`std::collections::HashMap`). One of type
+    /// `HashMap<K1, (K2, V)>` to hold the `(K2, V)` tuple, and second one of type
+    /// `HashMap<K2, K1>` just for holding the primary key of type `K1`.
+    ///
+    /// The [`capacity`](`DHashMap::capacity`) method return the capacity of first
+    /// [`HashMap`](`std::collections::HashMap`) of type `HashMap<K1, (K2, V)>`.
+    /// So that, if you previously used [`insert_unchecked`](DHashMap::insert_unchecked) method,
+    /// the returned capacity may be not equal to actual capacity of second internal
+    /// `HashMap<K2, K1>` in case of **unsynchronization** between first keys of type `K1`
+    /// and second keys of type `K2`. See [`insert_unchecked`](DHashMap::insert_unchecked)
+    /// method documentation for more.
+    ///
     /// # Examples
     ///
     /// ```
@@ -489,6 +503,20 @@ impl<K1, K2, V, S> DHashMap<K1, K2, V, S> {
 
     /// Returns the number of elements in the map.
     ///
+    /// # Note
+    ///
+    /// Internally [`DHashMap`] use two [`HashMap`](`std::collections::HashMap`). One of type
+    /// `HashMap<K1, (K2, V)>` to hold the `(K2, V)` tuple, and second one of type
+    /// `HashMap<K2, K1>` just for holding the primary key of type `K1`.
+    ///
+    /// The [`len`](`DHashMap::len`) method return the number of elements contained inside first
+    /// [`HashMap`](`std::collections::HashMap`) of type `HashMap<K1, (K2, V)>`.
+    /// So that, if you previously used [`insert_unchecked`](DHashMap::insert_unchecked) method,
+    /// the returned length may be not equal to actual number of elements inside of second internal
+    /// `HashMap<K2, K1>` in case of **unsynchronization** between first keys of type `K1`
+    /// and second keys of type `K2`. See [`insert_unchecked`](DHashMap::insert_unchecked)
+    /// method documentation for more.
+    ///
     /// # Examples
     ///
     /// ```
@@ -516,6 +544,15 @@ impl<K1, K2, V, S> DHashMap<K1, K2, V, S> {
     }
 
     /// Returns `true` if the map contains no elements.
+    ///
+    /// # Note
+    ///
+    /// Internally [`DHashMap`] use two [`HashMap`](`std::collections::HashMap`). One of type
+    /// `HashMap<K1, (K2, V)>` to hold the `(K2, V)` tuple, and second one of type
+    /// `HashMap<K2, K1>` just for holding the primary key of type `K1`.
+    ///
+    /// The [`is_empty`](`DHashMap::is_empty`) method return the status of first
+    /// [`HashMap`](`std::collections::HashMap`) of type `HashMap<K1, (K2, V)>`.
     ///
     /// # Examples
     ///

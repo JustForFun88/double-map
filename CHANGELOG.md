@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.9.0] - 2022-04-20
+
+### Added
+
+- [`PartialEq`](https://doc.rust-lang.org/core/cmp/trait.PartialEq.html) trait implementation for `DHashMap`;
+- [`Debug`](https://doc.rust-lang.org/core/fmt/trait.Debug.html) trait implementation for `DHashMap`;
+
+### Changed
+
+Improve realizations of some methods (`get_key1`, `get_key2`, `get_keys`, `get_key1_value`, `get_key2_value`,
+`get_keys_value`, `contains_keys`, `get_mut_key1`, `get_mut_key2`, `remove_key1`, `remove_key2`, `insert_unchecked`)
+
+### Removed
+
+- Removed unnecessary lifetime bounds on implementations of
+[`ExactSizeIterator`](https://doc.rust-lang.org/stable/core/iter/trait.ExactSizeIterator.html)
+for `Iter`, `Keys`, `Values`, `IterMut`, `ValuesMut` structures;
+- Removed `K1: Clone` and `K2: Clone` bounds for all `VacantEntry` methods except `insert` method;
+- Removed unnecessary `K1: Eq + Hash` and `K2: Eq + Hash` bounds for all `Entry` methods. Remained
+`K1: Clone` and `K2: Clone` bounds only for the methods that need on it.
+- Removed unnecessary `K1: Eq + Hash + Clone` and `K2: Eq + Hash + Clone` on implementations of
+[`Display`](https://doc.rust-lang.org/core/fmt/trait.Display.html) and
+[`Error `](https://doc.rust-lang.org/std/error/trait.Error.html) traits for `OccupiedError` structure.
+- Removed unnecessary `K1: Eq + Hash + Clone` and `K2: Eq + Hash + Clone` on implementations of
+[`Display`](https://doc.rust-lang.org/core/fmt/trait.Display.html) and
+[`Error `](https://doc.rust-lang.org/std/error/trait.Error.html) traits  for `TryInsertError` structure.
+
+### Fixed
+
+Nothing
+
 ## [v0.8.0] - 2022-04-13
 
 ### Added

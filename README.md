@@ -72,14 +72,14 @@ interface. Look at [Change log](CHANGELOG.md) for more information.
  
 ### Trait Implementations
 - [x] `Clone`: Done since `v0.1.0`
-- [ ] `Debug`: Under development
+- [x] `Debug`: Done since `v0.9.0`
 - [x] `Default`: Done since `v0.3.0`
 - [x] `Extend`: Done since `v0.2.0`
 - [ ] `From`: Under development
 - [x] `FromIterator`: Done since `v0.2.0`
 - [ ] `Index`: Under development
 - [ ] `IntoIterator`: Under development
-- [ ] `PartialEq`: Under development
+- [x] `PartialEq`: Done since `v0.9.0`
 
 ## License
 

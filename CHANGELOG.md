@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.10.0] - 2022-04-21
+
+### Added
+
+- **`drain`** `DHashMap` method that clears the map, returning all keys-value tuples
+as an arbitrary order iterator;
+- **`get_mut_keys`** `DHashMap` method that returns a mutable reference to the value corresponding
+to the given primary key `(key #1)` and secondary key `(key #2)` if they both exist and refer to
+the same value;
+- **`remove_keys`** `DHashMap` method that removes element from the map corresponding to the
+given primary key `(key #1)` and secondary key `(key #2)` returning the value at the keys if
+the keys was previously in the map and refer to the same value;
+- Add some clarifications to `capacity`, `len`, `is_empty` methods documentations.
+
+### Changed
+
+Nothing
+
+### Removed
+
+Nothing
+
+### Fixed
+
+Nothing
+
 ## [v0.9.0] - 2022-04-20
 
 ### Added

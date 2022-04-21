@@ -1319,7 +1319,7 @@ where
     ///
     /// // We remove element with key #1 from the map and get corresponding value
     /// assert_eq!(map.remove_key1(&1), Some("Eins".to_owned()));
-    /// // If we try to remove the same element with key #1 twise we get None,
+    /// // If we try to remove the same element with key #1 twice we get None,
     /// // because that element was already removed
     /// assert_eq!(map.remove_key1(&1), None);
     ///
@@ -1381,7 +1381,7 @@ where
     ///
     /// // We remove element with key #1 from the map and get corresponding value
     /// assert_eq!(map.remove_key2(&"One"), Some("Eins".to_owned()));
-    /// // If we try to remove the same element with key #1 twise we get None,
+    /// // If we try to remove the same element with key #1 twice we get None,
     /// // because that element was already removed
     /// assert_eq!(map.remove_key2(&"One"), None);
     ///
@@ -1408,6 +1408,56 @@ where
         }
     }
 
+    /// Removes element from the map corresponding to the given primary key `(key #1)`
+    /// and secondary key `(key #2)` returning the value at the keys if the keys was
+    /// previously in the map and refer to the same value. Keeps the allocated memory
+    /// for reuse.
+    ///
+    /// The key may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the key type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// // We create map with three elements
+    /// let mut map = dhashmap! {
+    ///     1, "One"   => String::from("Eins"),
+    ///     2, "Two"   => String::from("Zwei"),
+    ///     3, "Three" => String::from("Drei"),
+    /// };
+    ///
+    /// // We can see that DHashMap holds three elements
+    /// assert!(map.len() == 3 && map.capacity() >= 3);
+    ///
+    /// // Also we reserve memory for holding additionally at least 20 elements,
+    /// // so that DHashMap can hold 23 elements or more
+    /// map.reserve(20);
+    /// let capacity_before_remove = map.capacity();
+    ///
+    /// // We remove element from the map and get corresponding value
+    /// assert_eq!(map.remove_keys(&1, &"One"), Some("Eins".to_owned()));
+    /// // If we try to remove the same element with these keys twice we get None,
+    /// // because that element was already removed
+    /// assert_eq!(map.remove_keys(&1, &"One"), None);
+    ///
+    /// // We get None if both keys don't exist in the map
+    /// assert_eq!(map.remove_keys(&4, &"Four"), None);
+    /// // Also we get None if both keys exist but refer to the different value
+    /// assert_eq!(map.remove_keys(&2, &"Three"), None);
+    /// assert_eq!(map.get_key1(&2).unwrap(),     "Zwei");
+    /// assert_eq!(map.get_key2(&"Three").unwrap(), "Drei");
+    ///
+    /// // Now we remove all elements one by one, and can see that map holds nothing
+    /// map.remove_keys(&2, &"Two");
+    /// map.remove_keys(&3, &"Three");
+    /// assert_eq!(map.len(), 0);
+    ///
+    /// // But map capacity is equal to the old one and can hold at least 23 elements
+    /// assert!(map.capacity() == capacity_before_remove && map.capacity() >= 23);
+    /// ```
     #[inline]
     pub fn remove_keys<Q1: ?Sized, Q2: ?Sized>(&mut self, k1: &Q1, k2: &Q2) -> Option<V>
     where

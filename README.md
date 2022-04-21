@@ -49,7 +49,7 @@ interface. Look at [Change log](CHANGELOG.md) for more information.
 - [x] `iter_mut`: Done since `v0.5.0`
 - [x] `len`: Done since `v0.1.0` 
 - [x] `is_empty`: Done since `v0.1.0` 
-- [ ] `drain`: Under development 
+- [x] `drain`: Done since `v0.10.0`
 - [ ] `drain_filter`: Under development 
 - [ ] `retain`: Under development 
 - [x] `clear`: Done since `v0.1.0` 

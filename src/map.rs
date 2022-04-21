@@ -574,6 +574,64 @@ impl<K1, K2, V, S> DHashMap<K1, K2, V, S> {
         self.value_map.is_empty()
     }
 
+    /// Clears the map, returning all keys-value tuples as an arbitrary
+    /// order iterator. The iterator element is tuple of type `(K1, K2, V)`.
+    /// Keeps the allocated memory for reuse.
+    ///
+    /// # Note
+    ///
+    /// Internally [`DHashMap`] use two [`HashMap`](`std::collections::HashMap`). One of type
+    /// `HashMap<K1, (K2, V)>` to hold the `(K2, V)` tuple, and second one of type
+    /// `HashMap<K2, K1>` just for holding the primary key of type `K1`.
+    ///
+    /// Created iterator contain elements only the first [`HashMap`](`std::collections::HashMap`)
+    /// of type `HashMap<K1, (K2, V)>`.
+    /// So that, if you previously used [`insert_unchecked`](DHashMap::insert_unchecked) method,
+    /// this method can return false second keys (key #2) in case of **unsynchronization**
+    /// between first keys of type `K1` and second keys of type `K2`. See
+    /// [`insert_unchecked`](DHashMap::insert_unchecked) method documentation for more.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// // We insert three elements
+    /// let mut a = DHashMap::new();
+    /// a.insert("apple",  1, "a");
+    /// a.insert("banana", 2, "b");
+    /// a.insert("Cherry", 3, "c");
+    ///
+    /// // We can see that DHashMap hold three elements
+    /// assert_eq!(a.len(), 3);
+    ///
+    /// // Also we reserve memory for holding additionally at least 20 elements,
+    /// // so that DHashMap can now hold 23 elements or more
+    /// a.reserve(20);
+    /// let capacity_before_drain = a.capacity();
+    ///
+    /// for (key1, key2, value) in a.drain() {
+    ///     println!{"key1: {}, key2: {}, value: {}", key1, key2, value}
+    ///     assert!(
+    ///         (key1, key2, value)  == ("apple",  1, "a") ||
+    ///         (key1, key2, value)  == ("banana", 2, "b") ||
+    ///         (key1, key2, value)  == ("Cherry", 3, "c")
+    ///     );
+    /// }
+    ///
+    /// // As we can see, the map is empty and contain no element
+    /// assert!(a.is_empty() && a.len() == 0);
+    /// // But map capacity is equal to old one and can hold at least 23 elements
+    /// assert!(a.capacity() == capacity_before_drain && a.capacity() >= 23);
+    /// ```
+    #[inline]
+    pub fn drain(&mut self) -> Drain<'_, K1, K2, V> {
+        self.key_map.drain();
+        Drain {
+            base: self.value_map.drain(),
+        }
+    }
+
     /// Clears the map, removing all keys-value tuples.
     /// Keeps the allocated memory for reuse.
     ///
@@ -2410,6 +2468,78 @@ impl<K1, K2, V> ExactSizeIterator for ValuesMut<'_, K1, K2, V> {
 }
 
 impl<K1, K2, V> FusedIterator for ValuesMut<'_, K1, K2, V> {}
+
+/// A draining iterator over the entries of a `DHashMap` in arbitrary order.
+/// The iterator element is tuple of type`(K1, K2, V)`.
+///
+/// This `struct` is created by the [`drain`](DHashMap::drain) method
+/// on [`DHashMap`]. See its documentation for more.
+///
+/// # Example
+///
+/// ```
+/// use double_map::{DHashMap, dhashmap};
+///
+/// let mut map = dhashmap!{
+///     1, "a" => "One",
+///     2, "b" => "Two",
+///     3, "c" => "Three",
+/// };
+///
+/// let mut drain_iter = map.drain();
+/// let item1 = drain_iter.next();
+/// let item2 = drain_iter.next();
+/// let item3 = drain_iter.next();
+/// assert!(
+///     item1 == Some((1, "a", "One"))  ||
+///     item1 == Some((2, "b", "Two"))  ||
+///     item1 == Some((3, "c", "Three"))
+/// );
+/// assert!(
+///     item2 == Some((1, "a", "One"))  ||
+///     item2 == Some((2, "b", "Two"))  ||
+///     item2 == Some((3, "c", "Three"))
+/// );
+/// assert!(
+///     item3 == Some((1, "a", "One"))  ||
+///     item3 == Some((2, "b", "Two"))  ||
+///     item3 == Some((3, "c", "Three"))
+/// );
+/// assert_eq!(drain_iter.next(), None);
+///
+/// // It is fused iterator
+/// assert_eq!(drain_iter.next(), None);
+/// assert_eq!(drain_iter.next(), None);
+/// ```
+#[derive(Debug)]
+pub struct Drain<'a, K1: 'a, K2: 'a, V: 'a> {
+    base: hash_map::Drain<'a, K1, (K2, V)>,
+}
+
+impl<'a, K1, K2, V> Iterator for Drain<'a, K1, K2, V> {
+    type Item = (K1, K2, V);
+
+    #[inline]
+    fn next(&mut self) -> Option<(K1, K2, V)> {
+        match self.base.next() {
+            Some((key_one, (key_two, value))) => Some((key_one, key_two, value)),
+            None => None,
+        }
+    }
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.base.size_hint()
+    }
+}
+
+impl<K1, K2, V> ExactSizeIterator for Drain<'_, K1, K2, V> {
+    #[inline]
+    fn len(&self) -> usize {
+        self.base.len()
+    }
+}
+
+impl<K1, K2, V> FusedIterator for Drain<'_, K1, K2, V> {}
 
 /// A view into an occupied entry in a [`DHashMap`].
 /// It is part of the [`Entry`] enum and [`OccupiedError`] struct.

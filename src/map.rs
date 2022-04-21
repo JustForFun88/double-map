@@ -1223,6 +1223,64 @@ where
         }
     }
 
+    /// Returns a mutable reference to the value corresponding to the given primary key `(key #1)`
+    /// and secondary key `(key #2)` if they both exist and refer to the same value.
+    ///
+    /// The keys may be any borrowed form of the map's keys type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the keys type.
+    ///
+    /// # Note
+    /// Note that this [`get_mut_keys`](DHashMap::get_mut_keys) method return a reference
+    /// to the value only if two keys exist and refer to the same `value`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// let mut  map = dhashmap! {
+    ///     1, "One" => String::from("One"),
+    ///     2, "Two" => String::from("Two"),
+    ///     3, "Three" => String::from("Three"),
+    /// };
+    ///
+    /// // two keys exist and refer to the same value
+    /// for (key_one, key_two) in (1..=3).zip(["One", "Two", "Three"]) {
+    ///     if let Some(value) = map.get_mut_keys(&key_one, &key_two) {
+    ///         value.push_str(" mississippi");
+    ///     }
+    /// }
+    ///
+    /// assert_eq!(map.get_key1(&1), Some(&"One mississippi".to_owned()));
+    /// assert_eq!(map.get_key1(&2), Some(&"Two mississippi".to_owned()));
+    /// assert_eq!(map.get_key1(&3), Some(&"Three mississippi".to_owned()));
+    ///
+    /// // Both keys don't exist
+    /// assert_eq!(map.get_mut_keys(&4, &"Four"), None);
+    ///
+    /// // Both keys exist but refer to the different value
+    /// assert_eq!(map.get_mut_keys(&1, &"Two" ), None);
+    /// assert_eq!(map.get_key1(&1).unwrap(),     "One mississippi");
+    /// assert_eq!(map.get_key2(&"Two").unwrap(), "Two mississippi");
+    /// ```
+    #[inline]
+    pub fn get_mut_keys<Q1: ?Sized, Q2: ?Sized>(&mut self, k1: &Q1, k2: &Q2) -> Option<&mut V>
+    where
+        K1: Borrow<Q1>,
+        K2: Borrow<Q2>,
+        Q1: Hash + Eq,
+        Q2: Hash + Eq,
+    {
+        match self.value_map.get_mut(k1) {
+            Some((ref k2_v, val)) => match self.key_map.get_key_value(k2) {
+                Some((k2_k, k1_k)) if k2_v == k2_k && k1 == k1_k.borrow() => Some(val),
+                _ => None,
+            },
+            None => None,
+        }
+    }
+
     /// Removes element from the map using a primary key `(key #1)`,
     /// returning the value corresponding to the key if the key was
     /// previously in the map. Keeps the allocated memory for reuse.

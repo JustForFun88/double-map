@@ -1245,21 +1245,24 @@ where
     ///     3, "Three" => String::from("Three"),
     /// };
     ///
-    /// // two keys exist and refer to the same value
+    /// // two keys exist and refer to the same value, so we have
+    /// // a mutable reference to the value
     /// for (key_one, key_two) in (1..=3).zip(["One", "Two", "Three"]) {
     ///     if let Some(value) = map.get_mut_keys(&key_one, &key_two) {
     ///         value.push_str(" mississippi");
     ///     }
     /// }
     ///
+    /// // We can see that all values updated
     /// assert_eq!(map.get_key1(&1), Some(&"One mississippi".to_owned()));
     /// assert_eq!(map.get_key1(&2), Some(&"Two mississippi".to_owned()));
     /// assert_eq!(map.get_key1(&3), Some(&"Three mississippi".to_owned()));
     ///
-    /// // Both keys don't exist
+    /// // But if both keys don't exist we don't have a mutable reference to the value
     /// assert_eq!(map.get_mut_keys(&4, &"Four"), None);
     ///
-    /// // Both keys exist but refer to the different value
+    /// // If both keys exist but refer to the different value we also don't have
+    /// // a mutable reference to the value
     /// assert_eq!(map.get_mut_keys(&1, &"Two" ), None);
     /// assert_eq!(map.get_key1(&1).unwrap(),     "One mississippi");
     /// assert_eq!(map.get_key2(&"Two").unwrap(), "Two mississippi");
@@ -1400,6 +1403,29 @@ where
             Some(key) => match self.value_map.remove(&key) {
                 Some((_, value)) => Some(value),
                 None => None,
+            },
+            None => None,
+        }
+    }
+
+    #[inline]
+    pub fn remove_keys<Q1: ?Sized, Q2: ?Sized>(&mut self, k1: &Q1, k2: &Q2) -> Option<V>
+    where
+        K1: Borrow<Q1>,
+        K2: Borrow<Q2>,
+        Q1: Hash + Eq,
+        Q2: Hash + Eq,
+    {
+        match self.value_map.get_key_value(k1) {
+            Some((k1_v, (k2_v, _))) => match self.key_map.get_key_value(k2) {
+                Some((k2_k, k1_k)) if k1_v == k1_k && k2_v == k2_k => {
+                    self.key_map.remove(k2);
+                    match self.value_map.remove(k1) {
+                        Some((_, value)) => Some(value),
+                        None => None,
+                    }
+                },
+                _ => None,
             },
             None => None,
         }

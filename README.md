@@ -80,6 +80,7 @@ interface. Look at [Change log](CHANGELOG.md) for more information.
 - [ ] `Index`: Under development
 - [ ] `IntoIterator`: Under development
 - [x] `PartialEq`: Done since `v0.9.0`
+- [x] `Eq`: Done since `v0.11.0`
 
 ## License
 

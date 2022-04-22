@@ -1474,7 +1474,7 @@ where
                         Some((_, value)) => Some(value),
                         None => None,
                     }
-                },
+                }
                 _ => None,
             },
             None => None,
@@ -2069,6 +2069,15 @@ where
                 .iter()
                 .all(|(k1, k2)| rk_map.get(k1).map_or(false, |k| *k2 == *k))
     }
+}
+
+impl<K1, K2, V, S> Eq for DHashMap<K1, K2, V, S>
+where
+    K1: Eq + Hash,
+    K2: Eq + Hash,
+    V: Eq,
+    S: BuildHasher,
+{
 }
 
 /// Creates an empty `DHashMap<K1, K2, V, S>`, with the `Default` value for the hasher.
@@ -2674,6 +2683,202 @@ impl<K1, K2, V> ExactSizeIterator for Drain<'_, K1, K2, V> {
 }
 
 impl<K1, K2, V> FusedIterator for Drain<'_, K1, K2, V> {}
+
+/// An owning iterator over the entries of a `DHashMap`.
+///
+/// This `struct` is created by the [`into_iter`] method on [`DHashMap`]
+/// (provided by the [`IntoIterator`] trait). See its documentation for more.
+///
+/// [`into_iter`]: IntoIterator::into_iter
+/// [`IntoIterator`]: core::iter::IntoIterator
+///
+/// # Example
+///
+/// ```
+/// use double_map::{DHashMap, dhashmap};
+///
+/// let mut map = dhashmap!{
+///     1, "a" => "One",
+///     2, "b" => "Two",
+///     3, "c" => "Three",
+/// };
+///
+/// let mut iter = map.into_iter();
+/// let item1 = iter.next();
+/// let item2 = iter.next();
+/// let item3 = iter.next();
+/// assert!(
+///     item1 == Some((1, "a", "One"))  ||
+///     item1 == Some((2, "b", "Two"))  ||
+///     item1 == Some((3, "c", "Three"))
+/// );
+/// assert!(
+///     item2 == Some((1, "a", "One"))  ||
+///     item2 == Some((2, "b", "Two"))  ||
+///     item2 == Some((3, "c", "Three"))
+/// );
+/// assert!(
+///     item3 == Some((1, "a", "One"))  ||
+///     item3 == Some((2, "b", "Two"))  ||
+///     item3 == Some((3, "c", "Three"))
+/// );
+/// assert_eq!(iter.next(), None);
+///
+/// // It is fused iterator
+/// assert_eq!(iter.next(), None);
+/// assert_eq!(iter.next(), None);
+/// ```
+#[derive(Debug)]
+pub struct IntoIter<K1, K2, V> {
+    base: hash_map::IntoIter<K1, (K2, V)>,
+}
+
+impl<K1, K2, V> Iterator for IntoIter<K1, K2, V> {
+    type Item = (K1, K2, V);
+
+    #[inline]
+    fn next(&mut self) -> Option<(K1, K2, V)> {
+        match self.base.next() {
+            Some((k1, (k2, v))) => Some((k1, k2, v)),
+            None => None,
+        }
+    }
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.base.size_hint()
+    }
+}
+
+impl<K1, K2, V> ExactSizeIterator for IntoIter<K1, K2, V> {
+    #[inline]
+    fn len(&self) -> usize {
+        self.base.len()
+    }
+}
+
+impl<K1, K2, V> FusedIterator for IntoIter<K1, K2, V> {}
+
+impl<'a, K1, K2, V, S> IntoIterator for &'a DHashMap<K1, K2, V, S> {
+    type Item = (&'a K1, &'a K2, &'a V);
+    type IntoIter = Iter<'a, K1, K2, V>;
+
+    /// Creates an iterator visiting all keys-value tuples in arbitrary order.
+    /// The iterator element is tuple of type `(&'a K1, &'a K2, &'a V)`.
+    ///
+    /// # Note
+    ///
+    /// So that, if you previously used [`insert_unchecked`](DHashMap::insert_unchecked) method,
+    /// this method can return false second keys (key #2) in case of **unsynchronization**
+    /// between first keys of type `K1` and second keys of type `K2`. See
+    /// [`insert_unchecked`](DHashMap::insert_unchecked) and [`iter`](DHashMap::iter)
+    /// methods documentation for more.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// let mut map = dhashmap!{
+    ///     "a", 1 => "One",
+    ///     "b", 2 => "Two",
+    ///     "c", 3 => "Three",
+    /// };
+    /// assert_eq!(map.len(), 3);
+    ///
+    /// for (key1, key2, value) in &map {
+    ///     println!("key1: {}, key2: {}, value: {}", key1, key2, value);
+    ///     assert!(
+    ///         (key1, key2, value) == (&"a", &1, &"One") ||
+    ///         (key1, key2, value) == (&"b", &2, &"Two") ||
+    ///         (key1, key2, value) == (&"c", &3, &"Three")
+    ///     );
+    /// }
+    ///
+    /// assert_eq!(map.len(), 3);
+    /// ```
+    fn into_iter(self) -> Iter<'a, K1, K2, V> {
+        self.iter()
+    }
+}
+
+impl<'a, K1, K2, V, S> IntoIterator for &'a mut DHashMap<K1, K2, V, S> {
+    type Item = (&'a K1, &'a K2, &'a mut V);
+    type IntoIter = IterMut<'a, K1, K2, V>;
+
+    /// Creates an iterator visiting all keys-value tuples in arbitrary order,
+    /// with mutable references to the values. The iterator element is tuple
+    /// of type `(&'a K1, &'a K2, &'a V)`.
+    ///
+    /// # Note
+    ///
+    /// So that, if you previously used [`insert_unchecked`](DHashMap::insert_unchecked) method,
+    /// this method can return false second keys (key #2) in case of **unsynchronization**
+    /// between first keys of type `K1` and second keys of type `K2`. See
+    /// [`insert_unchecked`](DHashMap::insert_unchecked) and [`iter_mut`](DHashMap::iter_mut)
+    /// methods documentation for more.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// let mut map = dhashmap!{
+    ///     "a", "One"   => 1,
+    ///     "b", "Two"   => 2,
+    ///     "c", "Three" => 3,
+    /// };
+    ///
+    /// assert_eq!(map.len(), 3);
+    ///
+    /// // Update all values
+    /// for (_, _, value) in &mut map {
+    ///     *value *= 2;
+    /// }
+    ///
+    /// for (key1, key2, value) in &map {
+    ///     println!("key1: {}, key2: {}, value: {}", key1, key2, value);
+    ///     assert!(
+    ///         (key1, key2, value) == (&"a", &"One",   &2) ||
+    ///         (key1, key2, value) == (&"b", &"Two",   &4) ||
+    ///         (key1, key2, value) == (&"c", &"Three", &6)
+    ///     );
+    /// }
+    ///
+    /// assert_eq!(map.len(), 3);
+    /// ```
+    fn into_iter(self) -> IterMut<'a, K1, K2, V> {
+        self.iter_mut()
+    }
+}
+
+impl<K1, K2, V, S> IntoIterator for DHashMap<K1, K2, V, S> {
+    type Item = (K1, K2, V);
+    type IntoIter = IntoIter<K1, K2, V>;
+
+    /// Creates a consuming iterator, that is, one that moves each keys-value
+    /// tuple out of the map in arbitrary order. The map cannot be used after
+    /// calling this.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// let mut map = dhashmap!{
+    ///     1, "a" => "One",
+    ///     2, "b" => "Two",
+    ///     3, "c" => "Three",
+    /// };
+    ///
+    /// // Not possible with .iter()
+    /// let vec: Vec<(i32, &str, &str)> = map.into_iter().collect();
+    /// ```
+    fn into_iter(self) -> IntoIter<K1, K2, V> {
+        IntoIter {
+            base: self.value_map.into_iter(),
+        }
+    }
+}
 
 /// A view into an occupied entry in a [`DHashMap`].
 /// It is part of the [`Entry`] enum and [`OccupiedError`] struct.

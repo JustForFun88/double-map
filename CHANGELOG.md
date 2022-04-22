@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.11.0] - 2022-04-22
+
+### Added
+
+- [`Eq`](https://doc.rust-lang.org/beta/core/cmp/trait.Eq.html) trait implementation for `DHashMap`;
+- [`IntoIterator`](https://doc.rust-lang.org/core/iter/trait.IntoIterator.html) trait implementation for `DHashMap`;
+
+### Changed
+
+Nothing
+
+### Removed
+
+Nothing
+
+### Fixed
+
+Nothing
+
 ## [v0.10.0] - 2022-04-21
 
 ### Added

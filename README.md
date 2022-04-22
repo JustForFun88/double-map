@@ -78,7 +78,7 @@ interface. Look at [Change log](CHANGELOG.md) for more information.
 - [ ] `From`: Under development
 - [x] `FromIterator`: Done since `v0.2.0`
 - [ ] `Index`: Under development
-- [ ] `IntoIterator`: Under development
+- [x] `IntoIterator`: Done since `v0.11.0`
 - [x] `PartialEq`: Done since `v0.9.0`
 - [x] `Eq`: Done since `v0.11.0`
 

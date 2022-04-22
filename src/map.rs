@@ -2807,7 +2807,7 @@ impl<'a, K1, K2, V, S> IntoIterator for &'a mut DHashMap<K1, K2, V, S> {
 
     /// Creates an iterator visiting all keys-value tuples in arbitrary order,
     /// with mutable references to the values. The iterator element is tuple
-    /// of type `(&'a K1, &'a K2, &'a V)`.
+    /// of type `(&'a K1, &'a K2, &'a mut V)`.
     ///
     /// # Note
     ///

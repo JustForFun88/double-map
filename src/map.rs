@@ -2274,6 +2274,52 @@ where
     }
 }
 
+/// Inserts all new keys and values from the iterator to existing `DHashMap<K1, K2, V, S>`.
+impl<'a, K1, K2, V, S> Extend<&'a (K1, K2, V)> for DHashMap<K1, K2, V, S>
+where
+    K1: Eq + Hash + Copy,
+    K2: Eq + Hash + Copy,
+    V: Copy,
+    S: BuildHasher,
+{
+    /// Inserts all new keys and values from the iterator to existing `DHashMap<K1, K2, V, S>`.
+    ///
+    /// Replace values with existing keys with new values returned from the iterator.
+    /// The keys and values must implement [`Copy`] trait.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// // Let's create `DHashMap` with std::collections::hash_map::RandomState hasher
+    /// let mut map = DHashMap::new();
+    /// map.insert(1, 1, 999);
+    ///
+    /// let mut number = 0;
+    /// let some_vec: Vec<_> = std::iter::repeat_with(move || {
+    ///     number +=1;
+    ///     (number, number, number * 10)
+    /// }).take(5).collect();
+    ///
+    /// // You don't need to specify the hasher
+    /// let some_iter = some_vec.iter();
+    /// map.extend(some_iter);
+    ///
+    /// // Replace values with existing keys with new values returned from the iterator.
+    /// // So that the map.get_key1(&1) doesn't return Some(&999).
+    /// assert_eq!(map.get_key1(&1), Some(&10));
+    /// assert_eq!(map.get_key1(&5), Some(&50));
+    /// assert_eq!(map.get_key1(&6), None);
+    ///
+    /// // And created vector are still can be used.
+    /// assert_eq!(some_vec[4], (5, 5, 50));
+    #[inline]
+    fn extend<T: IntoIterator<Item = &'a (K1, K2, V)>>(&mut self, iter: T) {
+        self.extend(iter.into_iter().map(|(k1, k2, v)| (k1, k2, v)))
+    }
+}
+
 /// An iterator over the entries of a `DHashMap` in arbitrary order.
 /// The iterator element is tuple of type `(&'a K1, &'a K2, &'a V)`.
 ///

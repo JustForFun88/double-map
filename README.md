@@ -41,10 +41,10 @@ interface. Look at [Change log](CHANGELOG.md) for more information.
 - [x] `with_capacity_and_hasher`: Done since `v0.1.0` 
 - [x] `capacity`: Done since `v0.1.0` 
 - [x] `keys`: Done since `v0.6.0`
-- [ ] `into_keys`: Under development 
+- [x] `into_keys`: Done since `v0.12.0` 
 - [x] `values`: Done since `v0.6.0` 
 - [x] `values_mut`: Done since `v0.6.0` 
-- [ ] `into_values`: Under development 
+- [x] `into_values`: Done since `v0.12.0`
 - [x] `iter`: Done since `v0.4.0`
 - [x] `iter_mut`: Done since `v0.5.0`
 - [x] `len`: Done since `v0.1.0` 
@@ -74,7 +74,7 @@ interface. Look at [Change log](CHANGELOG.md) for more information.
 - [x] `Clone`: Done since `v0.1.0`
 - [x] `Debug`: Done since `v0.9.0`
 - [x] `Default`: Done since `v0.3.0`
-- [x] `Extend`: Done since `v0.2.0`
+- [x] `Extend`: Done since `v0.2.0` (some update in version `v0.12.0`)
 - [ ] `From`: Under development
 - [x] `FromIterator`: Done since `v0.2.0`
 - [ ] `Index`: Under development

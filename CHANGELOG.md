@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.12.0] - 2022-04-23
+
+### Added
+
+- **`into_keys`** `DHashMap` method that creates a consuming iterator visiting all the keys in arbitrary order;
+- **`into_values`** `DHashMap` method that creates a consuming iterator visiting all the values in arbitrary order;
+- [`Extend`](https://doc.rust-lang.org/core/iter/trait.Extend.html) trait implementation for `DHashMap` was 
+expanded (add `Extend<&'a (K1, K2, V)>`);
+
+### Changed
+
+Updated documentations and examples of some methods and structures (`Iter`, `Keys`, `Values`, `Drain`, `IntoIter`
+structures, `IntoIterator` trait implementations documentations, etc.)
+
+### Removed
+
+Nothing
+
+### Fixed
+
+Nothing
+
 ## [v0.11.0] - 2022-04-22
 
 ### Added

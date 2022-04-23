@@ -346,6 +346,44 @@ impl<K1, K2, V, S> DHashMap<K1, K2, V, S> {
         Keys { inner: self.iter() }
     }
 
+    /// Creates a consuming iterator visiting all the keys in arbitrary order.
+    /// The map cannot be used after calling this. The iterator element is tuple
+    /// of type `(K1, K2)`.
+    ///
+    /// # Note
+    ///
+    /// Created iterator contains only content of the first [`HashMap<K1, (K2, V)>`](`std::collections::HashMap`)
+    /// which is used underneath of the [`DHashMap`].
+    ///
+    /// So that, if you previously used [`insert_unchecked`](DHashMap::insert_unchecked) method,
+    /// this method can return false second keys (key #2) in case of **unsynchronization**
+    /// between first keys of type `K1` and second keys of type `K2`. See
+    /// [`insert_unchecked`](DHashMap::insert_unchecked) method documentation for more.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// let map = dhashmap![
+    ///     ("a", 1) => "One",
+    ///     ("b", 2) => "Two",
+    ///     ("c", 3) => "Three",
+    /// ];
+    ///
+    /// let mut vec: Vec<(&str, i32)> = map.into_keys().collect();
+    /// // The `IntoKeys` iterator produces keys in arbitrary order, so the
+    /// // keys must be sorted to test them against a sorted array.
+    /// vec.sort_unstable();
+    /// assert_eq!(vec, [("a", 1), ("b", 2), ("c", 3)]);
+    /// ```
+    #[inline]
+    pub fn into_keys(self) -> IntoKeys<K1, K2, V> {
+        IntoKeys {
+            inner: self.into_iter(),
+        }
+    }
+
     /// An iterator visiting all values in arbitrary order.
     /// The iterator element type is `&'a V`.
     ///
@@ -402,6 +440,33 @@ impl<K1, K2, V, S> DHashMap<K1, K2, V, S> {
     pub fn values_mut(&mut self) -> ValuesMut<'_, K1, K2, V> {
         ValuesMut {
             inner: self.iter_mut(),
+        }
+    }
+
+    /// Creates a consuming iterator visiting all the values in arbitrary order.
+    /// The map cannot be used after calling this. The iterator element type is `V`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// let map = dhashmap![
+    ///     ("a", 1) => 10,
+    ///     ("b", 2) => 20,
+    ///     ("c", 3) => 30,
+    /// ];
+    ///
+    /// let mut vec: Vec<i32> = map.into_values().collect();
+    /// // The `IntoValues` iterator produces values in arbitrary order, so
+    /// // the values must be sorted to test them against a sorted array.
+    /// vec.sort_unstable();
+    /// assert_eq!(vec, [10, 20, 30]);
+    /// ```
+    #[inline]
+    pub fn into_values(self) -> IntoValues<K1, K2, V> {
+        IntoValues {
+            inner: self.into_iter(),
         }
     }
 
@@ -2257,7 +2322,7 @@ where
     /// }).take(5).collect();
     ///
     /// // You don't need to specify the hasher
-    /// let some_iter = some_vec.iter().map(|(k1, k2, v)| (k1, k2, v));
+    /// let some_iter = some_vec.iter().map(|&(k1, k2, v)| (k1, k2, v));
     /// map.extend(some_iter);
     ///
     /// // Replace values with existing keys with new values returned from the iterator.
@@ -2303,8 +2368,7 @@ where
     /// }).take(5).collect();
     ///
     /// // You don't need to specify the hasher
-    /// let some_iter = some_vec.iter();
-    /// map.extend(some_iter);
+    /// map.extend(&some_vec);
     ///
     /// // Replace values with existing keys with new values returned from the iterator.
     /// // So that the map.get_key1(&1) doesn't return Some(&999).
@@ -2316,7 +2380,7 @@ where
     /// assert_eq!(some_vec[4], (5, 5, 50));
     #[inline]
     fn extend<T: IntoIterator<Item = &'a (K1, K2, V)>>(&mut self, iter: T) {
-        self.extend(iter.into_iter().map(|(k1, k2, v)| (k1, k2, v)))
+        self.extend(iter.into_iter().map(|&(k1, k2, v)| (k1, k2, v)))
     }
 }
 
@@ -2336,26 +2400,14 @@ where
 ///     2, "b" => "Two",
 ///     3, "c" => "Three",
 /// };
-/// let mut  iter = map.iter();
-/// let item1 = iter.next();
-/// let item2 = iter.next();
-/// let item3 = iter.next();
-/// assert!(
-///     item1 == Some((&1, &"a", &"One"  )) ||
-///     item1 == Some((&2, &"b", &"Two"  )) ||
-///     item1 == Some((&3, &"c", &"Three"))
-/// );
-/// assert!(
-///     item2 == Some((&1, &"a", &"One"  )) ||
-///     item2 == Some((&2, &"b", &"Two"  )) ||
-///     item2 == Some((&3, &"c", &"Three"))
-/// );
-/// assert!(
-///     item3 == Some((&1, &"a", &"One"  )) ||
-///     item3 == Some((&2, &"b", &"Two"  )) ||
-///     item3 == Some((&3, &"c", &"Three"))
-/// );
-/// assert_eq!(iter.next(), None);
+///
+/// let mut iter = map.iter();
+/// let mut vec = vec![iter.next(), iter.next(), iter.next()];
+///
+/// // The `Iter` iterator produces tuples in arbitrary order, so the
+/// // tuples must be sorted to test them against a sorted array.
+/// vec.sort_unstable();
+/// assert_eq!(vec, [Some((&1, &"a", &"One")), Some((&2, &"b", &"Two")), Some((&3, &"c", &"Three"))]);
 ///
 /// // It is fused iterator
 /// assert_eq!(iter.next(), None);
@@ -2408,26 +2460,14 @@ impl<K1, K2, V> FusedIterator for Iter<'_, K1, K2, V> {}
 ///     2, "b" => "Two",
 ///     3, "c" => "Three",
 /// };
+///
 /// let mut keys = map.keys();
-/// let item1 = keys.next();
-/// let item2 = keys.next();
-/// let item3 = keys.next();
-/// assert!(
-///     item1 == Some((&1, &"a")) ||
-///     item1 == Some((&2, &"b")) ||
-///     item1 == Some((&3, &"c"))
-/// );
-/// assert!(
-///     item2 == Some((&1, &"a")) ||
-///     item2 == Some((&2, &"b")) ||
-///     item2 == Some((&3, &"c"))
-/// );
-/// assert!(
-///     item3 == Some((&1, &"a")) ||
-///     item3 == Some((&2, &"b")) ||
-///     item3 == Some((&3, &"c"))
-/// );
-/// assert_eq!(keys.next(), None);
+/// let mut vec = vec![keys.next(), keys.next(), keys.next()];
+///
+/// // The `Keys` iterator produces tuples in arbitrary order, so the
+/// // tuples must be sorted to test them against a sorted array.
+/// vec.sort_unstable();
+/// assert_eq!(vec, [Some((&1, &"a")), Some((&2, &"b")), Some((&3, &"c"))]);
 ///
 /// // It is fused iterator
 /// assert_eq!(keys.next(), None);
@@ -2476,30 +2516,18 @@ impl<K1, K2, V> FusedIterator for Keys<'_, K1, K2, V> {}
 /// use double_map::{DHashMap, dhashmap};
 ///
 /// let map = dhashmap!{
-///     1, "a" => "One",
-///     2, "b" => "Two",
-///     3, "c" => "Three",
+///     1, "a" => 10,
+///     2, "b" => 20,
+///     3, "c" => 30,
 /// };
+///
 /// let mut values = map.values();
-/// let item1 = values.next();
-/// let item2 = values.next();
-/// let item3 = values.next();
-/// assert!(
-///     item1 == Some(&"One") ||
-///     item1 == Some(&"Two") ||
-///     item1 == Some(&"Three")
-/// );
-/// assert!(
-///     item2 == Some(&"One") ||
-///     item2 == Some(&"Two") ||
-///     item2 == Some(&"Three")
-/// );
-/// assert!(
-///     item3 == Some(&"One") ||
-///     item3 == Some(&"Two") ||
-///     item3 == Some(&"Three")
-/// );
-/// assert_eq!(values.next(), None);
+/// let mut vec = vec![values.next(), values.next(), values.next()];
+///
+/// // The `Values` iterator produces values in arbitrary order, so the
+/// // values must be sorted to test them against a sorted array.
+/// vec.sort_unstable();
+/// assert_eq!(vec, [Some(&10), Some(&20), Some(&30)]);
 ///
 /// // It is fused iterator
 /// assert_eq!(values.next(), None);
@@ -2676,25 +2704,12 @@ impl<K1, K2, V> FusedIterator for ValuesMut<'_, K1, K2, V> {}
 /// };
 ///
 /// let mut drain_iter = map.drain();
-/// let item1 = drain_iter.next();
-/// let item2 = drain_iter.next();
-/// let item3 = drain_iter.next();
-/// assert!(
-///     item1 == Some((1, "a", "One"))  ||
-///     item1 == Some((2, "b", "Two"))  ||
-///     item1 == Some((3, "c", "Three"))
-/// );
-/// assert!(
-///     item2 == Some((1, "a", "One"))  ||
-///     item2 == Some((2, "b", "Two"))  ||
-///     item2 == Some((3, "c", "Three"))
-/// );
-/// assert!(
-///     item3 == Some((1, "a", "One"))  ||
-///     item3 == Some((2, "b", "Two"))  ||
-///     item3 == Some((3, "c", "Three"))
-/// );
-/// assert_eq!(drain_iter.next(), None);
+/// let mut vec = vec![drain_iter.next(), drain_iter.next(), drain_iter.next()];
+///
+/// // The `Drain` iterator produces tuples in arbitrary order, so the
+/// // tuples must be sorted to test them against a sorted array.
+/// vec.sort_unstable();
+/// assert_eq!(vec, [Some((1, "a", "One")), Some((2, "b", "Two")), Some((3, "c", "Three"))]);
 ///
 /// // It is fused iterator
 /// assert_eq!(drain_iter.next(), None);
@@ -2750,25 +2765,12 @@ impl<K1, K2, V> FusedIterator for Drain<'_, K1, K2, V> {}
 /// };
 ///
 /// let mut iter = map.into_iter();
-/// let item1 = iter.next();
-/// let item2 = iter.next();
-/// let item3 = iter.next();
-/// assert!(
-///     item1 == Some((1, "a", "One"))  ||
-///     item1 == Some((2, "b", "Two"))  ||
-///     item1 == Some((3, "c", "Three"))
-/// );
-/// assert!(
-///     item2 == Some((1, "a", "One"))  ||
-///     item2 == Some((2, "b", "Two"))  ||
-///     item2 == Some((3, "c", "Three"))
-/// );
-/// assert!(
-///     item3 == Some((1, "a", "One"))  ||
-///     item3 == Some((2, "b", "Two"))  ||
-///     item3 == Some((3, "c", "Three"))
-/// );
-/// assert_eq!(iter.next(), None);
+/// let mut vec = vec![iter.next(), iter.next(), iter.next()];
+///
+/// // The `IntoIter` iterator produces tuples in arbitrary order, so the
+/// // tuples must be sorted to test them against a sorted array.
+/// vec.sort_unstable();
+/// assert_eq!(vec, [Some((1, "a", "One")), Some((2, "b", "Two")), Some((3, "c", "Three"))]);
 ///
 /// // It is fused iterator
 /// assert_eq!(iter.next(), None);
@@ -2804,6 +2806,126 @@ impl<K1, K2, V> ExactSizeIterator for IntoIter<K1, K2, V> {
 
 impl<K1, K2, V> FusedIterator for IntoIter<K1, K2, V> {}
 
+/// An owning iterator over the keys of a `DHashMap`.
+///
+/// This `struct` is created by the [`into_keys`] method on [`DHashMap`].
+/// See its documentation for more.
+///
+/// [`into_keys`]: DHashMap::into_keys
+///
+/// # Example
+///
+/// ```
+/// use double_map::{DHashMap, dhashmap};
+///
+/// let mut map = dhashmap!{
+///     1, "a" => "One",
+///     2, "b" => "Two",
+///     3, "c" => "Three",
+/// };
+///
+/// let mut keys = map.into_keys();
+/// let mut vec = vec![keys.next(), keys.next(), keys.next()];
+///
+/// // The `IntoKeys` iterator produces keys in arbitrary order, so the
+/// // keys must be sorted to test them against a sorted array.
+/// vec.sort_unstable();
+/// assert_eq!(vec, [Some((1, "a")), Some((2, "b")), Some((3, "c"))]);
+///
+/// // It is fused iterator
+/// assert_eq!(keys.next(), None);
+/// assert_eq!(keys.next(), None);
+/// ```
+#[derive(Debug)]
+pub struct IntoKeys<K1, K2, V> {
+    inner: IntoIter<K1, K2, V>,
+}
+
+impl<K1, K2, V> Iterator for IntoKeys<K1, K2, V> {
+    type Item = (K1, K2);
+
+    #[inline]
+    fn next(&mut self) -> Option<(K1, K2)> {
+        match self.inner.next() {
+            Some((k1, k2, _)) => Some((k1, k2)),
+            None => None,
+        }
+    }
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.inner.size_hint()
+    }
+}
+
+impl<K1, K2, V> ExactSizeIterator for IntoKeys<K1, K2, V> {
+    #[inline]
+    fn len(&self) -> usize {
+        self.inner.len()
+    }
+}
+
+impl<K1, K2, V> FusedIterator for IntoKeys<K1, K2, V> {}
+
+/// An owning iterator over the values of a `DHashMap`.
+///
+/// This `struct` is created by the [`into_values`] method on [`DHashMap`].
+/// See its documentation for more.
+///
+/// [`into_values`]: DHashMap::into_values
+///
+/// # Example
+///
+/// ```
+/// use double_map::{DHashMap, dhashmap};
+///
+/// let mut map = dhashmap!{
+///     1, "One"   => "a",
+///     2, "Two"   => "b",
+///     3, "Three" => "c",
+/// };
+///
+/// let mut values = map.into_values();
+/// let mut vec = vec![values.next(), values.next(), values.next()];
+///
+/// // The `IntoValues` iterator produces values in arbitrary order, so
+/// // the values must be sorted to test them against a sorted array.
+/// vec.sort_unstable();
+/// assert_eq!(vec, [Some("a"), Some("b"), Some("c")]);
+///
+/// // It is fused iterator
+/// assert_eq!(values.next(), None);
+/// assert_eq!(values.next(), None);
+/// ```
+#[derive(Debug)]
+pub struct IntoValues<K1, K2, V> {
+    inner: IntoIter<K1, K2, V>,
+}
+
+impl<K1, K2, V> Iterator for IntoValues<K1, K2, V> {
+    type Item = V;
+
+    #[inline]
+    fn next(&mut self) -> Option<V> {
+        match self.inner.next() {
+            Some((_, _, v)) => Some(v),
+            None => None,
+        }
+    }
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.inner.size_hint()
+    }
+}
+
+impl<K1, K2, V> ExactSizeIterator for IntoValues<K1, K2, V> {
+    #[inline]
+    fn len(&self) -> usize {
+        self.inner.len()
+    }
+}
+
+impl<K1, K2, V> FusedIterator for IntoValues<K1, K2, V> {}
+
 impl<'a, K1, K2, V, S> IntoIterator for &'a DHashMap<K1, K2, V, S> {
     type Item = (&'a K1, &'a K2, &'a V);
     type IntoIter = Iter<'a, K1, K2, V>;
@@ -2812,6 +2934,9 @@ impl<'a, K1, K2, V, S> IntoIterator for &'a DHashMap<K1, K2, V, S> {
     /// The iterator element is tuple of type `(&'a K1, &'a K2, &'a V)`.
     ///
     /// # Note
+    ///
+    /// Created iterator iterates only through the first [`HashMap<K1, (K2, V)>`](`std::collections::HashMap`)
+    /// which is used underneath of the [`DHashMap`].
     ///
     /// So that, if you previously used [`insert_unchecked`](DHashMap::insert_unchecked) method,
     /// this method can return false second keys (key #2) in case of **unsynchronization**
@@ -2856,6 +2981,9 @@ impl<'a, K1, K2, V, S> IntoIterator for &'a mut DHashMap<K1, K2, V, S> {
     /// of type `(&'a K1, &'a K2, &'a mut V)`.
     ///
     /// # Note
+    ///
+    /// Created iterator iterates only through the first [`HashMap<K1, (K2, V)>`](`std::collections::HashMap`)
+    /// which is used underneath of the [`DHashMap`].
     ///
     /// So that, if you previously used [`insert_unchecked`](DHashMap::insert_unchecked) method,
     /// this method can return false second keys (key #2) in case of **unsynchronization**
@@ -2905,6 +3033,16 @@ impl<K1, K2, V, S> IntoIterator for DHashMap<K1, K2, V, S> {
     /// tuple out of the map in arbitrary order. The map cannot be used after
     /// calling this.
     ///
+    /// # Note
+    ///
+    /// Created iterator contains only content of the first [`HashMap<K1, (K2, V)>`](`std::collections::HashMap`)
+    /// which is used underneath of the [`DHashMap`].
+    ///
+    /// So that, if you previously used [`insert_unchecked`](DHashMap::insert_unchecked) method,
+    /// this method can return false second keys (key #2) in case of **unsynchronization**
+    /// between first keys of type `K1` and second keys of type `K2`. See
+    /// [`insert_unchecked`](DHashMap::insert_unchecked) method documentation for more.
+    ///
     /// # Examples
     ///
     /// ```
@@ -2917,7 +3055,11 @@ impl<K1, K2, V, S> IntoIterator for DHashMap<K1, K2, V, S> {
     /// };
     ///
     /// // Not possible with .iter()
-    /// let vec: Vec<(i32, &str, &str)> = map.into_iter().collect();
+    /// let mut vec: Vec<(i32, &str, &str)> = map.into_iter().collect();
+    /// // The `IntoIter` iterator produces tuples in arbitrary order, so
+    /// // the tuples must be sorted to test them against a sorted array.
+    /// vec.sort_unstable();
+    /// assert_eq!(vec, [(1, "a", "One"), (2, "b", "Two"), (3, "c", "Three")])
     /// ```
     fn into_iter(self) -> IntoIter<K1, K2, V> {
         IntoIter {

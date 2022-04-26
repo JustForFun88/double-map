@@ -11,6 +11,7 @@ use core::mem;
 use std::collections::hash_map;
 use std::collections::HashMap;
 use std::collections::TryReserveError;
+use core::ops::Index;
 
 /// A hash map with double keys implemented as wrapper above two
 /// [`HashMaps`](`std::collections::HashMap`).
@@ -2171,6 +2172,46 @@ where
     }
 }
 
+/// Get a reference to the value through indexing operations (`DHashMap[index]`)
+/// in immutable contexts.
+impl<K1, K2, Q: ?Sized, V, S> Index<&Q> for DHashMap<K1, K2, V, S>
+where
+    K1: Eq + Hash + Borrow<Q>,
+    K2: Eq + Hash,
+    Q: Eq + Hash,
+    S: BuildHasher,
+{
+    type Output = V;
+
+    /// Returns a reference to the value corresponding to the supplied primary key `(key #1)`.
+    ///
+    /// The key may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the key type.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the key is not present in the `DHashMap`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// let map = dhashmap!{
+    ///     1, "a" => "One",
+    ///     2, "b" => "Two",
+    /// };
+    ///
+    /// assert_eq!(map[&1], "One");
+    /// assert_eq!(map[&2], "Two");
+    /// ```
+    #[inline]
+    fn index(&self, key: &Q) -> &V {
+        self.get_key1(key).expect("no entry found for key")
+    }
+}
+
 /// Creates an new `DHashMap<K1, K2, V, S>`, with the `Default` value
 /// for the hasher from from an iterator.
 impl<K1, K2, V, S> FromIterator<(K1, K2, V)> for DHashMap<K1, K2, V, S>
@@ -2212,6 +2253,7 @@ where
     /// assert_eq!(map.get_key1(&1), Some(&10));
     /// assert_eq!(map.get_key1(&5), Some(&50));
     /// assert_eq!(map.get_key1(&6), None);
+    /// ```
     fn from_iter<T: IntoIterator<Item = (K1, K2, V)>>(iter: T) -> DHashMap<K1, K2, V, S> {
         let mut map = DHashMap::with_hasher(Default::default());
         map.extend(iter);
@@ -2274,6 +2316,7 @@ where
     /// assert_eq!(map.get_key1(&11), Some(&111));
     /// assert_eq!(map.get_key1(&55), Some(&555));
     /// assert_eq!(map.get_key1(&66), None);
+    /// ```
     #[inline]
     fn extend<T: IntoIterator<Item = (K1, K2, V)>>(&mut self, iter: T) {
         // Keys may be already present or show multiple times in the iterator.
@@ -2322,7 +2365,7 @@ where
     /// }).take(5).collect();
     ///
     /// // You don't need to specify the hasher
-    /// let some_iter = some_vec.iter().map(|&(k1, k2, v)| (k1, k2, v));
+    /// let some_iter = some_vec.iter().map(|(k1, k2, v)| (k1, k2, v));
     /// map.extend(some_iter);
     ///
     /// // Replace values with existing keys with new values returned from the iterator.
@@ -2333,6 +2376,7 @@ where
     ///
     /// // And created vector are still can be used.
     /// assert_eq!(some_vec[4], (5, 5, 50));
+    /// ```
     #[inline]
     fn extend<T: IntoIterator<Item = (&'a K1, &'a K2, &'a V)>>(&mut self, iter: T) {
         self.extend(iter.into_iter().map(|(&k1, &k2, &v)| (k1, k2, v)))
@@ -2378,6 +2422,7 @@ where
     ///
     /// // And created vector are still can be used.
     /// assert_eq!(some_vec[4], (5, 5, 50));
+    /// ```
     #[inline]
     fn extend<T: IntoIterator<Item = &'a (K1, K2, V)>>(&mut self, iter: T) {
         self.extend(iter.into_iter().map(|&(k1, k2, v)| (k1, k2, v)))

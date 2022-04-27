@@ -10,7 +10,7 @@ use core::hint::unreachable_unchecked;
 use core::iter::{Extend, FromIterator, FusedIterator};
 use core::mem;
 use core::ops::Index;
-use std::collections::{HashMap, hash_map, TryReserveError};
+use std::collections::{hash_map, HashMap, TryReserveError};
 
 /// A hash map with double keys implemented as wrapper above two
 /// [`HashMaps`](`std::collections::HashMap`).
@@ -2241,7 +2241,7 @@ where
     K2: Eq + Hash + Clone,
     S: BuildHasher + Default + Clone,
 {
-    /// Creates an new `DHashMap<K1, K2, V, [`RandomState`]>`, with the `Default` value
+    /// Creates an new `DHashMap<K1, K2, V, S>`, with the `Default` value
     /// for the hasher from from an iterator.
     ///
     /// You need to specify the type of `hasher`

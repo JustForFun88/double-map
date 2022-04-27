@@ -75,9 +75,9 @@ interface. Look at [Change log](CHANGELOG.md) for more information.
 - [x] `Debug`: Done since `v0.9.0`
 - [x] `Default`: Done since `v0.3.0`
 - [x] `Extend`: Done since `v0.2.0` (some update in version `v0.12.0`)
-- [ ] `From`: Under development
+- [x] `From`: Done since `v0.14.0`
 - [x] `FromIterator`: Done since `v0.2.0`
-- [ ] `Index`: Under development
+- [x] `Index`: Done since `v0.14.0`
 - [x] `IntoIterator`: Done since `v0.11.0`
 - [x] `PartialEq`: Done since `v0.9.0`
 - [x] `Eq`: Done since `v0.11.0`

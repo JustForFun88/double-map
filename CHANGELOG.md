@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.14.0] - 2022-04-27
+
+### Added
+
+- [`Index`](https://doc.rust-lang.org/core/ops/trait.Index.html) trait implementation for `DHashMap`;
+- [`From`](https://doc.rust-lang.org/core/convert/trait.From.html) trait implementation for `DHashMap`;
+
+### Changed
+
+Nothing
+
+### Removed
+
+Nothing
+
+### Fixed
+
+Nothing
+
 ## [v0.12.0] - 2022-04-23
 
 ### Added

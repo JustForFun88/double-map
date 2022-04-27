@@ -2,16 +2,15 @@
 mod tests_double_map;
 
 use core::borrow::Borrow;
+use core::convert::From;
 use core::default::Default;
 use core::fmt::{self, Debug};
 use core::hash::{BuildHasher, Hash};
 use core::hint::unreachable_unchecked;
 use core::iter::{Extend, FromIterator, FusedIterator};
 use core::mem;
-use std::collections::hash_map;
-use std::collections::HashMap;
-use std::collections::TryReserveError;
 use core::ops::Index;
+use std::collections::{HashMap, hash_map, TryReserveError};
 
 /// A hash map with double keys implemented as wrapper above two
 /// [`HashMaps`](`std::collections::HashMap`).
@@ -2212,6 +2211,28 @@ where
     }
 }
 
+/// Create a new `DHashMap<K1, K2, V, `[`RandomState`](std::collections::hash_map::RandomState)`>`
+/// from an array list of sequentially given keys and values.
+impl<K1, K2, V, const N: usize> From<[(K1, K2, V); N]>
+    for DHashMap<K1, K2, V, hash_map::RandomState>
+where
+    K1: Eq + Hash + Clone,
+    K2: Eq + Hash + Clone,
+{
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let map1 = DHashMap::from([(1, 2, 3), (4, 5, 6)]);
+    /// let map2: DHashMap<_, _, _> = [(1, 2, 3), (4, 5, 6)].into();
+    /// assert_eq!(map1, map2);
+    /// ```
+    fn from(arr: [(K1, K2, V); N]) -> Self {
+        Self::from_iter(arr)
+    }
+}
+
 /// Creates an new `DHashMap<K1, K2, V, S>`, with the `Default` value
 /// for the hasher from from an iterator.
 impl<K1, K2, V, S> FromIterator<(K1, K2, V)> for DHashMap<K1, K2, V, S>
@@ -2220,7 +2241,7 @@ where
     K2: Eq + Hash + Clone,
     S: BuildHasher + Default + Clone,
 {
-    /// Creates an new `DHashMap<K1, K2, V, S>`, with the `Default` value
+    /// Creates an new `DHashMap<K1, K2, V, [`RandomState`]>`, with the `Default` value
     /// for the hasher from from an iterator.
     ///
     /// You need to specify the type of `hasher`
@@ -2374,8 +2395,13 @@ where
     /// assert_eq!(map.get_key1(&5), Some(&50));
     /// assert_eq!(map.get_key1(&6), None);
     ///
-    /// // And created vector are still can be used.
+    /// // Created vector are still can be used
     /// assert_eq!(some_vec[4], (5, 5, 50));
+    ///
+    /// // Also you can use for extending already existing map
+    /// let mut map2 = DHashMap::new();
+    /// map2.extend(&map);
+    /// assert_eq!(map, map2);
     /// ```
     #[inline]
     fn extend<T: IntoIterator<Item = (&'a K1, &'a K2, &'a V)>>(&mut self, iter: T) {

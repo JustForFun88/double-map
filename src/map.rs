@@ -49,13 +49,58 @@ pub use self::values_mut::*;
 
 /// Default hasher for `HashMap`.
 #[cfg(feature = "ahash")]
-// pub type DefaultHashBuilder = ahash::RandomState;
 pub type DefaultHashBuilder = core::hash::BuildHasherDefault<ahash::AHasher>;
 
 /// Dummy default hasher for `HashMap`.
 #[cfg(not(feature = "ahash"))]
 pub enum DefaultHashBuilder {}
 
+/// A hash map with double keys implemented with quadratic probing and SIMD lookup.
+///
+/// The default hashing algorithm is currently [`AHash`], though this is
+/// subject to change at any point in the future. This hash function is very
+/// fast for all types of keys, but this algorithm will typically *not* protect
+/// against attacks such as HashDoS.
+///
+/// The hashing algorithm can be replaced on a per-[`DHashMap`] basis using the
+/// [`default`], [`with_hasher`], and [`with_capacity_and_hasher`] methods.
+/// There are many alternative [hashing algorithms available on crates.io].
+///
+/// It is required that the keys implement the [`Eq`] and [`Hash`] traits, although
+/// this can frequently be achieved by using `#[derive(PartialEq, Eq, Hash)]`.
+/// If you implement these yourself, it is important that the following
+/// property holds:
+///
+/// ```text
+/// k1 == k2 -> hash(k1) == hash(k2)
+/// ```
+///
+/// In other words, if two keys are equal, their hashes must be equal.
+///
+/// It is a logic error for a key to be modified in such a way that the key's
+/// hash, as determined by the [`Hash`] trait, or its equality, as determined by
+/// the [`Eq`] trait, changes while it is in the map. This is normally only
+/// possible through [`Cell`], [`RefCell`], global state, I/O, or unsafe code.
+/// The behavior resulting from such a logic error is not specified, but will
+/// not result in undefined behavior. This could include panics, incorrect results,
+/// aborts, memory leaks, and non-termination.
+///
+/// It is also a logic error for the [`Hash`] implementation of a key to panic.
+/// This is generally only possible if the trait is implemented manually. If a
+/// panic does occur then the contents of the `HashMap` become corrupted and
+/// all items are dropped from the table.
+///
+/// [`Eq`]: https://doc.rust-lang.org/std/cmp/trait.Eq.html
+/// [`Hash`]: https://doc.rust-lang.org/std/hash/trait.Hash.html
+/// [`PartialEq`]: https://doc.rust-lang.org/std/cmp/trait.PartialEq.html
+/// [`RefCell`]: https://doc.rust-lang.org/std/cell/struct.RefCell.html
+/// [`Cell`]: https://doc.rust-lang.org/std/cell/struct.Cell.html
+/// [`default`]: #method.default
+/// [`with_hasher`]: #method.with_hasher
+/// [`with_capacity_and_hasher`]: #method.with_capacity_and_hasher
+/// [`fnv`]: https://crates.io/crates/fnv
+/// [`AHash`]: https://crates.io/crates/ahash
+/// [hashing algorithms available on crates.io]: https://crates.io/keywords/hasher
 pub struct DHashMap<K1, K2, V, S = DefaultHashBuilder, A: Allocator + Clone = Global> {
     hash_builder: S,
     table: RawTable<(K1, K2, V), A>,
@@ -79,6 +124,8 @@ impl<K1: Clone, K2: Clone, V: Clone, S: Clone, A: Allocator + Clone> Clone
     }
 }
 
+/// Ensures that a single closure type across uses of this which, in turn prevents multiple
+/// instances of any functions like RawTable::reserve from being generated
 #[cfg_attr(feature = "inline-more", inline)]
 pub(crate) fn make_hasher_key1<K1, K2, V, S>(hash_builder: &S) -> impl Fn(&(K1, K2, V)) -> u64 + '_
 where
@@ -88,6 +135,8 @@ where
     move |val| make_hash::<K1, S>(hash_builder, &val.0)
 }
 
+/// Ensures that a single closure type across uses of this which, in turn prevents multiple
+/// instances of any functions like RawTable::reserve from being generated
 #[cfg_attr(feature = "inline-more", inline)]
 pub(crate) fn make_hasher_key2<K1, K2, V, S>(hash_builder: &S) -> impl Fn(&(K1, K2, V)) -> u64 + '_
 where
@@ -143,6 +192,8 @@ where
     hash_builder.hash_one(val)
 }
 
+/// Ensures that a single closure type across uses of this which, in turn prevents multiple
+/// instances of any functions like RawTable::reserve from being generated
 #[cfg_attr(feature = "inline-more", inline)]
 fn equivalent_key1<Q1, K1, K2, V>(k: &Q1) -> impl Fn(&(K1, K2, V)) -> bool + '_
 where
@@ -151,6 +202,8 @@ where
     move |x| k.equivalent(&x.0)
 }
 
+/// Ensures that a single closure type across uses of this which, in turn prevents multiple
+/// instances of any functions like RawTable::reserve from being generated
 #[cfg_attr(feature = "inline-more", inline)]
 fn equivalent_key2<Q2, K1, K2, V>(k: &Q2) -> impl Fn(&(K1, K2, V)) -> bool + '_
 where
@@ -171,11 +224,66 @@ where
 
 #[cfg(feature = "ahash")]
 impl<K1, K2, V> DHashMap<K1, K2, V, DefaultHashBuilder> {
+    /// Creates a new empty [`DHashMap`]s with [`DefaultHashBuilder`]
+    /// type of hash builder to hash keys.
+    ///
+    /// The hash map is initially created with a capacity of 0, so it
+    /// will not allocate until it is first inserted into.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    /// let mut map: DHashMap<u32, &str, i32> = DHashMap::new();
+    ///
+    /// // The created DHashMap holds none elements
+    /// assert_eq!(map.len(), 0);
+    ///
+    /// // The created DHashMap also doesn't allocate memory
+    /// assert_eq!(map.capacity(), 0);
+    ///
+    /// // Now we insert element inside created DHashMap
+    /// map.insert(1, "One", 1);
+    /// // We can see that the DHashMap holds 1 element
+    /// assert_eq!(map.len(), 1);
+    /// // And it also allocates some capacity
+    /// assert!(map.capacity() > 1);
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Creates an empty [`DHashMap`] with the specified capacity and
+    /// [`DefaultHashBuilder`] type of hash builder to hash keys.
+    ///
+    /// The hash map will be able to hold at least `capacity` elements without
+    /// reallocating. If `capacity` is 0, the hash map will not allocate.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    /// let mut map: DHashMap<&str, i32, &str> = DHashMap::with_capacity(5);
+    ///
+    /// // The created DHashMap holds none elements
+    /// assert_eq!(map.len(), 0);
+    /// // But it can hold at least 5 elements without reallocating
+    /// let empty_map_capacity = map.capacity();
+    /// assert!(empty_map_capacity >= 5);
+    ///
+    /// // Now we insert some 5 elements inside created DHashMap
+    /// map.insert("One",   1, "a");
+    /// map.insert("Two",   2, "b");
+    /// map.insert("Three", 3, "c");
+    /// map.insert("Four",  4, "d");
+    /// map.insert("Five",  5, "e");
+    ///
+    /// // We can see that the DHashMap holds 5 elements
+    /// assert_eq!(map.len(), 5);
+    /// // But its capacity isn't changed
+    /// assert_eq!(map.capacity(), empty_map_capacity)
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn with_capacity(capacity: usize) -> Self {
         Self::with_capacity_and_hasher(capacity, DefaultHashBuilder::default())
@@ -184,11 +292,72 @@ impl<K1, K2, V> DHashMap<K1, K2, V, DefaultHashBuilder> {
 
 #[cfg(feature = "ahash")]
 impl<K1, K2, V, A: Allocator + Clone> DHashMap<K1, K2, V, DefaultHashBuilder, A> {
+    /// Creates an empty [`DHashMap`] using the given allocator.
+    ///
+    /// The hash map is initially created with a capacity of 0, so it
+    /// will not allocate until it is first inserted into.
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use double_map::{DHashMap, BumpWrapper};
+    /// use bumpalo::Bump;
+    ///
+    /// let bump = Bump::new();
+    /// let mut map = DHashMap::new_in(BumpWrapper(&bump));
+    ///
+    /// // The created DHashMap holds none elements
+    /// assert_eq!(map.len(), 0);
+    ///
+    /// // The created DHashMap also doesn't allocate memory
+    /// assert_eq!(map.capacity(), 0);
+    ///
+    /// // Now we insert element inside created DHashMap
+    /// map.insert("One", 1, "First");
+    /// // We can see that the DHashMap holds 1 element
+    /// assert_eq!(map.len(), 1);
+    /// // And it also allocates some capacity
+    /// assert!(map.capacity() > 1);
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn new_in(alloc: A) -> Self {
         Self::with_hasher_in(DefaultHashBuilder::default(), alloc)
     }
 
+    /// Creates an empty [`DHashMap`] with the specified capacity and
+    /// [`DefaultHashBuilder`] type of hash builder to hash keys using
+    /// the given allocator.
+    ///
+    /// The hash map will be able to hold at least `capacity` elements without
+    /// reallocating. If `capacity` is 0, the hash map will not allocate.
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use double_map::{DHashMap, BumpWrapper};
+    /// use bumpalo::Bump;
+    ///
+    /// let bump = Bump::new();
+    /// let mut map = DHashMap::with_capacity_in(5, BumpWrapper(&bump));
+    ///
+    /// // The created DHashMap holds none elements
+    /// assert_eq!(map.len(), 0);
+    /// // But it can hold at least 5 elements without reallocating
+    /// let empty_map_capacity = map.capacity();
+    /// assert!(empty_map_capacity >= 5);
+    ///
+    /// // Now we insert some 5 elements inside created DHashMap
+    /// map.insert("One",   1, "a");
+    /// map.insert("Two",   2, "b");
+    /// map.insert("Three", 3, "c");
+    /// map.insert("Four",  4, "d");
+    /// map.insert("Five",  5, "e");
+    ///
+    /// // We can see that the DHashMap holds 5 elements
+    /// assert_eq!(map.len(), 5);
+    /// // But its capacity isn't changed
+    /// assert_eq!(map.capacity(), empty_map_capacity)
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn with_capacity_in(capacity: usize, alloc: A) -> Self {
         Self::with_capacity_and_hasher_in(capacity, DefaultHashBuilder::default(), alloc)
@@ -196,6 +365,37 @@ impl<K1, K2, V, A: Allocator + Clone> DHashMap<K1, K2, V, DefaultHashBuilder, A>
 }
 
 impl<K1, K2, V, S> DHashMap<K1, K2, V, S> {
+    /// Creates an empty [`DHashMap`] which will use the given hash builder to hash
+    /// keys.
+    ///
+    /// The created map has the default initial capacity, witch is equal to 0, so
+    /// it will not allocate until it is first inserted into.
+    ///
+    /// The `hash_builder` passed should implement the [`BuildHasher`] trait for
+    /// the [`DHashMap`] to be useful, see its documentation for details.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    /// use double_map::dhash_map::DefaultHashBuilder;
+    ///
+    /// let s = DefaultHashBuilder::default();
+    /// let mut map = DHashMap::with_hasher(s);
+    ///
+    /// // The created DHashMap holds none elements
+    /// assert_eq!(map.len(), 0);
+    ///
+    /// // The created DHashMap also doesn't allocate memory
+    /// assert_eq!(map.capacity(), 0);
+    ///
+    /// // Now we insert elements inside created DHashMap
+    /// map.insert("One", 1, 2);
+    /// // We can see that the DHashMap holds 1 element
+    /// assert_eq!(map.len(), 1);
+    /// // And it also allocates some capacity
+    /// assert!(map.capacity() > 1);
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub const fn with_hasher(hash_builder: S) -> Self {
         Self {
@@ -204,6 +404,42 @@ impl<K1, K2, V, S> DHashMap<K1, K2, V, S> {
         }
     }
 
+    /// Creates an empty [`DHashMap`] with the specified capacity, using `hash_builder`
+    /// to hash the keys.
+    ///
+    /// The hash map will be able to hold at least `capacity` elements without
+    /// reallocating. If `capacity` is 0, the hash map will not allocate.
+    ///
+    /// The `hash_builder` passed should implement the [`BuildHasher`] trait for
+    /// the [`DHashMap`] to be useful, see its documentation for details.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    /// use double_map::dhash_map::DefaultHashBuilder;
+    ///
+    /// let s = DefaultHashBuilder::default();
+    /// let mut map = DHashMap::with_capacity_and_hasher(5, s);
+    ///
+    /// // The created DHashMap holds none elements
+    /// assert_eq!(map.len(), 0);
+    /// // But it can hold at least 5 elements without reallocating
+    /// let empty_map_capacity = map.capacity();
+    /// assert!(empty_map_capacity >= 5);
+    ///
+    /// // Now we insert some 5 elements inside the created DHashMap
+    /// map.insert("One",   1, "a");
+    /// map.insert("Two",   2, "b");
+    /// map.insert("Three", 3, "c");
+    /// map.insert("Four",  4, "d");
+    /// map.insert("Five",  5, "e");
+    ///
+    /// // We can see that the DHashMap holds 5 elements
+    /// assert_eq!(map.len(), 5);
+    /// // But its capacity isn't changed
+    /// assert_eq!(map.capacity(), empty_map_capacity)
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn with_capacity_and_hasher(capacity: usize, hash_builder: S) -> Self {
         Self {
@@ -220,6 +456,34 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
         self.table.allocator()
     }
 
+    /// Creates an empty [`DHashMap`] which will use the given hash builder
+    /// to hash keys. It will be allocated with the given allocator.
+    ///
+    /// The created map has the default initial capacity, witch is equal to 0,
+    /// so it will not allocate until it is first inserted into.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    /// use double_map::dhash_map::DefaultHashBuilder;
+    ///
+    /// let s = DefaultHashBuilder::default();
+    /// let mut map = DHashMap::with_hasher(s);
+    ///
+    /// // The created DHashMap holds none elements
+    /// assert_eq!(map.len(), 0);
+    ///
+    /// // The created DHashMap also doesn't allocate memory
+    /// assert_eq!(map.capacity(), 0);
+    ///
+    /// // Now we insert elements inside created DHashMap
+    /// map.insert("One", 1, 2);
+    /// // We can see that the DHashMap holds 1 element
+    /// assert_eq!(map.len(), 1);
+    /// // And it also allocates some capacity
+    /// assert!(map.capacity() > 1);
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn with_hasher_in(hash_builder: S, alloc: A) -> Self {
         Self {
@@ -228,6 +492,40 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
         }
     }
 
+    /// Creates an empty [`DHashMap`] with the specified capacity, using `hash_builder`
+    /// to hash the keys. It will be allocated with the given allocator.
+    ///
+    /// The hash map will be able to hold at least `capacity` elements without
+    /// reallocating. If `capacity` is 0, the hash map will not allocate.
+    ///
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    /// use double_map::dhash_map::DefaultHashBuilder;
+    ///
+    /// let s = DefaultHashBuilder::default();
+    /// let mut map = DHashMap::with_capacity_and_hasher(5, s);
+    ///
+    /// // The created DHashMap holds none elements
+    /// assert_eq!(map.len(), 0);
+    /// // But it can hold at least 5 elements without reallocating
+    /// let empty_map_capacity = map.capacity();
+    /// assert!(empty_map_capacity >= 5);
+    ///
+    /// // Now we insert some 5 elements inside the created DHashMap
+    /// map.insert("One",   1, "a");
+    /// map.insert("Two",   2, "b");
+    /// map.insert("Three", 3, "c");
+    /// map.insert("Four",  4, "d");
+    /// map.insert("Five",  5, "e");
+    ///
+    /// // We can see that the DHashMap holds 5 elements
+    /// assert_eq!(map.len(), 5);
+    /// // But its capacity isn't changed
+    /// assert_eq!(map.capacity(), empty_map_capacity)
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn with_capacity_and_hasher_in(capacity: usize, hash_builder: S, alloc: A) -> Self {
         Self {
@@ -236,26 +534,149 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
         }
     }
 
+    /// Returns a reference to the map's [`BuildHasher`].
+    ///
+    /// [`BuildHasher`]: https://doc.rust-lang.org/std/hash/trait.BuildHasher.html
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    /// use double_map::dhash_map::DefaultHashBuilder;
+    ///
+    /// let hasher = DefaultHashBuilder::default();
+    /// let map: DHashMap<i32, i32, i32> = DHashMap::with_hasher(hasher);
+    /// let hasher: &DefaultHashBuilder = map.hasher();
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn hasher(&self) -> &S {
         &self.hash_builder
     }
 
+    /// Returns the number of elements the map can hold without reallocating.
+    ///
+    /// This number is a lower bound; the [`DHashMap<K1, K2, V>`] might
+    /// be able to hold more, but is guaranteed to be able to hold at least
+    /// this many.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    /// let map = DHashMap::<i32, &str, &str>::with_capacity(16);
+    ///
+    /// // The created DHashMap can hold at least 16 elements
+    /// assert!(map.capacity() >= 16);
+    /// // But for now it doesn't hold any elements
+    /// assert_eq!(map.len(), 0);
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn capacity(&self) -> usize {
         self.table.capacity()
     }
 
+    /// An iterator visiting all keys in arbitrary order.
+    /// The iterator element is tuple of type `(&'a K1, &'a K2)`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map = DHashMap::new();
+    /// map.insert("a", 1, "One");
+    /// map.insert("b", 2, "Two");
+    /// map.insert("c", 3, "Three");
+    ///
+    /// assert_eq!(map.len(), 3);
+    ///
+    /// let mut vec: Vec<(&str, i32)> = Vec::new();
+    ///
+    /// for (key1, key2)  in map.keys() {
+    ///     println!("key1: {}, key2: {}", key1, key2);
+    ///     vec.push((*key1, *key2));
+    /// }
+    ///
+    /// // The `Keys` iterator produces keys in arbitrary order, so the
+    /// // keys must be sorted to test them against a sorted array.
+    /// vec.sort_unstable();
+    /// assert_eq!(vec, [("a", 1), ("b", 2), ("c", 3)]);
+    ///
+    /// assert_eq!(map.len(), 3);
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn keys(&self) -> Keys<'_, K1, K2, V> {
         Keys { inner: self.iter() }
     }
 
+    /// An iterator visiting all values in arbitrary order.
+    /// The iterator element type is `&'a V`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map = DHashMap::new();
+    /// map.insert("a", "One", 1);
+    /// map.insert("b", "Two", 2);
+    /// map.insert("c", "Three", 3);
+    ///
+    /// assert_eq!(map.len(), 3);
+    ///
+    /// let mut vec: Vec<i32> = Vec::new();
+    ///
+    /// for value in map.values() {
+    ///     println!("value = {}", value);
+    ///     vec.push(*value);
+    /// }
+    ///
+    /// // The `Values` iterator produces values in arbitrary order, so the
+    /// // values must be sorted to test them against a sorted array.
+    /// vec.sort_unstable();
+    /// assert_eq!(vec, [1, 2, 3]);
+    ///
+    /// assert_eq!(map.len(), 3);
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn values(&self) -> Values<'_, K1, K2, V> {
         Values { inner: self.iter() }
     }
 
+    /// An iterator visiting all values mutably in arbitrary order.
+    /// The iterator element type is `&'a mut V`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map = DHashMap::new();
+    ///
+    /// map.insert("a", "One",   1);
+    /// map.insert("b", "Two",   2);
+    /// map.insert("c", "Three", 3);
+    ///
+    /// assert_eq!(map.len(), 3);
+    ///
+    /// for value in map.values_mut() {
+    ///     *value = *value + 10;
+    /// }
+    ///
+    /// let mut vec: Vec<i32> = Vec::new();
+    ///
+    /// for val in map.values() {
+    ///     println!("{}", val);
+    ///     vec.push(*val);
+    /// }
+    ///
+    /// // The `Values` iterator produces values in arbitrary order, so the
+    /// // values must be sorted to test them against a sorted array.
+    /// vec.sort_unstable();
+    /// assert_eq!(vec, [11, 12, 13]);
+    ///
+    /// assert_eq!(map.len(), 3);
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn values_mut(&mut self) -> ValuesMut<'_, K1, K2, V> {
         ValuesMut {
@@ -263,6 +684,35 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
         }
     }
 
+    /// An iterator visiting all keys-value tuples in arbitrary order.
+    /// The iterator element is tuple of type `(&'a K1, &'a K2, &'a V)`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map = DHashMap::new();
+    /// map.insert("a", 1, "One");
+    /// map.insert("b", 2, "Two");
+    /// map.insert("c", 3, "Three");
+    ///
+    /// assert_eq!(map.len(), 3);
+    ///
+    /// let mut vec: Vec<(&str, i32, &str)> = Vec::new();
+    ///
+    /// for (key1, key2, value) in map.iter() {
+    ///     println!("key1: {}, key2: {}, value: {}", key1, key2, value);
+    ///     vec.push((*key1, *key2, *value));
+    /// }
+    ///
+    /// // The `Iter` iterator produces items in arbitrary order, so the
+    /// // items must be sorted to test them against a sorted array.
+    /// vec.sort_unstable();
+    /// assert_eq!(vec, [("a", 1, "One"), ("b", 2, "Two"), ("c", 3, "Three")]);
+    ///
+    /// assert_eq!(map.len(), 3);
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn iter(&self) -> Iter<'_, K1, K2, V> {
         // Here we tie the lifetime of self to the iter.
@@ -274,6 +724,42 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
         }
     }
 
+    /// An iterator visiting all keys-value tuples in arbitrary order,
+    /// with mutable references to the values.
+    /// The iterator element is tuple of type`(&'a K1, &'a K2, &'a mut V)`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map = DHashMap::new();
+    /// map.insert("a", 10, 1);
+    /// map.insert("b", 20, 2);
+    /// map.insert("c", 30, 3);
+    ///
+    /// assert_eq!(map.len(), 3);
+    ///
+    /// // Update all values
+    /// for (_, _, value) in map.iter_mut() {
+    ///     *value *= 2;
+    /// }
+    /// 
+    /// let mut vec: Vec<(&str, i32, i32)> = Vec::new();
+    ///
+    /// for (key1, key2, value) in map.iter() {
+    ///     println!("key1: {}, key2: {}, value: {}", key1, key2, value);
+    ///     vec.push((*key1, *key2, *value));
+    /// }
+    ///
+    ///
+    /// // The `Iter` iterator produces items in arbitrary order, so the
+    /// // items must be sorted to test them against a sorted array.
+    /// vec.sort_unstable();
+    /// assert_eq!(vec, [("a", 10, 2), ("b", 20, 4), ("c", 30, 6)]);
+    ///
+    /// assert_eq!(map.len(), 3);
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn iter_mut(&mut self) -> IterMut<'_, K1, K2, V> {
         // Here we tie the lifetime of self to the iter.
@@ -291,6 +777,27 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
         self.table.buckets()
     }
 
+    /// Returns the number of elements in the map.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// let mut a = DHashMap::new();
+    /// // The created DHashMap doesn't hold any elements
+    /// assert_eq!(a.len(), 0);
+    /// // We insert one element
+    /// a.insert(1, "Breakfast", "Pancakes");
+    /// // And can be sure that DHashMap holds one element
+    /// assert_eq!(a.len(), 1);
+    ///
+    /// let map = dhashmap![
+    ///    1, "Breakfast" => "Pancakes",
+    ///    2, "Lunch" => "Sandwich",
+    /// ];
+    /// assert_eq!(map.len(), 2);
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn len(&self) -> usize {
         self.table.len()
@@ -1475,4 +1982,58 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> IntoIterator for &'a mut DHashMap<K
     fn into_iter(self) -> IterMut<'a, K1, K2, V> {
         self.iter_mut()
     }
+}
+
+/// Create a [`DHashMap<K1, K2, V, DefaultHashBuilder, Global>`]
+/// from a list of sequentially given keys and values.
+///
+/// Input data list must follow one of these rules:
+/// - `K1, K2 => V, K1, K2 => V` ... and so on;
+/// - `(K1, K2) => V, (K1, K2) => V` ... and so on.
+///
+/// Last comma separator can be omitted.
+/// If this macros is called without arguments, i.e. like
+/// ```
+/// # use double_map::{DHashMap, dhashmap};
+/// let map: DHashMap<i32, String, String>  = dhashmap![];
+/// ```
+/// it is equivalent to [`DHashMap::new()`] function
+///
+/// # Examples
+///
+/// ```
+/// use double_map::{DHashMap, dhashmap};
+///
+/// // Calling macros without arguments is equivalent to DHashMap::new() function
+/// let _map0: DHashMap<i32, i32, i32> = dhashmap![];
+///
+/// let map = dhashmap!{
+///     1, "a" => "One",
+///     2, "b" => "Two", // last comma separator can be omitted
+/// };
+///
+/// assert_eq!(map.get_key1(&1),   Some(&"One"));
+/// assert_eq!(map.get_key1(&2),   Some(&"Two"));
+/// assert_eq!(map.get_key2(&"a"), Some(&"One"));
+/// assert_eq!(map.get_key2(&"b"), Some(&"Two"));
+///
+/// let map2 = dhashmap!{
+///     (3, "c") => "Three",
+///     (4, "d") => "Four" // last comma separator can be omitted
+/// };
+///
+/// assert_eq!(map2.get_key1(&3),   Some(&"Three"));
+/// assert_eq!(map2.get_key1(&4),   Some(&"Four"));
+/// assert_eq!(map2.get_key2(&"c"), Some(&"Three"));
+/// assert_eq!(map2.get_key2(&"d"), Some(&"Four"));
+/// ```
+#[macro_export]
+macro_rules! dhashmap {
+    () => (DHashMap::new());
+    ($($key1:expr, $key2:expr => $value:expr),+ $(,)?) => (
+        DHashMap::<_, _, _, double_map::dhash_map::DefaultHashBuilder>::from_iter([$(($key1, $key2, $value)),+])
+    );
+    ($(($key1:expr, $key2:expr) => $value:expr),+ $(,)?) => (
+        DHashMap::<_, _, _, double_map::dhash_map::DefaultHashBuilder>::from_iter([$(($key1, $key2, $value)),+])
+    );
 }

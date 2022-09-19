@@ -1,6 +1,6 @@
 [package]
 name = "double-map"
-version = "0.14.0"
+version = "0.15.0"
 authors = ["Alisher Galiev <alishergaliev88@gmail.com>"]
 description = "A HashMap with double key to single data/value"
 edition = "2021"
@@ -10,3 +10,34 @@ keywords = ["hashtable", "hashmap", "hashset", "double_key", "two_key"]
 categories = ["data-structures"]
 
 [dependencies]
+# For the default hasher
+ahash = { version = "0.8.0", default-features = false, optional = true }
+
+# For external trait impls
+rayon = { version = "1.0", optional = true }
+serde = { version = "1.0.25", default-features = false, optional = true }
+
+# Optional support for bumpalo
+bumpalo = { version = "3.5.0", optional = true }
+
+[dev-dependencies]
+lazy_static = "1.4"
+rand = { version = "0.8.3", features = ["small_rng"] }
+rayon = "1.0"
+fnv = "1.0.7"
+serde_test = "1.0"
+doc-comment = "0.3.1"
+
+[features]
+default = ["ahash", "inline-more"]
+
+nightly = []
+raw = []
+
+# Enables usage of `#[inline]` on far more functions than by default in this
+# crate. This may lead to a performance increase but often comes at a compile
+# time cost.
+inline-more = []
+
+[package.metadata.docs.rs]
+features = ["nightly", "rayon", "serde", "raw"]

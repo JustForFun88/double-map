@@ -230,6 +230,16 @@ impl<K1, K2, V> DHashMap<K1, K2, V, DefaultHashBuilder> {
     /// The hash map is initially created with a capacity of 0, so it
     /// will not allocate until it is first inserted into.
     ///
+    /// Warning: `hash_builder` normally use a fixed key by default and that does
+    /// not allow the `DHashMaps` to be protected against attacks such as [`HashDoS`].
+    /// Users who require HashDoS resistance should explicitly use
+    /// [`ahash::RandomState`] or [`std::collections::hash_map::RandomState`]
+    /// as the hasher when creating a [`DHashMap`], for example with
+    /// [`with_hasher`](DHashMap::with_hasher) method.
+    ///
+    /// [`HashDoS`]: https://en.wikipedia.org/wiki/Collision_attack
+    /// [`std::collections::hash_map::RandomState`]: https://doc.rust-lang.org/std/collections/hash_map/struct.RandomState.html
+    ///
     /// # Examples
     ///
     /// ```
@@ -259,6 +269,16 @@ impl<K1, K2, V> DHashMap<K1, K2, V, DefaultHashBuilder> {
     ///
     /// The hash map will be able to hold at least `capacity` elements without
     /// reallocating. If `capacity` is 0, the hash map will not allocate.
+    ///
+    /// Warning: `hash_builder` normally use a fixed key by default and that does
+    /// not allow the `DHashMaps` to be protected against attacks such as [`HashDoS`].
+    /// Users who require HashDoS resistance should explicitly use
+    /// [`ahash::RandomState`] or [`std::collections::hash_map::RandomState`]
+    /// as the hasher when creating a [`DHashMap`], for example with
+    /// [`with_capacity_and_hasher`](DHashMap::with_capacity_and_hasher) method.
+    ///
+    /// [`HashDoS`]: https://en.wikipedia.org/wiki/Collision_attack
+    /// [`std::collections::hash_map::RandomState`]: https://doc.rust-lang.org/std/collections/hash_map/struct.RandomState.html
     ///
     /// # Examples
     ///
@@ -292,14 +312,27 @@ impl<K1, K2, V> DHashMap<K1, K2, V, DefaultHashBuilder> {
 
 #[cfg(feature = "ahash")]
 impl<K1, K2, V, A: Allocator + Clone> DHashMap<K1, K2, V, DefaultHashBuilder, A> {
-    /// Creates an empty [`DHashMap`] using the given allocator.
+    /// Creates an empty [`DHashMap`] using the given allocator. Uses
+    /// [`DefaultHashBuilder`] type of hash builder to hash keys.
     ///
     /// The hash map is initially created with a capacity of 0, so it
     /// will not allocate until it is first inserted into.
     ///
+    /// Warning: `hash_builder` normally use a fixed key by default and that does
+    /// not allow the `DHashMaps` to be protected against attacks such as [`HashDoS`].
+    /// Users who require HashDoS resistance should explicitly use
+    /// [`ahash::RandomState`] or [`std::collections::hash_map::RandomState`]
+    /// as the hasher when creating a [`DHashMap`], for example with
+    /// [`with_hasher_in`](DHashMap::with_hasher_in) method.
+    ///
+    /// [`HashDoS`]: https://en.wikipedia.org/wiki/Collision_attack
+    /// [`std::collections::hash_map::RandomState`]: https://doc.rust-lang.org/std/collections/hash_map/struct.RandomState.html
+    ///
     /// # Examples
     ///
-    /// ```ignore
+    /// ```
+    /// # #[cfg(feature = "bumpalo")]
+    /// # fn test() {
     /// use double_map::{DHashMap, BumpWrapper};
     /// use bumpalo::Bump;
     ///
@@ -318,6 +351,11 @@ impl<K1, K2, V, A: Allocator + Clone> DHashMap<K1, K2, V, DefaultHashBuilder, A>
     /// assert_eq!(map.len(), 1);
     /// // And it also allocates some capacity
     /// assert!(map.capacity() > 1);
+    /// # }
+    /// # fn main() {
+    /// #     #[cfg(feature = "bumpalo")]
+    /// #     test()
+    /// # }
     /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn new_in(alloc: A) -> Self {
@@ -325,15 +363,27 @@ impl<K1, K2, V, A: Allocator + Clone> DHashMap<K1, K2, V, DefaultHashBuilder, A>
     }
 
     /// Creates an empty [`DHashMap`] with the specified capacity and
-    /// [`DefaultHashBuilder`] type of hash builder to hash keys using
-    /// the given allocator.
+    /// [`DefaultHashBuilder`] type of hash builder to hash keys.
+    /// It will be allocated with the given allocator.
     ///
     /// The hash map will be able to hold at least `capacity` elements without
     /// reallocating. If `capacity` is 0, the hash map will not allocate.
     ///
+    /// Warning: `hash_builder` normally use a fixed key by default and that does
+    /// not allow the `DHashMaps` to be protected against attacks such as [`HashDoS`].
+    /// Users who require HashDoS resistance should explicitly use
+    /// [`ahash::RandomState`] or [`std::collections::hash_map::RandomState`]
+    /// as the hasher when creating a [`DHashMap`], for example with
+    /// [`with_capacity_and_hasher_in`](DHashMap::with_capacity_and_hasher_in) method.
+    ///
+    /// [`HashDoS`]: https://en.wikipedia.org/wiki/Collision_attack
+    /// [`std::collections::hash_map::RandomState`]: https://doc.rust-lang.org/std/collections/hash_map/struct.RandomState.html
+    ///
     /// # Examples
     ///
-    /// ```ignore
+    /// ```
+    /// # #[cfg(feature = "bumpalo")]
+    /// # fn test() {
     /// use double_map::{DHashMap, BumpWrapper};
     /// use bumpalo::Bump;
     ///
@@ -357,6 +407,11 @@ impl<K1, K2, V, A: Allocator + Clone> DHashMap<K1, K2, V, DefaultHashBuilder, A>
     /// assert_eq!(map.len(), 5);
     /// // But its capacity isn't changed
     /// assert_eq!(map.capacity(), empty_map_capacity)
+    /// # }
+    /// # fn main() {
+    /// #     #[cfg(feature = "bumpalo")]
+    /// #     test()
+    /// # }
     /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn with_capacity_in(capacity: usize, alloc: A) -> Self {
@@ -371,8 +426,17 @@ impl<K1, K2, V, S> DHashMap<K1, K2, V, S> {
     /// The created map has the default initial capacity, witch is equal to 0, so
     /// it will not allocate until it is first inserted into.
     ///
+    /// Warning: `hash_builder` is normally use a fixed key by default and that is
+    /// not allow `DHashMaps` to be protected against attacks such as [`HashDoS`].
+    /// Users who require HashDoS resistance should explicitly use
+    /// [`ahash::RandomState`] or [`std::collections::hash_map::RandomState`]
+    /// as the hasher when creating a [`DHashMap`].
+    ///
     /// The `hash_builder` passed should implement the [`BuildHasher`] trait for
     /// the [`DHashMap`] to be useful, see its documentation for details.
+    ///
+    /// [`HashDoS`]: https://en.wikipedia.org/wiki/Collision_attack
+    /// [`std::collections::hash_map::RandomState`]: https://doc.rust-lang.org/std/collections/hash_map/struct.RandomState.html
     ///
     /// # Examples
     ///
@@ -410,8 +474,17 @@ impl<K1, K2, V, S> DHashMap<K1, K2, V, S> {
     /// The hash map will be able to hold at least `capacity` elements without
     /// reallocating. If `capacity` is 0, the hash map will not allocate.
     ///
+    /// Warning: `hash_builder` normally use a fixed key by default and that does
+    /// not allow the `DHashMaps` to be protected against attacks such as [`HashDoS`].
+    /// Users who require HashDoS resistance should explicitly use
+    /// [`ahash::RandomState`] or [`std::collections::hash_map::RandomState`]
+    /// as the hasher when creating a [`DHashMap`].
+    ///
     /// The `hash_builder` passed should implement the [`BuildHasher`] trait for
     /// the [`DHashMap`] to be useful, see its documentation for details.
+    ///
+    /// [`HashDoS`]: https://en.wikipedia.org/wiki/Collision_attack
+    /// [`std::collections::hash_map::RandomState`]: https://doc.rust-lang.org/std/collections/hash_map/struct.RandomState.html
     ///
     /// # Examples
     ///
@@ -451,6 +524,25 @@ impl<K1, K2, V, S> DHashMap<K1, K2, V, S> {
 
 impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// Returns a reference to the underlying allocator.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # #[cfg(feature = "bumpalo")]
+    /// # fn test() {
+    /// use double_map::{DHashMap, BumpWrapper};
+    /// use bumpalo::Bump;
+    ///
+    /// let bump = Bump::new();
+    /// let mut map: DHashMap<i8, i8, i8, _, BumpWrapper> = DHashMap::new_in(BumpWrapper(&bump));
+    ///
+    /// let bumpwrap: &BumpWrapper = map.allocator();
+    /// # }
+    /// # fn main() {
+    /// #     #[cfg(feature = "bumpalo")]
+    /// #     test()
+    /// # }
+    /// ```
     #[inline]
     pub fn allocator(&self) -> &A {
         self.table.allocator()
@@ -462,14 +554,27 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// The created map has the default initial capacity, witch is equal to 0,
     /// so it will not allocate until it is first inserted into.
     ///
+    /// Warning: `hash_builder` normally use a fixed key by default and that does
+    /// not allow the `DHashMaps` to be protected against attacks such as [`HashDoS`].
+    /// Users who require HashDoS resistance should explicitly use
+    /// [`ahash::RandomState`] or [`std::collections::hash_map::RandomState`]
+    /// as the hasher when creating a [`DHashMap`].
+    ///
+    /// [`HashDoS`]: https://en.wikipedia.org/wiki/Collision_attack
+    /// [`std::collections::hash_map::RandomState`]: https://doc.rust-lang.org/std/collections/hash_map/struct.RandomState.html
+    ///
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// # #[cfg(feature = "bumpalo")]
+    /// # fn test() {
+    /// use double_map::{DHashMap, BumpWrapper};
     /// use double_map::dhash_map::DefaultHashBuilder;
+    /// use bumpalo::Bump;
     ///
     /// let s = DefaultHashBuilder::default();
-    /// let mut map = DHashMap::with_hasher(s);
+    /// let bump = Bump::new();
+    /// let mut map = DHashMap::with_hasher_in(s, BumpWrapper(&bump));
     ///
     /// // The created DHashMap holds none elements
     /// assert_eq!(map.len(), 0);
@@ -483,6 +588,11 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// assert_eq!(map.len(), 1);
     /// // And it also allocates some capacity
     /// assert!(map.capacity() > 1);
+    /// # }
+    /// # fn main() {
+    /// #     #[cfg(feature = "bumpalo")]
+    /// #     test()
+    /// # }
     /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn with_hasher_in(hash_builder: S, alloc: A) -> Self {
@@ -498,15 +608,27 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// The hash map will be able to hold at least `capacity` elements without
     /// reallocating. If `capacity` is 0, the hash map will not allocate.
     ///
+    /// Warning: `hash_builder` normally use a fixed key by default and that does
+    /// not allow the `DHashMaps` to be protected against attacks such as [`HashDoS`].
+    /// Users who require HashDoS resistance should explicitly use
+    /// [`ahash::RandomState`] or [`std::collections::hash_map::RandomState`]
+    /// as the hasher when creating a [`DHashMap`].
+    ///
+    /// [`HashDoS`]: https://en.wikipedia.org/wiki/Collision_attack
+    /// [`std::collections::hash_map::RandomState`]: https://doc.rust-lang.org/std/collections/hash_map/struct.RandomState.html
     ///
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// # #[cfg(feature = "bumpalo")]
+    /// # fn test() {
+    /// use double_map::{DHashMap, BumpWrapper};
     /// use double_map::dhash_map::DefaultHashBuilder;
+    /// use bumpalo::Bump;
     ///
     /// let s = DefaultHashBuilder::default();
-    /// let mut map = DHashMap::with_capacity_and_hasher(5, s);
+    /// let bump = Bump::new();
+    /// let mut map = DHashMap::with_capacity_and_hasher_in(5, s, BumpWrapper(&bump));
     ///
     /// // The created DHashMap holds none elements
     /// assert_eq!(map.len(), 0);
@@ -525,6 +647,11 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// assert_eq!(map.len(), 5);
     /// // But its capacity isn't changed
     /// assert_eq!(map.capacity(), empty_map_capacity)
+    /// # }
+    /// # fn main() {
+    /// #     #[cfg(feature = "bumpalo")]
+    /// #     test()
+    /// # }
     /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn with_capacity_and_hasher_in(capacity: usize, hash_builder: S, alloc: A) -> Self {
@@ -744,7 +871,7 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// for (_, _, value) in map.iter_mut() {
     ///     *value *= 2;
     /// }
-    /// 
+    ///
     /// let mut vec: Vec<(&str, i32, i32)> = Vec::new();
     ///
     /// for (key1, key2, value) in map.iter() {
@@ -803,11 +930,78 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
         self.table.len()
     }
 
+    /// Returns `true` if the map contains no elements.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut a = DHashMap::new();
+    /// // The created DHashMap doesn't hold any elements, so it's empty
+    /// assert!(a.is_empty() && a.len() == 0);
+    /// // We insert one element
+    /// a.insert(1, "a", "One");
+    /// // And can be sure that DHashMap is not empty but holds one element
+    /// assert!(!a.is_empty() && a.len() == 1);
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
+    /// Clears the map, returning all keys-value tuples as an arbitrary
+    /// order iterator. The iterator element is tuple of type `(K1, K2, V)`.
+    /// Keeps the allocated memory for reuse.
+    ///
+    /// If the returned iterator is dropped before being fully consumed, it
+    /// drops the remaining key-value pairs. The returned iterator keeps a
+    /// mutable borrow on the vector to optimize its implementation.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// // We insert three elements
+    /// let mut a = DHashMap::new();
+    /// a.insert("apple",  1, "a");
+    /// a.insert("banana", 2, "b");
+    /// a.insert("Cherry", 3, "c");
+    ///
+    /// // We can see that DHashMap hold three elements
+    /// assert_eq!(a.len(), 3);
+    ///
+    /// // Also we reserve memory for holding additionally at least 20 elements,
+    /// // so that DHashMap can now hold 23 elements or more
+    /// a.reserve(20);
+    /// let capacity_before_drain = a.capacity();
+    ///
+    /// for (key1, key2, value) in a.drain() {
+    ///     println!{"key1: {}, key2: {}, value: {}", key1, key2, value}
+    ///     assert!(
+    ///         (key1, key2, value)  == ("apple",  1, "a") ||
+    ///         (key1, key2, value)  == ("banana", 2, "b") ||
+    ///         (key1, key2, value)  == ("Cherry", 3, "c")
+    ///     );
+    /// }
+    ///
+    /// // As we can see, the map is empty and contain no element
+    /// assert!(a.is_empty() && a.len() == 0);
+    /// // But map capacity is equal to old one.
+    /// assert!(a.capacity() == capacity_before_drain);
+    ///
+    /// let mut a = DHashMap::new();
+    /// a.insert(1, "a", "One");
+    /// a.insert(2, "b", "Two");
+    ///
+    /// {   // Iterator is dropped without being consumed.
+    ///     let d = a.drain();
+    /// }
+    ///
+    /// // But the map is empty even if we do not use Drain iterator.
+    /// assert!(a.is_empty());
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn drain(&mut self) -> Drain<'_, K1, K2, V, A> {
         Drain {
@@ -815,6 +1009,30 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
         }
     }
 
+    /// Retains only the elements specified by the predicate. Keeps the
+    /// allocated memory for reuse.
+    ///
+    /// In other words, remove all pairs `(K1, K2, V)` such that
+    /// `f(&K1, &mut V)` returns `false`. The elements are visited in
+    /// unsorted (and unspecified) order.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map: DHashMap<i32, i32, i32> = (0..8).map(|x| (x, x + 1, x * 100)).collect();
+    /// assert_eq!(map.len(), 8);
+    ///
+    /// map.retain_key1(|&k1, _| k1 % 2 == 0);
+    ///
+    /// // We can see, that the number of elements inside map is changed.
+    /// assert_eq!(map.len(), 4);
+    ///
+    /// let mut vec: Vec<(i32, i32, i32)> = map.iter().map(|(&k1, &k2, &v)| (k1, k2, v)).collect();
+    /// vec.sort_unstable();
+    /// assert_eq!(vec, [(0, 1, 0), (2, 3, 200), (4, 5, 400), (6, 7, 600)]);
+    /// ```
     pub fn retain_key1<F>(&mut self, mut f: F)
     where
         F: FnMut(&K1, &mut V) -> bool,
@@ -830,6 +1048,30 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
         }
     }
 
+    /// Retains only the elements specified by the predicate. Keeps the
+    /// allocated memory for reuse.
+    ///
+    /// In other words, remove all pairs `(K1, K2, V)` such that
+    /// `f(&K2, &mut V)` returns `false`. The elements are visited in
+    /// unsorted (and unspecified) order.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map: DHashMap<i32, i32, i32> = (0..8).map(|x| (x, x + 1, x * 100)).collect();
+    /// assert_eq!(map.len(), 8);
+    ///
+    /// map.retain_key2(|&k2, _| k2 % 2 == 0);
+    ///
+    /// // We can see, that the number of elements inside map is changed.
+    /// assert_eq!(map.len(), 4);
+    ///
+    /// let mut vec: Vec<(i32, i32, i32)> = map.iter().map(|(&k1, &k2, &v)| (k1, k2, v)).collect();
+    /// vec.sort_unstable();
+    /// assert_eq!(vec, [(1, 2, 100), (3, 4, 300), (5, 6, 500), (7, 8, 700)]);
+    /// ```
     pub fn retain_key2<F>(&mut self, mut f: F)
     where
         F: FnMut(&K2, &mut V) -> bool,
@@ -845,6 +1087,30 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
         }
     }
 
+    /// Retains only the elements specified by the predicate. Keeps the
+    /// allocated memory for reuse.
+    ///
+    /// In other words, remove all pairs `(K1, K2, V)` such that
+    /// `f(&K1, &K2, &mut V)` returns `false`. The elements are visited in
+    /// unsorted (and unspecified) order.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map: DHashMap<i32, i32, i32> = (0..12).map(|x| (x, x + 1, x * 100)).collect();
+    /// assert_eq!(map.len(), 12);
+    ///
+    /// map.retain_keys(|&k1, &k2, _| (k1 % 3 == 0) && (k2 % 3 == 1));
+    ///
+    /// // We can see, that the number of elements inside map is changed.
+    /// assert_eq!(map.len(), 4);
+    ///
+    /// let mut vec: Vec<(i32, i32, i32)> = map.iter().map(|(&k1, &k2, &v)| (k1, k2, v)).collect();
+    /// vec.sort_unstable();
+    /// assert_eq!(vec, [(0, 1, 0), (3, 4, 300), (6, 7, 600), (9, 10, 900)]);
+    /// ```
     pub fn retain_keys<F>(&mut self, mut f: F)
     where
         F: FnMut(&K1, &K2, &mut V) -> bool,
@@ -860,6 +1126,55 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
         }
     }
 
+    /// Drains elements which are true under the given predicate,
+    /// and returns an iterator over the removed items.
+    ///
+    /// In other words, move all pairs `(K1, K2, V)` such that
+    /// `f(&K1, &K2, &mut V)` returns `true` out into another iterator.
+    ///
+    /// Note that `drain_filter` lets you mutate every value in the filter
+    /// closure, regardless of whether you choose to keep or remove it.
+    ///
+    /// When the returned DrainedFilter is dropped, any remaining elements that
+    /// satisfy the predicate are dropped from the table.
+    ///
+    /// It is unspecified how many more elements will be subjected to the closure
+    /// if a panic occurs in the closure, or a panic occurs while dropping an
+    /// element, or if the `DrainFilter` value is leaked.
+    ///
+    /// Keeps the allocated memory for reuse.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map: DHashMap<i32, i32, i32> = (0..8).map(|x| (x, x, x)).collect();
+    /// assert_eq!(map.len(), 8);
+    ///
+    /// let drained: DHashMap<i32, i32, i32> = map
+    ///     .drain_filter(|&k1, &k2, _| (k1 % 3 == 0) && (k2 % 3 == 0))
+    ///     .collect();
+    ///
+    /// let mut first: Vec<_> = map.keys().map(|(&k1, &k2)| (k1, k2)).collect();
+    /// let mut second: Vec<_> = drained.keys().map(|(&k1, &k2)| (k1, k2)).collect();
+    /// first.sort_unstable();
+    /// second.sort_unstable();
+    /// assert_eq!(first, vec![(1, 1), (2, 2), (4, 4), (5, 5), (7, 7)]);
+    /// assert_eq!(second, vec![(0, 0), (3, 3), (6, 6)]);
+    ///
+    /// let mut map: DHashMap<i32, i32, i32> = (0..8).map(|x| (x, x + 1, x)).collect();
+    /// assert_eq!(map.len(), 8);
+    ///
+    /// {
+    ///     // Iterator is dropped without being consumed.
+    ///     let _d = map.drain_filter(|k1, _, _| k1 % 2 != 0);
+    /// }
+    ///
+    /// // But the map lens have been reduced by half
+    /// // even if we do not use DrainFilter iterator.
+    /// assert_eq!(map.len(), 4);
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn drain_filter<F>(&mut self, f: F) -> DrainFilter<'_, K1, K2, V, F, A>
     where
@@ -874,11 +1189,57 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
         }
     }
 
+    /// Clears the map, removing all keys-value tuples.
+    /// Keeps the allocated memory for reuse.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// let mut a = dhashmap![
+    ///    1, "Breakfast" => "Pancakes",
+    ///    2, "Lunch" => "Sandwich",
+    /// ];
+    ///
+    /// // We can that see DHashMap holds two elements
+    /// assert_eq!(a.len(), 2);
+    /// let capacity_before_clearing = a.capacity();
+    ///
+    /// a.clear();
+    ///
+    /// // And now the map is empty and contains no elements
+    /// assert!(a.is_empty() && a.len() == 0);
+    /// // But map capacity is equal to the old one
+    /// assert_eq!(a.capacity(), capacity_before_clearing);
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn clear(&mut self) {
         self.table.clear();
     }
 
+    /// Creates a consuming iterator visiting all the keys in arbitrary order.
+    /// The map cannot be used after calling this. The iterator element is tuple
+    /// of type `(K1, K2)`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// let map = dhashmap![
+    ///     ("a", 1) => "One",
+    ///     ("b", 2) => "Two",
+    ///     ("c", 3) => "Three",
+    /// ];
+    ///
+    /// let mut vec: Vec<(&str, i32)> = map.into_keys().collect();
+    ///
+    /// // The `IntoKeys` iterator produces keys in arbitrary order, so the
+    /// // keys must be sorted to test them against a sorted array.
+    /// vec.sort_unstable();
+    /// assert_eq!(vec, [("a", 1), ("b", 2), ("c", 3)]);
+    /// ```
     #[inline]
     pub fn into_keys(self) -> IntoKeys<K1, K2, V, A> {
         IntoKeys {
@@ -886,6 +1247,27 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
         }
     }
 
+    /// Creates a consuming iterator visiting all the values in arbitrary order.
+    /// The map cannot be used after calling this. The iterator element type is `V`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// let map = dhashmap![
+    ///     ("a", 1) => 10,
+    ///     ("b", 2) => 20,
+    ///     ("c", 3) => 30,
+    /// ];
+    ///
+    /// let mut vec: Vec<i32> = map.into_values().collect();
+    ///
+    /// // The `IntoValues` iterator produces values in arbitrary order, so
+    /// // the values must be sorted to test them against a sorted array.
+    /// vec.sort_unstable();
+    /// assert_eq!(vec, [10, 20, 30]);
+    /// ```
     #[inline]
     pub fn into_values(self) -> IntoValues<K1, K2, V, A> {
         IntoValues {
@@ -901,6 +1283,28 @@ where
     S: BuildHasher,
     A: Allocator + Clone,
 {
+    /// Reserves capacity for at least `additional` more elements to be inserted
+    /// in the `DHashMap<K1, K2, V>`. The collection may reserve more space to avoid
+    /// frequent reallocations.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the new allocation size overflows `isize::Max`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    /// let mut a = DHashMap::<&str, i128, &str>::new();
+    /// a.insert("apple",  1, "a");
+    /// a.insert("banana", 2, "b");
+    /// a.insert("cherry", 3, "c");
+    ///
+    /// // We reserve space for additional 10 elements
+    /// a.reserve(10);
+    /// // And can see that created DHashMap can hold at least 13 elements
+    /// assert!(a.capacity() >= 13);
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn reserve(&mut self, additional: usize) {
         self.table.reserve(
@@ -910,6 +1314,50 @@ where
         );
     }
 
+    /// Tries to reserve capacity for at least `additional` more elements to be inserted
+    /// in the given `DHashMap<K1, K2, V>`. The collection may reserve more space to avoid
+    /// frequent reallocations.
+    ///
+    /// # Errors
+    ///
+    /// If the capacity overflows, or the allocator reports a failure, then an error
+    /// is returned.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map: DHashMap<&str, isize, isize> = DHashMap::new();
+    /// // Map is empty and doesn't allocate memory
+    /// assert_eq!(map.capacity(), 0);
+    ///
+    /// map.try_reserve(10).expect("why is the test harness OOMing on 10 elements?");
+    ///
+    /// // And now map can hold at least 10 elements
+    /// assert!(map.capacity() >= 10);
+    /// ```
+    /// If the capacity overflows, or the allocator reports a failure, then an error
+    /// is returned:
+    /// ```
+    /// # fn test() {
+    /// use double_map::DHashMap;
+    /// use double_map::TryReserveError;
+    /// let mut map: DHashMap<i32, i32, i32> = DHashMap::new();
+    ///
+    /// match map.try_reserve(isize::MAX as usize) {
+    ///     Err(error) => match error {
+    ///         TryReserveError::CapacityOverflow => {}
+    ///         _ => panic!("TryReserveError::AllocError ?"),
+    ///     },
+    ///     _ => panic!(),
+    /// }
+    /// # }
+    /// # fn main() {
+    /// #     #[cfg(not(miri))]
+    /// #     test()
+    /// # }
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn try_reserve(&mut self, additional: usize) -> Result<(), TryReserveError> {
         self.table.try_reserve(
@@ -919,6 +1367,40 @@ where
         )
     }
 
+    /// Shrinks the capacity of the map as much as possible. It will drop
+    /// down as much as possible while maintaining the internal rules
+    /// and possibly leaving some space in accordance with the resize policy.
+    ///
+    /// Note that in general case the capacity is not *guaranteed* to shrink,
+    /// but a zero-length DHashMap should generally shrink to capacity zero.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    /// let mut a = DHashMap::<i32, &str, &str>::with_capacity(16);
+    ///
+    /// // This DHashMap can hold at least 16 elements
+    /// let capacity_before_shrink = a.capacity();
+    /// assert!(capacity_before_shrink >= 16);
+    ///
+    /// // And after shrinking, map capacity is less than before
+    /// a.shrink_to_fit();
+    /// assert!(a.capacity() < capacity_before_shrink);
+    ///
+    /// // If we reserve some memory and insert some elements
+    /// a.reserve(10);
+    /// a.insert(1, "a", "One");
+    /// a.insert(2, "b", "Two");
+    /// assert!(a.capacity() >= 10);
+    ///
+    /// // After applying shrink_to_fit method, the capacity less than
+    /// // reserved before, but inserted elements are still inside map
+    /// a.shrink_to_fit();
+    /// assert!(a.capacity() >= 2 && a.capacity() < 10);
+    /// assert_eq!(a.get_key1(&1), Some(&"One"));
+    /// assert_eq!(a.get_key1(&2), Some(&"Two"))
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn shrink_to_fit(&mut self) {
         self.table.shrink_to(
@@ -928,6 +1410,33 @@ where
         );
     }
 
+    /// Shrinks the capacity of the map with a lower limit. It will drop
+    /// down no lower than the supplied limit while maintaining the internal rules
+    /// and possibly leaving some space in accordance with the resize policy.
+    ///
+    /// If the current capacity is less than the lower limit, this is a no-op.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map: DHashMap<i32, i32, i32> = DHashMap::with_capacity(100);
+    /// map.insert(1, 2, 3);
+    /// map.insert(4, 5, 6);
+    /// map.insert(7, 8, 9);
+    /// assert!(map.capacity() >= 100);
+    ///
+    /// // We have only 3 elements inside map, so it works
+    /// map.shrink_to(10);
+    /// assert!(map.capacity() >= 10 && map.capacity() < 100);
+    ///
+    /// // If we try shrink_to the capacity, that less than elements quantity inside map
+    /// map.shrink_to(0);
+    /// // So it works partially, but the resulting capacity is not less than quantity
+    /// // of elements inside the map
+    /// assert!(map.capacity() >= 3  && map.capacity() < 10);
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn shrink_to(&mut self, min_capacity: usize) {
         self.table.shrink_to(
@@ -937,6 +1446,63 @@ where
         );
     }
 
+    /// Tries to get the given keys' corresponding entry in the map for in-place
+    /// manipulation.
+    ///
+    /// Returns [`Entry`] enum if `all` of the following is `true`:
+    /// - Both `K1` and `K2` keys are vacant.
+    /// - If both `K1` and `K2` keys exist, they refer to the same value.
+    ///
+    /// When the above statements are `false`, [`entry`](DHashMap::entry) method returns
+    /// [`EntryError`] structure which contains the [`ErrorKind`] enum, and the values
+    /// of provided keys that were not used for creation entry (but can be used for
+    /// another purpose).
+    ///
+    /// Depending on the points below, different [`ErrorKind`] variants may be returned:
+    /// - When `K1` key is vacant, but `K2` key already exists with some value, the
+    /// returned [`ErrorKind`] variant is [`ErrorKind::VacantK1AndOccupiedK2`].
+    /// - When `K1` key already exists with some value, but `K2` key is vacant, the
+    /// returned [`ErrorKind`] variant is [`ErrorKind::OccupiedK1AndVacantK2`].
+    /// - When both `K1` key and `K2` key already exist with some values, but point
+    /// to different entries (values) the returned [`ErrorKind`] variant is
+    /// [`ErrorKind::KeysPointsToDiffEntries`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    /// use double_map::dhash_map::ErrorKind;
+    ///
+    /// let mut letters = DHashMap::new();
+    ///
+    /// for ch in "a short treatise on fungi".chars() {
+    ///     if let Ok(entry) = letters.entry(ch.clone(), ch) {
+    ///         let counter = entry.or_insert(0);
+    ///         *counter += 1;
+    ///     }
+    /// }
+    ///
+    /// assert_eq!(letters.get_key1(&'s'), Some(&2));
+    /// assert_eq!(letters.get_key1(&'t'), Some(&3));
+    /// assert_eq!(letters.get_key1(&'u'), Some(&1));
+    /// assert_eq!(letters.get_key1(&'y'), None);
+    ///
+    /// // Return `ErrorKind::OccupiedK1AndVacantK2` if `K1` key already
+    /// // exists with some value, but `K2` key is vacant.
+    /// let error_kind = letters.entry('s', 'y').unwrap_err().error;
+    /// assert_eq!(error_kind, ErrorKind::OccupiedK1AndVacantK2);
+    ///
+    /// // Return `ErrorKind::VacantK1AndOccupiedK2` if `K1` key is vacant,
+    /// // but `K2` key already exists with some value.
+    /// let error_kind = letters.entry('y', 's').unwrap_err().error;
+    /// assert_eq!(error_kind, ErrorKind::VacantK1AndOccupiedK2);
+    ///
+    /// // Return `ErrorKind::KeysPointsToDiffEntries` if both
+    /// // `K1` key and `K2` key already exist with some values,
+    /// // but point to different entries (values).
+    /// let error_kind = letters.entry('s', 't').unwrap_err().error;
+    /// assert_eq!(error_kind, ErrorKind::KeysPointsToDiffEntries);
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn entry(
         &mut self,
@@ -993,6 +1559,63 @@ where
         }
     }
 
+    /// Tries to get the given keys' corresponding entry by references in the map for
+    /// in-place manipulation.
+    ///
+    /// Returns [`EntryRef`] enum if `all` of the following is `true`:
+    /// - Both `K1` and `K2` keys are vacant.
+    /// - If both `K1` and `K2` keys exist, they refer to the same value.
+    ///
+    /// When the above statements are `false`, [`entry_ref`](DHashMap::entry_ref) method
+    /// returns [`ErrorKind`] enum.
+    ///
+    /// Depending on the points below, different [`ErrorKind`] variants may be returned:
+    /// - When `K1` key is vacant, but `K2` key already exists with some value, the
+    /// returned [`ErrorKind`] variant is [`ErrorKind::VacantK1AndOccupiedK2`].
+    /// - When `K1` key already exists with some value, but `K2` key is vacant, the
+    /// returned [`ErrorKind`] variant is [`ErrorKind::OccupiedK1AndVacantK2`].
+    /// - When both `K1` key and `K2` key already exist with some values, but point
+    /// to different entries (values) the returned [`ErrorKind`] variant is
+    /// [`ErrorKind::KeysPointsToDiffEntries`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    /// use double_map::dhash_map::ErrorKind;
+    ///
+    /// let mut letters: DHashMap<String, String, usize>  = DHashMap::new();
+    ///
+    /// let source = ["zebra", "horse", "zebra", "zebra"];
+    ///
+    /// for (i, &s) in source.iter().enumerate() {
+    ///     if let Ok(entry) = letters.entry_ref(s, s) {
+    ///         let counter = entry.or_insert(0);
+    ///         *counter += 1;
+    ///     }
+    /// }
+    ///
+    /// assert_eq!(letters.get_key1("zebra"), Some(&3));
+    /// assert_eq!(letters.get_key1("horse"), Some(&1));
+    /// assert_eq!(letters.get_key2("zebra"), Some(&3));
+    /// assert_eq!(letters.get_key2("horse"), Some(&1));
+    ///
+    /// // Return `ErrorKind::OccupiedK1AndVacantK2` if `K1` key already
+    /// // exists with some value, but `K2` key is vacant.
+    /// let error_kind = letters.entry_ref("zebra", "pony").unwrap_err();
+    /// assert_eq!(error_kind, ErrorKind::OccupiedK1AndVacantK2);
+    ///
+    /// // Return `ErrorKind::VacantK1AndOccupiedK2` if `K1` key is vacant,
+    /// // but `K2` key already exists with some value.
+    /// let error_kind = letters.entry_ref("pony", "horse").unwrap_err();
+    /// assert_eq!(error_kind, ErrorKind::VacantK1AndOccupiedK2);
+    ///
+    /// // Return `ErrorKind::KeysPointsToDiffEntries` if both
+    /// // `K1` key and `K2` key already exist with some values,
+    /// // but point to different entries (values).
+    /// let error_kind = letters.entry_ref("zebra", "horse").unwrap_err();
+    /// assert_eq!(error_kind, ErrorKind::KeysPointsToDiffEntries);
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn entry_ref<'a, 'b, Q1, Q2>(
         &'a mut self,
@@ -1045,6 +1668,23 @@ where
         }
     }
 
+    /// Returns a reference to the value corresponding to the given
+    /// first key `K1`.
+    ///
+    /// The key may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the key type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map = DHashMap::new();
+    /// map.insert(1, "a", "One");
+    /// assert_eq!(map.get_key1(&1), Some(&"One"));
+    /// assert_eq!(map.get_key1(&2), None);
+    /// ```
     #[inline]
     pub fn get_key1<Q1: ?Sized>(&self, k1: &Q1) -> Option<&V>
     where
@@ -1057,6 +1697,23 @@ where
         }
     }
 
+    /// Returns a reference to the value corresponding to the given
+    /// second key `K2`.
+    ///
+    /// The key may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the key type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map = DHashMap::new();
+    /// map.insert(1, "a", "One");
+    /// assert_eq!(map.get_key2(&"a"), Some(&"One"));
+    /// assert_eq!(map.get_key2(&"b"), None);
+    /// ```
     #[inline]
     pub fn get_key2<Q2: ?Sized>(&self, k2: &Q2) -> Option<&V>
     where
@@ -1069,6 +1726,43 @@ where
         }
     }
 
+    /// Returns a reference to the value corresponding to the given
+    /// first `K1` and second `K2` keys if they both exist and refer
+    /// to the same value.
+    ///
+    /// The keys may be any borrowed form of the map's keys type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the keys type.
+    ///
+    /// # Note
+    ///
+    /// Note that this [`get_keys`](DHashMap::get_keys) method return
+    /// a reference to the value only if two keys exist and refer to
+    /// the same `value`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// let map = dhashmap! {
+    ///     1, "One" => String::from("Eins"),
+    ///     2, "Two" => String::from("Zwei"),
+    ///     3, "Three" => String::from("Drei"),
+    /// };
+    ///
+    /// // two keys exist and refer to the same value ("Eins")
+    /// assert_eq!(map.get_keys(&1, &"One" ), Some(&"Eins".to_owned()));
+    ///
+    /// // Both keys don't exist
+    /// assert_eq!(map.get_keys(&4, &"Four"), None);
+    ///
+    /// // Both keys exist but refer to the different value (key1: 1 refers to "Eins",
+    /// // key2: "Two" refers to "Zwei")
+    /// assert_eq!(map.get_keys(&1, &"Two" ), None);
+    /// assert_eq!(map.get_key1(&1).unwrap(),     "Eins");
+    /// assert_eq!(map.get_key2(&"Two").unwrap(), "Zwei");
+    /// ```
     #[inline]
     pub fn get_keys<Q1: ?Sized, Q2: ?Sized>(&self, k1: &Q1, k2: &Q2) -> Option<&V>
     where
@@ -1082,6 +1776,23 @@ where
         }
     }
 
+    /// Returns the keys-value tuple corresponding to the supplied
+    /// first key `K1`. Return the tuple of type `(&'a K1, &'a K2, &'a V)`.
+    ///
+    /// The supplied key may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the key type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map = DHashMap::new();
+    /// map.insert(1, 10, "a");
+    /// assert_eq!(map.get_key1_value(&1), Some((&1, &10, &"a")));
+    /// assert_eq!(map.get_key1_value(&2), None);
+    /// ```
     #[inline]
     pub fn get_key1_value<Q1: ?Sized>(&self, k1: &Q1) -> Option<(&K1, &K2, &V)>
     where
@@ -1094,6 +1805,23 @@ where
         }
     }
 
+    /// Returns the keys-value tuple corresponding to the supplied
+    /// second key `K2`. Return the tuple of type `(&'a K1, &'a K2, &'a V)`.
+    ///
+    /// The supplied key may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the key type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map = DHashMap::new();
+    /// map.insert(1, 10, "a");
+    /// assert_eq!(map.get_key2_value(&10), Some((&1, &10, &"a")));
+    /// assert_eq!(map.get_key2_value(&20), None);
+    /// ```
     #[inline]
     pub fn get_key2_value<Q2: ?Sized>(&self, k2: &Q2) -> Option<(&K1, &K2, &V)>
     where
@@ -1106,6 +1834,43 @@ where
         }
     }
 
+    /// Returns a reference to the keys-value tuple corresponding to the given
+    /// first `K1` and second `K2` keys if they both exist and refer to the same
+    /// value. Return tuple of type `(&'a K1, &'a K2, &'a V)`.
+    ///
+    /// The supplied keys may be any borrowed form of the map's keys type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the keys type.
+    ///
+    /// # Note
+    ///
+    /// Note that this [`get_keys_value`](DHashMap::get_keys_value) method return
+    /// the tuple of type`(&'a K1, &'a K2, &'a V)` only if two keys exist and refer
+    /// to the same `value`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// let map = dhashmap! {
+    ///     1, "One"   => "Zebra",
+    ///     2, "Two"   => "Horse",
+    ///     3, "Three" => "Pony",
+    /// };
+    ///
+    /// // two key exist and refer to the same value ("Zebra")
+    /// assert_eq!(map.get_keys_value(&1, &"One").unwrap(), (&1, &"One", &"Zebra"));
+    ///
+    /// // Both keys don't exist
+    /// assert_eq!(map.get_keys_value(&4, &"Four"), None);
+    ///
+    /// // Both keys exist but refer to the different value
+    /// // (key1: 1 refer to "Zebra", key2: "Two" refer to "Horse")
+    /// assert_eq!(map.get_keys_value(&1, &"Two" ), None);
+    /// assert_eq!(map.get_key1(&1).unwrap(),     &"Zebra");
+    /// assert_eq!(map.get_key2(&"Two").unwrap(), &"Horse");
+    /// ```
     #[inline]
     pub fn get_keys_value<Q1: ?Sized, Q2: ?Sized>(&self, k1: &Q1, k2: &Q2) -> Option<(&K1, &K2, &V)>
     where
@@ -1161,6 +1926,30 @@ where
         }
     }
 
+    /// Returns the keys-value tuple corresponding to the supplied
+    /// first key `K1`, with a mutable reference to value. Return
+    /// the tuple of type `(&'a K1, &'a K2, &'a mut V)`.
+    ///
+    /// The supplied key may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the key type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map = DHashMap::new();
+    /// map.insert(1, 10, "a");
+    ///
+    /// let (k1, k2, v) = map.get_key1_value_mut(&1).unwrap();
+    /// assert_eq!(k1, &1);
+    /// assert_eq!(k2, &10);
+    /// assert_eq!(v, &mut "a");
+    /// *v = "b";
+    /// assert_eq!(map.get_key1_value_mut(&1), Some((&1, &10, &mut "b")));
+    /// assert_eq!(map.get_key1_value_mut(&2), None);
+    /// ```
     #[inline]
     pub fn get_key1_value_mut<Q1: ?Sized>(&mut self, k1: &Q1) -> Option<(&K1, &K2, &mut V)>
     where
@@ -1173,6 +1962,30 @@ where
         }
     }
 
+    /// Returns the keys-value tuple corresponding to the supplied
+    /// second key `K2`, with a mutable reference to value. Return
+    /// the tuple of type `(&'a K1, &'a K2, &'a mut V)`.
+    ///
+    /// The supplied key may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the key type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map = DHashMap::new();
+    /// map.insert(1, 10, "a");
+    ///
+    /// let (k1, k2, v) = map.get_key2_value_mut(&10).unwrap();
+    /// assert_eq!(k1, &1);
+    /// assert_eq!(k2, &10);
+    /// assert_eq!(v, &mut "a");
+    /// *v = "b";
+    /// assert_eq!(map.get_key2_value_mut(&10), Some((&1, &10, &mut "b")));
+    /// assert_eq!(map.get_key2_value_mut(&20), None);
+    /// ```
     #[inline]
     pub fn get_key2_value_mut<Q2: ?Sized>(&mut self, k2: &Q2) -> Option<(&K1, &K2, &mut V)>
     where
@@ -1185,6 +1998,49 @@ where
         }
     }
 
+    /// Returns the keys-value tuple corresponding to the supplied
+    /// first `K1` and second `K2` keys, with a mutable reference
+    /// to value only if they both exist and refer to the same value.
+    /// Return tuple of type `(&'a K1, &'a K2, &'a V)`.
+    ///
+    /// The supplied keys may be any borrowed form of the map's keys type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the keys type.
+    ///
+    /// # Note
+    ///
+    /// Note that this [`get_keys_value_mut`](DHashMap::get_keys_value_mut) method
+    /// return the tuple of type`(&'a K1, &'a K2, &'a mut V)` only if two keys exist
+    /// and refer to the same `value`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// let mut map = dhashmap! {
+    ///     1, "One"   => "Zebra",
+    ///     2, "Two"   => "Horse",
+    ///     3, "Three" => "Pony",
+    /// };
+    ///
+    /// // two key exist and refer to the same value ("Zebra")
+    /// let (k1, k2, v) = map.get_keys_value_mut(&1, &"One").unwrap();
+    /// assert_eq!(k1, &1);
+    /// assert_eq!(k2, &"One");
+    /// assert_eq!(v, &mut "Zebra");
+    /// *v = "Elk";
+    /// assert_eq!(map.get_keys_value_mut(&1, &"One").unwrap(), (&1, &"One", &mut "Elk"));
+    ///
+    /// // Both keys don't exist
+    /// assert_eq!(map.get_keys_value_mut(&4, &"Four"), None);
+    ///
+    /// // Both keys exist but refer to the different value
+    /// // (key1: 1 refer to "Elk", key2: "Two" refer to "Horse")
+    /// assert_eq!(map.get_keys_value_mut(&1, &"Two" ), None);
+    /// assert_eq!(map.get_key1(&1).unwrap(),     &"Elk");
+    /// assert_eq!(map.get_key2(&"Two").unwrap(), &"Horse");
+    /// ```
     #[inline]
     pub fn get_keys_value_mut<Q1, Q2>(&mut self, k1: &Q1, k2: &Q2) -> Option<(&K1, &K2, &mut V)>
     where
@@ -1198,6 +2054,27 @@ where
         }
     }
 
+    /// Returns `true` if the map contains a value for the specified
+    /// fist key `K1`.
+    ///
+    /// The key may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the key type
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// let map = dhashmap! {
+    ///     1, "One" => String::from("Eins"),
+    ///     2, "Two" => String::from("Zwei"),
+    ///     3, "Three" => String::from("Drei"),
+    /// };
+    ///
+    /// assert!( map.contains_key1(&1));
+    /// assert!(!map.contains_key1(&4));
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn contains_key1<Q1: ?Sized>(&self, k1: &Q1) -> bool
     where
@@ -1206,6 +2083,27 @@ where
         self.get_inner_key1(k1).is_some()
     }
 
+    /// Returns `true` if the map contains a value for the specified
+    /// second key `K2`.
+    ///
+    /// The key may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the key type
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// let map = dhashmap! {
+    ///     1, "One" => String::from("Eins"),
+    ///     2, "Two" => String::from("Zwei"),
+    ///     3, "Three" => String::from("Drei"),
+    /// };
+    ///
+    /// assert!( map.contains_key2(&"One") );
+    /// assert!(!map.contains_key2(&"Four"));
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn contains_key2<Q2: ?Sized>(&self, k2: &Q2) -> bool
     where
@@ -1214,6 +2112,41 @@ where
         self.get_inner_key2(k2).is_some()
     }
 
+    /// Returns `true` if the map contains a value for the specified
+    /// first `K1` and second `K2` keys and they both refer to the same
+    /// value.
+    ///
+    /// The keys may be any borrowed form of the map's keys type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the keys type.
+    ///
+    /// # Note
+    /// Note that this [`contains_keys`](DHashMap::contains_keys) method
+    /// return `true` only if two keys exist and refer to the same `value`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// let map = dhashmap! {
+    ///     1, "One" => String::from("Eins"),
+    ///     2, "Two" => String::from("Zwei"),
+    ///     3, "Three" => String::from("Drei"),
+    /// };
+    ///
+    /// // two keys exist and refer to the same value ("Eins")
+    /// assert_eq!(map.contains_keys(&1, &"One" ), true );
+    ///
+    /// // Both keys don't exist
+    /// assert_eq!(map.contains_keys(&4, &"Four"), false);
+    ///
+    /// // Both keys exist but refer to the different value (key1: 1 refers to "Eins",
+    /// // key2: "Two" refers to "Zwei")
+    /// assert_eq!(map.contains_keys(&1, &"Two" ), false);
+    /// assert!(map.contains_key1(&1)     == true && map.get_key1(&1).unwrap()     == "Eins");
+    /// assert!(map.contains_key2(&"Two") == true && map.get_key2(&"Two").unwrap() == "Zwei");
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn contains_keys<Q1, Q2>(&self, k1: &Q1, k2: &Q2) -> bool
     where
@@ -1223,6 +2156,25 @@ where
         self.get_inner_keys(k1, k2).is_some()
     }
 
+    /// Returns a mutable reference to the value corresponding to
+    /// the given fist key `K1`.
+    ///
+    /// The key may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the key type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map = DHashMap::new();
+    /// map.insert(1, "a", "One");
+    /// if let Some(x) = map.get_mut_key1(&1) {
+    ///     *x = "First";
+    /// }
+    /// assert_eq!(map.get_key1(&1), Some(&"First"));
+    /// ```
     #[inline]
     pub fn get_mut_key1<Q1: ?Sized>(&mut self, k1: &Q1) -> Option<&mut V>
     where
@@ -1235,6 +2187,25 @@ where
         }
     }
 
+    /// Returns a mutable reference to the value corresponding to
+    /// the given second key `K2`.
+    ///
+    /// The key may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the key type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map = DHashMap::new();
+    /// map.insert(1, "a", "One");
+    /// if let Some(x) = map.get_mut_key2(&"a") {
+    ///     *x = "First";
+    /// }
+    /// assert_eq!(map.get_key2(&"a"), Some(&"First"));
+    /// ```
     #[inline]
     pub fn get_mut_key2<Q2: ?Sized>(&mut self, k2: &Q2) -> Option<&mut V>
     where
@@ -1247,6 +2218,52 @@ where
         }
     }
 
+    /// Returns a mutable reference to the value corresponding to the given
+    /// first `K1` and second `K2` keys if they both exist and refer to the
+    /// same value.
+    ///
+    /// The keys may be any borrowed form of the map's keys type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the keys type.
+    ///
+    /// # Note
+    /// Note that this [`get_mut_keys`](DHashMap::get_mut_keys) method return
+    /// a reference to the value only if two keys exist and refer to the same
+    /// `value`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// let mut  map = dhashmap! {
+    ///     1, "One" => String::from("One"),
+    ///     2, "Two" => String::from("Two"),
+    ///     3, "Three" => String::from("Three"),
+    /// };
+    ///
+    /// // two keys exist and refer to the same value, so we have
+    /// // a mutable reference to the value
+    /// for (key_one, key_two) in (1..=3).zip(["One", "Two", "Three"]) {
+    ///     if let Some(value) = map.get_mut_keys(&key_one, &key_two) {
+    ///         value.push_str(" mississippi");
+    ///     }
+    /// }
+    ///
+    /// // We can see that all values updated
+    /// assert_eq!(map.get_key1(&1), Some(&"One mississippi".to_owned()));
+    /// assert_eq!(map.get_key1(&2), Some(&"Two mississippi".to_owned()));
+    /// assert_eq!(map.get_key1(&3), Some(&"Three mississippi".to_owned()));
+    ///
+    /// // But if both keys don't exist we don't have a mutable reference to the value
+    /// assert_eq!(map.get_mut_keys(&4, &"Four"), None);
+    ///
+    /// // If both keys exist but refer to the different value we also don't have
+    /// // a mutable reference to the value
+    /// assert_eq!(map.get_mut_keys(&1, &"Two" ), None);
+    /// assert_eq!(map.get_key1(&1).unwrap(),     "One mississippi");
+    /// assert_eq!(map.get_key2(&"Two").unwrap(), "Two mississippi");
+    /// ```
     #[inline]
     pub fn get_mut_keys<Q1, Q2>(&mut self, k1: &Q1, k2: &Q2) -> Option<&mut V>
     where
@@ -1306,6 +2323,37 @@ where
         }
     }
 
+    /// Attempts to get mutable references to `N` values in the map
+    /// at once corresponding to the given `N` fist `K1` keys.
+    ///
+    /// Returns an array of length `N` with the results of each query.
+    /// For soundness, at most one mutable reference will be returned
+    /// to any value. `None` will be returned if any of the keys are
+    /// duplicates or missing.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut libraries = DHashMap::new();
+    /// libraries.insert("Bogazkoy archives", "Boğazkale", "1900 B.C.");
+    /// libraries.insert("Library of Ashurbanipal", "Mosul", "668 B.C.");
+    /// libraries.insert("Library of Alexandria", "Alexandria", "285 B.C.");
+    /// libraries.insert("Library of Antioch", "Antakya", "221 B.C.");
+    /// libraries.insert("Library of Pergamum", "Bergama", "197 B.C.");
+    ///
+    /// let got = libraries.get_many_mut_key1(["Bogazkoy archives", "Library of Antioch"]);
+    /// assert_eq!(got, Some([&mut "1900 B.C.", &mut "221 B.C."]));
+    ///
+    /// // Missing keys result is None
+    /// let got = libraries.get_many_mut_key1(["Bogazkoy archives", "Libraries of the Forum"]);
+    /// assert_eq!(got, None);
+    ///
+    /// // Duplicate keys result is None
+    /// let got = libraries.get_many_mut_key1(["Bogazkoy archives", "Bogazkoy archives"]);
+    /// assert_eq!(got, None);
+    /// ```
     pub fn get_many_mut_key1<Q1, const N: usize>(&mut self, ks: [&Q1; N]) -> Option<[&'_ mut V; N]>
     where
         Q1: ?Sized + Hash + Equivalent<K1>,
@@ -1314,6 +2362,37 @@ where
             .map(|arr| arr.map(|(_, _, v)| v))
     }
 
+    /// Attempts to get mutable references to `N` values in the map
+    /// at once corresponding to the given `N` second `K2` keys.
+    ///
+    /// Returns an array of length `N` with the results of each query.
+    /// For soundness, at most one mutable reference will be returned
+    /// to any value. `None` will be returned if any of the keys are
+    /// duplicates or missing.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut libraries = DHashMap::new();
+    /// libraries.insert("Bogazkoy archives", "Boğazkale", "1900 B.C.");
+    /// libraries.insert("Library of Ashurbanipal", "Mosul", "668 B.C.");
+    /// libraries.insert("Library of Alexandria", "Alexandria", "285 B.C.");
+    /// libraries.insert("Library of Antioch", "Antakya", "221 B.C.");
+    /// libraries.insert("Library of Pergamum", "Bergama", "197 B.C.");
+    ///
+    /// let got = libraries.get_many_mut_key2(["Boğazkale", "Antakya"]);
+    /// assert_eq!(got, Some([&mut "1900 B.C.", &mut "221 B.C."]));
+    ///
+    /// // Missing keys result is None
+    /// let got = libraries.get_many_mut_key2(["Boğazkale", "Rome"]);
+    /// assert_eq!(got, None);
+    ///
+    /// // Duplicate keys result is None
+    /// let got = libraries.get_many_mut_key2(["Boğazkale", "Boğazkale"]);
+    /// assert_eq!(got, None);
+    /// ```
     pub fn get_many_mut_key2<Q2, const N: usize>(&mut self, ks: [&Q2; N]) -> Option<[&'_ mut V; N]>
     where
         Q2: ?Sized + Hash + Equivalent<K2>,
@@ -1322,6 +2401,60 @@ where
             .map(|arr| arr.map(|(_, _, v)| v))
     }
 
+    /// Attempts to get mutable references to `N` values in the map
+    /// at once corresponding to the given `N` first `K1` and second
+    /// `K2` keys.
+    ///
+    /// Returns an array of length `N` with the results of each query.
+    /// For soundness, at most one mutable reference will be returned
+    /// to any value. `None` will be returned if any of the keys are
+    /// duplicates or missing.
+    ///
+    /// # Note
+    ///
+    /// Note that this [`get_many_mut_keys`](DHashMap::get_many_mut_keys) method
+    /// return array of values `[&'_ mut V; N]` only if each of given two keys'
+    /// `(&Q1, &Q2)` tuples exist and refer to the same `value`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut libraries = DHashMap::new();
+    /// libraries.insert("Bogazkoy archives", "Boğazkale", "1900 B.C.");
+    /// libraries.insert("Library of Ashurbanipal", "Mosul", "668 B.C.");
+    /// libraries.insert("Library of Alexandria", "Alexandria", "285 B.C.");
+    /// libraries.insert("Library of Antioch", "Antakya", "221 B.C.");
+    /// libraries.insert("Library of Pergamum", "Bergama", "197 B.C.");
+    ///
+    /// let got = libraries.get_many_mut_keys([
+    ///     ("Bogazkoy archives", "Boğazkale"),
+    ///     ("Library of Antioch", "Antakya"),
+    /// ]);
+    /// assert_eq!(got, Some([&mut "1900 B.C.", &mut "221 B.C."]));
+    ///
+    /// // Missing keys result is None
+    /// let got = libraries.get_many_mut_keys([
+    ///     ("Bogazkoy archives", "Boğazkale"),
+    ///     ("Libraries of the Forum", "Rome"),
+    /// ]);
+    /// assert_eq!(got, None);
+    ///
+    /// // Duplicate keys result is None
+    /// let got = libraries.get_many_mut_keys([
+    ///     ("Bogazkoy archives", "Boğazkale"),
+    ///     ("Bogazkoy archives", "Boğazkale"),
+    /// ]);
+    /// assert_eq!(got, None);
+    ///
+    /// // Existing keys that refer to different values result is None
+    /// let got = libraries.get_many_mut_keys([
+    ///     ("Bogazkoy archives", "Mosul"),
+    ///     ("Library of Ashurbanipal", "Boğazkale"),
+    /// ]);
+    /// assert_eq!(got, None);
+    /// ```
     pub fn get_many_mut_keys<Q1, Q2, const N: usize>(
         &mut self,
         ks: [(&Q1, &Q2); N],
@@ -1334,6 +2467,45 @@ where
             .map(|arr| arr.map(|(_, _, v)| v))
     }
 
+    /// Attempts to get mutable references to `N` values in the map at once,
+    /// corresponding to the given `N` first `K1` keys, without validating
+    /// that the values are unique.
+    ///
+    /// Returns an array of length `N` with the results of each query. `None`
+    /// will be returned if any of the keys are missing.
+    ///
+    /// For a safe alternative see [`get_many_mut_key1`](`DHashMap::get_many_mut_key1`).
+    ///
+    /// # Safety
+    ///
+    /// Calling this method with overlapping keys if they exist in map is
+    /// *[undefined behavior]* even if the resulting references are not used.
+    ///
+    /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut libraries = DHashMap::new();
+    /// libraries.insert("Bogazkoy archives", "Boğazkale", "1900 B.C.");
+    /// libraries.insert("Library of Ashurbanipal", "Mosul", "668 B.C.");
+    /// libraries.insert("Library of Alexandria", "Alexandria", "285 B.C.");
+    /// libraries.insert("Library of Antioch", "Antakya", "221 B.C.");
+    /// libraries.insert("Library of Pergamum", "Bergama", "197 B.C.");
+    ///
+    /// let got = unsafe {
+    ///     libraries.get_many_unchecked_mut_key1(["Bogazkoy archives", "Library of Antioch"])
+    /// };
+    /// assert_eq!(got, Some([&mut "1900 B.C.", &mut "221 B.C."]));
+    ///
+    /// // Missing keys result is None
+    /// let got = unsafe {
+    ///     libraries.get_many_unchecked_mut_key1(["Bogazkoy archives", "Libraries of the Forum"])
+    /// };
+    /// assert_eq!(got, None);
+    /// ```
     pub unsafe fn get_many_unchecked_mut_key1<Q1, const N: usize>(
         &mut self,
         ks: [&Q1; N],
@@ -1345,6 +2517,41 @@ where
             .map(|arr| arr.map(|(_, _, v)| v))
     }
 
+    /// Attempts to get mutable references to `N` values in the map at once,
+    /// corresponding to the given `N` second `K2` keys, without validating
+    /// that the values are unique.
+    ///
+    /// Returns an array of length `N` with the results of each query. `None`
+    /// will be returned if any of the keys are missing.
+    ///
+    /// For a safe alternative see [`get_many_mut_key2`](`DHashMap::get_many_mut_key2`).
+    ///
+    /// # Safety
+    ///
+    /// Calling this method with overlapping keys if they exist in map is
+    /// *[undefined behavior]* even if the resulting references are not used.
+    ///
+    /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut libraries = DHashMap::new();
+    /// libraries.insert("Bogazkoy archives", "Boğazkale", "1900 B.C.");
+    /// libraries.insert("Library of Ashurbanipal", "Mosul", "668 B.C.");
+    /// libraries.insert("Library of Alexandria", "Alexandria", "285 B.C.");
+    /// libraries.insert("Library of Antioch", "Antakya", "221 B.C.");
+    /// libraries.insert("Library of Pergamum", "Bergama", "197 B.C.");
+    ///
+    /// let got = unsafe { libraries.get_many_unchecked_mut_key2(["Boğazkale", "Antakya"]) };
+    /// assert_eq!(got, Some([&mut "1900 B.C.", &mut "221 B.C."]));
+    ///
+    /// // Missing keys result is None
+    /// let got = unsafe { libraries.get_many_unchecked_mut_key2(["Boğazkale", "Rome"]) };
+    /// assert_eq!(got, None);
+    /// ```
     pub unsafe fn get_many_unchecked_mut_key2<Q2, const N: usize>(
         &mut self,
         ks: [&Q2; N],
@@ -1356,6 +2563,57 @@ where
             .map(|arr| arr.map(|(_, _, v)| v))
     }
 
+    /// Attempts to get mutable references to `N` values in the map at once,
+    /// corresponding to the given `N` first `K1` and second `K2` keys, without
+    /// validating that the values are unique.
+    ///
+    /// Returns an array of length `N` with the results of each query. `None`
+    /// will be returned if any of the keys are missing.
+    ///
+    /// For a safe alternative see [`get_many_mut_keys`](`DHashMap::get_many_mut_keys`).
+    ///
+    /// # Safety
+    ///
+    /// Calling this method with overlapping keys, if they both exist in map and refer
+    /// to the same value, is *[undefined behavior]* even if the resulting references
+    /// are not used.
+    ///
+    /// In other words this [`get_many_unchecked_mut_keys`](DHashMap::get_many_unchecked_mut_keys)
+    /// method return array of values `[&'_ mut V; N]` only if each of given two keys'
+    /// `(&Q1, &Q2)` tuples exist and refer to the same `value`. For more information see
+    /// [`get_keys_value_mut`](DHashMap::get_keys_value_mut) method.
+    ///
+    /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut libraries = DHashMap::new();
+    /// libraries.insert("Bogazkoy archives", "Boğazkale", "1900 B.C.");
+    /// libraries.insert("Library of Ashurbanipal", "Mosul", "668 B.C.");
+    /// libraries.insert("Library of Alexandria", "Alexandria", "285 B.C.");
+    /// libraries.insert("Library of Antioch", "Antakya", "221 B.C.");
+    /// libraries.insert("Library of Pergamum", "Bergama", "197 B.C.");
+    ///
+    /// let got = unsafe {
+    ///     libraries.get_many_unchecked_mut_keys([
+    ///         ("Bogazkoy archives", "Boğazkale"),
+    ///         ("Library of Antioch", "Antakya"),
+    ///     ])
+    /// };
+    /// assert_eq!(got, Some([&mut "1900 B.C.", &mut "221 B.C."]));
+    ///
+    /// // Missing keys result is None
+    /// let got = unsafe {
+    ///     libraries.get_many_unchecked_mut_keys([
+    ///         ("Bogazkoy archives", "Boğazkale"),
+    ///         ("Libraries of the Forum", "Rome"),
+    ///     ])
+    /// };
+    /// assert_eq!(got, None);
+    /// ```
     pub unsafe fn get_many_unchecked_mut_keys<Q1, Q2, const N: usize>(
         &mut self,
         ks: [(&Q1, &Q2); N],
@@ -1368,6 +2626,43 @@ where
             .map(|arr| arr.map(|(_, _, v)| v))
     }
 
+    /// Attempts to get mutable references to `N` values in the map at once
+    /// using the given `N` fist `K1` keys, with immutable references to the
+    /// corresponding `K1` and `K2` keys.
+    ///
+    /// Returns an array of length `N` with the results of each query. For
+    /// soundness, at most one mutable reference will be returned to any value.
+    /// `None` will be returned if any of the keys are duplicates or missing.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut libraries = DHashMap::new();
+    /// libraries.insert("Bogazkoy archives", "Boğazkale", "1900 B.C.");
+    /// libraries.insert("Library of Ashurbanipal", "Mosul", "668 B.C.");
+    /// libraries.insert("Library of Alexandria", "Alexandria", "285 B.C.");
+    /// libraries.insert("Library of Antioch", "Antakya", "221 B.C.");
+    /// libraries.insert("Library of Pergamum", "Bergama", "197 B.C.");
+    ///
+    /// let got = libraries.get_many_key1_value_mut(["Bogazkoy archives", "Library of Antioch"]);
+    /// assert_eq!(
+    ///     got,
+    ///     Some([
+    ///         (&"Bogazkoy archives", &"Boğazkale", &mut "1900 B.C."),
+    ///         (&"Library of Antioch", &"Antakya", &mut "221 B.C.")
+    ///     ])
+    /// );
+    ///
+    /// // Missing keys result is None
+    /// let got = libraries.get_many_key1_value_mut(["Bogazkoy archives", "Libraries of the Forum"]);
+    /// assert_eq!(got, None);
+    ///
+    /// // Duplicate keys result is None
+    /// let got = libraries.get_many_key1_value_mut(["Bogazkoy archives", "Bogazkoy archives"]);
+    /// assert_eq!(got, None);
+    /// ```
     pub fn get_many_key1_value_mut<Q1, const N: usize>(
         &mut self,
         ks: [&Q1; N],
@@ -1379,6 +2674,43 @@ where
             .map(|arr| arr.map(|(ref k1, ref k2, v)| (k1, k2, v)))
     }
 
+    /// Attempts to get mutable references to `N` values in the map at once
+    /// using the given `N` second `K2` keys, with immutable references to the
+    /// corresponding `K1` and `K2` keys.
+    ///
+    /// Returns an array of length `N` with the results of each query. For
+    /// soundness, at most one mutable reference will be returned to any value.
+    /// `None` will be returned if any of the keys are duplicates or missing.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut libraries = DHashMap::new();
+    /// libraries.insert("Bogazkoy archives", "Boğazkale", "1900 B.C.");
+    /// libraries.insert("Library of Ashurbanipal", "Mosul", "668 B.C.");
+    /// libraries.insert("Library of Alexandria", "Alexandria", "285 B.C.");
+    /// libraries.insert("Library of Antioch", "Antakya", "221 B.C.");
+    /// libraries.insert("Library of Pergamum", "Bergama", "197 B.C.");
+    ///
+    /// let got = libraries.get_many_key2_value_mut(["Boğazkale", "Antakya"]);
+    /// assert_eq!(
+    ///     got,
+    ///     Some([
+    ///         (&"Bogazkoy archives", &"Boğazkale", &mut "1900 B.C."),
+    ///         (&"Library of Antioch", &"Antakya", &mut "221 B.C.")
+    ///     ])
+    /// );
+    ///
+    /// // Missing keys result is None
+    /// let got = libraries.get_many_key2_value_mut(["Boğazkale", "Rome"]);
+    /// assert_eq!(got, None);
+    ///
+    /// // Duplicate keys result is None
+    /// let got = libraries.get_many_key2_value_mut(["Boğazkale", "Boğazkale"]);
+    /// assert_eq!(got, None);
+    /// ```
     pub fn get_many_key2_value_mut<Q2, const N: usize>(
         &mut self,
         ks: [&Q2; N],
@@ -1390,6 +2722,65 @@ where
             .map(|arr| arr.map(|(ref k1, ref k2, v)| (k1, k2, v)))
     }
 
+    /// Attempts to get mutable references to `N` values in the map at once
+    /// using the given `N` first `K1` and second `K2` keys, with immutable
+    /// references to the corresponding keys.
+    ///
+    /// Returns an array of length `N` with the results of each query. For
+    /// soundness, at most one mutable reference will be returned to any value.
+    /// `None` will be returned if any of the keys are duplicates or missing.
+    ///
+    /// # Note
+    ///
+    /// Note that this [`get_many_keys_value_mut`](DHashMap::get_many_keys_value_mut)
+    /// method return array of values `[(&'_ K1, &'_ K2, &'_ mut V); N]` only if each
+    /// of given two keys' `(&Q1, &Q2)` tuples exist and refer to the same `value`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut libraries = DHashMap::new();
+    /// libraries.insert("Bogazkoy archives", "Boğazkale", "1900 B.C.");
+    /// libraries.insert("Library of Ashurbanipal", "Mosul", "668 B.C.");
+    /// libraries.insert("Library of Alexandria", "Alexandria", "285 B.C.");
+    /// libraries.insert("Library of Antioch", "Antakya", "221 B.C.");
+    /// libraries.insert("Library of Pergamum", "Bergama", "197 B.C.");
+    ///
+    /// let got = libraries.get_many_keys_value_mut([
+    ///     ("Bogazkoy archives", "Boğazkale"),
+    ///     ("Library of Antioch", "Antakya"),
+    /// ]);
+    /// assert_eq!(
+    ///     got,
+    ///     Some([
+    ///         (&"Bogazkoy archives", &"Boğazkale", &mut "1900 B.C."),
+    ///         (&"Library of Antioch", &"Antakya", &mut "221 B.C.")
+    ///     ])
+    /// );
+    ///
+    /// // Missing keys result is None
+    /// let got = libraries.get_many_keys_value_mut([
+    ///     ("Bogazkoy archives", "Boğazkale"),
+    ///     ("Libraries of the Forum", "Rome"),
+    /// ]);
+    /// assert_eq!(got, None);
+    ///
+    /// // Duplicate keys result is None
+    /// let got = libraries.get_many_keys_value_mut([
+    ///     ("Bogazkoy archives", "Boğazkale"),
+    ///     ("Bogazkoy archives", "Boğazkale"),
+    /// ]);
+    /// assert_eq!(got, None);
+    ///
+    /// // Existing keys that refer to different values result is None
+    /// let got = libraries.get_many_keys_value_mut([
+    ///     ("Bogazkoy archives", "Mosul"),
+    ///     ("Library of Ashurbanipal", "Boğazkale"),
+    /// ]);
+    /// assert_eq!(got, None);
+    /// ```
     pub fn get_many_keys_value_mut<Q1, Q2, const N: usize>(
         &mut self,
         ks: [(&Q1, &Q2); N],
@@ -1402,6 +2793,52 @@ where
             .map(|arr| arr.map(|(ref k1, ref k2, v)| (k1, k2, v)))
     }
 
+    /// Attempts to get mutable references to `N` values in the map at once
+    /// using the given `N` first `K1` keys, with immutable references to the
+    /// corresponding `K1` and `K2` keys. This method does not validate that
+    /// the values are unique.
+    ///
+    /// Returns an array of length `N` with the results of each query.
+    /// `None` will be returned if any of the keys are missing.
+    ///
+    /// For a safe alternative see [`get_many_key1_value_mut`](`HashMap::get_many_key1_value_mut`).
+    ///
+    /// # Safety
+    ///
+    /// Calling this method with overlapping keys if they exist in map is
+    /// *[undefined behavior]* even if the resulting references are not used.
+    ///
+    /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut libraries = DHashMap::new();
+    /// libraries.insert("Bogazkoy archives", "Boğazkale", "1900 B.C.");
+    /// libraries.insert("Library of Ashurbanipal", "Mosul", "668 B.C.");
+    /// libraries.insert("Library of Alexandria", "Alexandria", "285 B.C.");
+    /// libraries.insert("Library of Antioch", "Antakya", "221 B.C.");
+    /// libraries.insert("Library of Pergamum", "Bergama", "197 B.C.");
+    ///
+    /// let got = unsafe {
+    ///     libraries.get_many_key1_value_unchecked_mut(["Bogazkoy archives", "Library of Antioch"])
+    /// };
+    /// assert_eq!(
+    ///     got,
+    ///     Some([
+    ///         (&"Bogazkoy archives", &"Boğazkale", &mut "1900 B.C."),
+    ///         (&"Library of Antioch", &"Antakya", &mut "221 B.C.")
+    ///     ])
+    /// );
+    ///
+    /// // Missing keys result in None
+    /// let got = unsafe {
+    ///     libraries.get_many_key1_value_unchecked_mut(["Bogazkoy archives", "Libraries of the Forum"])
+    /// };
+    /// assert_eq!(got, None);
+    /// ```
     pub unsafe fn get_many_key1_value_unchecked_mut<Q1, const N: usize>(
         &mut self,
         ks: [&Q1; N],
@@ -1413,6 +2850,48 @@ where
             .map(|arr| arr.map(|(ref k1, ref k2, v)| (k1, k2, v)))
     }
 
+    /// Attempts to get mutable references to `N` values in the map at once
+    /// using the given `N` second `K2` keys, with immutable references to the
+    /// corresponding `K1` and `K2` keys. This method does not validate that
+    /// the values are unique.
+    ///
+    /// Returns an array of length `N` with the results of each query.
+    /// `None` will be returned if any of the keys are missing.
+    ///
+    /// For a safe alternative see [`get_many_key2_value_mut`](`HashMap::get_many_key2_value_mut`).
+    ///
+    /// # Safety
+    ///
+    /// Calling this method with overlapping keys if they exist in map is
+    /// *[undefined behavior]* even if the resulting references are not used.
+    ///
+    /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut libraries = DHashMap::new();
+    /// libraries.insert("Bogazkoy archives", "Boğazkale", "1900 B.C.");
+    /// libraries.insert("Library of Ashurbanipal", "Mosul", "668 B.C.");
+    /// libraries.insert("Library of Alexandria", "Alexandria", "285 B.C.");
+    /// libraries.insert("Library of Antioch", "Antakya", "221 B.C.");
+    /// libraries.insert("Library of Pergamum", "Bergama", "197 B.C.");
+    ///
+    /// let got = unsafe { libraries.get_many_key2_value_unchecked_mut(["Boğazkale", "Antakya"]) };
+    /// assert_eq!(
+    ///     got,
+    ///     Some([
+    ///         (&"Bogazkoy archives", &"Boğazkale", &mut "1900 B.C."),
+    ///         (&"Library of Antioch", &"Antakya", &mut "221 B.C.")
+    ///     ])
+    /// );
+    ///
+    /// // Missing keys result in None
+    /// let got = unsafe { libraries.get_many_key2_value_unchecked_mut(["Boğazkale", "Rome"]) };
+    /// assert_eq!(got, None);
+    /// ```
     pub unsafe fn get_many_key2_value_unchecked_mut<Q2, const N: usize>(
         &mut self,
         ks: [&Q2; N],
@@ -1424,6 +2903,64 @@ where
             .map(|arr| arr.map(|(ref k1, ref k2, v)| (k1, k2, v)))
     }
 
+    /// Attempts to get mutable references to `N` values in the map at once
+    /// using the given `N` first `K1` and second `K2` keys, with immutable
+    /// references to the corresponding keys. This method does not validate that
+    /// the values are unique.
+    ///
+    /// Returns an array of length `N` with the results of each query.
+    /// `None` will be returned if any of the keys are missing.
+    ///
+    /// For a safe alternative see [`get_many_keys_value_mut`](`HashMap::get_many_keys_value_mut`).
+    ///
+    /// # Safety
+    ///
+    /// Calling this method with overlapping keys, if they both exist in map and refer
+    /// to the same value, is *[undefined behavior]* even if the resulting references
+    /// are not used.
+    ///
+    /// In other words this [`get_many_keys_value_unchecked_mut`](DHashMap::get_many_keys_value_unchecked_mut)
+    /// method return array of values `[(&'_ K1, &'_ K2, &'_ mut V); N]` only if each of given two keys'
+    /// `(&Q1, &Q2)` tuples exist and refer to the same `value`. For more information see
+    /// [`get_keys_value_mut`](DHashMap::get_keys_value_mut) method.
+    ///
+    /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut libraries = DHashMap::new();
+    /// libraries.insert("Bogazkoy archives", "Boğazkale", "1900 B.C.");
+    /// libraries.insert("Library of Ashurbanipal", "Mosul", "668 B.C.");
+    /// libraries.insert("Library of Alexandria", "Alexandria", "285 B.C.");
+    /// libraries.insert("Library of Antioch", "Antakya", "221 B.C.");
+    /// libraries.insert("Library of Pergamum", "Bergama", "197 B.C.");
+    ///
+    /// let got = unsafe {
+    ///     libraries.get_many_keys_value_unchecked_mut([
+    ///         ("Bogazkoy archives", "Boğazkale"),
+    ///         ("Library of Antioch", "Antakya"),
+    ///     ])
+    /// };
+    /// assert_eq!(
+    ///     got,
+    ///     Some([
+    ///         (&"Bogazkoy archives", &"Boğazkale", &mut "1900 B.C."),
+    ///         (&"Library of Antioch", &"Antakya", &mut "221 B.C.")
+    ///     ])
+    /// );
+    ///
+    /// // Missing keys result in None
+    /// let got = unsafe {
+    ///     libraries.get_many_keys_value_unchecked_mut([
+    ///         ("Bogazkoy archives", "Boğazkale"),
+    ///         ("Libraries of the Forum", "Rome"),
+    ///     ])
+    /// };
+    /// assert_eq!(got, None);
+    /// ```
     pub unsafe fn get_many_keys_value_unchecked_mut<Q1, Q2, const N: usize>(
         &mut self,
         ks: [(&Q1, &Q2); N],
@@ -1563,6 +3100,72 @@ where
             .get_many_unchecked_mut_from_iter::<N>(hashes_iter)
     }
 
+    /// Tries to insert given keys and value into the map. Update the value
+    /// if keys are already present and refer to the same value with returning
+    /// old value.
+    ///
+    /// If the map did not have these keys present, [`None`] is returned.
+    ///
+    /// If the map did have these key **present**, and **both keys refer to
+    /// the same value**, the value is updated, and the old value is returned
+    /// inside `Some(Ok(V))` variants. The key is not updated, though; this
+    /// matters for types that can be `==` without being identical.
+    /// See the [std module-level documentation] for more.
+    ///
+    /// The [`insert`](DHashMap::insert) method returns [`InsertError`] structure
+    /// (inside of `Some(Err(_))` variants):
+    /// - when `K1` key is vacant, but `K2` key already exists with some value;
+    /// - when `K1` key already exists with some value, but `K2` key is vacant;
+    /// - when both `K1` and `K2` keys already exist with some values, but
+    /// point to different entries (values).
+    ///
+    /// The above mentioned error kinds can be matched through the [`ErrorKind`] enum.
+    /// Returned [`InsertError`] structure also contains provided keys and value
+    /// that were not inserted and can be used for another purpose.
+    ///
+    /// [std module-level documentation]: std::collections#insert-and-complex-keys
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    /// use double_map::dhash_map::{InsertError, ErrorKind};
+    /// let mut map = DHashMap::new();
+    ///
+    /// // Returns None if keys are vacant
+    /// assert_eq!(map.insert(1, "a", "One"), None);
+    /// assert_eq!(map.is_empty(), false);
+    ///
+    /// // If the map did have these keys present, and both keys refer to
+    /// // the same value, the value is updated, and the old value is returned
+    /// // inside `Some(Ok(V))` variants
+    /// map.insert(2, "b", "Two");
+    /// assert_eq!(map.insert(2, "b", "Second"), Some(Ok("Two")));
+    /// assert_eq!(map.get_key1(&2), Some(&"Second"));
+    ///
+    /// // Returns `ErrorKind::OccupiedK1AndVacantK2` if key #1 already
+    /// // exists with some value, but key #2 is vacant. Error structure
+    /// // also contains provided keys and value
+    /// match map.insert(1, "c", "value") {
+    ///     Some(Err(InsertError{ error, keys, value })) => {
+    ///         assert_eq!(error, ErrorKind::OccupiedK1AndVacantK2);
+    ///         assert_eq!(keys, (1, "c"));
+    ///         assert_eq!(value, "value");
+    ///     }
+    ///     _ => unreachable!(),
+    /// }
+    ///
+    /// // Returns `ErrorKind::VacantK1AndOccupiedK2` if key #1 is vacant,
+    /// // but key #2 already exists with some value.
+    /// let error_kind = map.insert(3, "a", "value").unwrap().unwrap_err().error;
+    /// assert_eq!(error_kind, ErrorKind::VacantK1AndOccupiedK2);
+    ///
+    /// // Returns `ErrorKind::KeysPointsToDiffEntries` if both
+    /// // key #1 and key #2 already exist with some values,
+    /// // but point to different entries (values).
+    /// let error_kind = map.insert(1, "b", "value").unwrap().unwrap_err().error;
+    /// assert_eq!(error_kind, ErrorKind::KeysPointsToDiffEntries);
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn insert(&mut self, k1: K1, k2: K2, v: V) -> Option<Result<V, InsertError<K1, K2, V>>> {
         let hash_builder = &self.hash_builder;
@@ -1614,6 +3217,58 @@ where
         }
     }
 
+    /// Insert a keys-value tuple into the map without checking
+    /// if any (or both) of the keys already exists in the map.
+    ///
+    /// Returns a reference to the keys and mutable reference
+    /// to the value just inserted.
+    ///
+    /// This operation is safe if a keys does not exist in the map.
+    ///
+    /// However, if any of the keys exists in the map already, the behavior
+    /// is unspecified: this operation may panic, loop forever, or any
+    /// following operation with the map may panic, loop forever or return
+    /// arbitrary result.
+    ///
+    /// That said, this operation (and following operations) are guaranteed to
+    /// not violate memory safety.
+    ///
+    /// This operation is faster than regular insert, because it does not perform
+    /// lookup before insertion.
+    ///
+    /// This operation is useful during initial population of the map.
+    /// For example, when constructing a map from another map, we know
+    /// that keys are unique.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map1 = DHashMap::new();
+    /// assert_eq!(map1.insert(1, "a", "pony"), None);
+    /// assert_eq!(map1.insert(2, "b", "horse"), None);
+    /// assert_eq!(map1.insert(3, "c", "zebra"), None);
+    /// assert_eq!(map1.len(), 3);
+    ///
+    /// let mut map2 = DHashMap::new();
+    ///
+    /// for (k1, k2, value) in map1.into_iter() {
+    ///     map2.insert_unique_unchecked(k1, k2, value);
+    /// }
+    ///
+    /// let (k1, k2, value) = map2.insert_unique_unchecked(4, "d", "elk");
+    /// assert_eq!(k1, &4);
+    /// assert_eq!(k2, &"d");
+    /// assert_eq!(value, &mut "elk");
+    /// *value = "deer";
+    ///
+    /// assert_eq!(map2[&1], "pony");
+    /// assert_eq!(map2[&2], "horse");
+    /// assert_eq!(map2[&3], "zebra");
+    /// assert_eq!(map2[&4], "deer");
+    /// assert_eq!(map2.len(), 4);
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn insert_unique_unchecked(&mut self, k1: K1, k2: K2, v: V) -> (&K1, &K2, &mut V) {
         let hash_builder = &self.hash_builder;
@@ -1631,6 +3286,99 @@ where
         (k1, k2, v)
     }
 
+    /// Tries to insert given keys and value into the map, and returns
+    /// a mutable reference to the value in the entry if the map did not
+    /// have these keys present.
+    ///
+    /// If the map did have these keys **present**, and **both keys refer to
+    /// the same value**, ***nothing*** is updated, and a [`TryInsertError::Occupied`]
+    /// enum variant error containing [`OccupiedError`] structure is returned.
+    /// The [`OccupiedError`] contains the occupied entry [`OccupiedEntry`],
+    /// and the value that was not inserted.
+    ///
+    /// The [`try_insert`](DHashMap::try_insert) method return [`InsertError`] structure
+    /// (inside of [`TryInsertError::Insert`] variant):
+    /// - when `K1` key is vacant, but `K2` key already exists with some value;
+    /// - when `K1` key already exists with some value, but `K2` key is vacant;
+    /// - when both `K1` and `K2` keys already exist with some values, but
+    /// point to different entries (values).
+    ///
+    /// The above mentioned error kinds can be matched through the [`ErrorKind`] enum.
+    /// Returned [`InsertError`] structure also contains provided keys and value
+    /// that were not inserted and can be used for another purpose.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    /// use double_map::dhash_map::{TryInsertError, OccupiedError, InsertError, ErrorKind};
+    ///
+    ///
+    /// let mut map = DHashMap::new();
+    ///
+    /// // Returns mutable reference to the value if keys are vacant
+    /// let value = map.try_insert(1, "a", "One").unwrap();
+    /// assert_eq!(value, &"One");
+    /// *value = "First";
+    /// assert_eq!(map.get_key1(&1), Some(&"First"));
+    ///
+    /// // If the map did have these keys present, and both keys refer to
+    /// // the same value, nothing is updated, and the provided value
+    /// // is returned inside `Err(TryInsertError::Occupied(_))` variants
+    /// map.try_insert(2, "b", "Two");
+    /// match map.try_insert(2, "b", "Second") {
+    ///     Err(error) => match error {
+    ///         TryInsertError::Occupied(OccupiedError{ entry, value }) => {
+    ///             assert_eq!(entry.keys(), (&2, &"b"));
+    ///             assert_eq!(entry.get(), &"Two");
+    ///             assert_eq!(value, "Second");
+    ///         }
+    ///         _ => unreachable!(),
+    ///     }
+    ///     _ => unreachable!(),
+    /// }
+    /// assert_eq!(map.get_key1(&2), Some(&"Two"));
+    ///
+    /// // Returns `ErrorKind::OccupiedK1AndVacantK2` if `K1` key already
+    /// // exists with some value, but `K2` key is vacant. Error structure
+    /// // also contains provided keys and value
+    /// match map.try_insert(1, "c", "value") {
+    ///     Err(error) => match error {
+    ///         TryInsertError::Insert(InsertError{ error, keys, value }) => {
+    ///             assert_eq!(error, ErrorKind::OccupiedK1AndVacantK2);
+    ///             assert_eq!(keys, (1, "c"));
+    ///             assert_eq!(value, "value");
+    ///         }
+    ///         _ => unreachable!()
+    ///     }
+    ///     _ => unreachable!(),
+    /// }
+    ///
+    /// // Returns `ErrorKind::VacantK1AndOccupiedK2` if `K1` key is vacant,
+    /// // but `K2` key already exists with some value.
+    /// match map.try_insert(3, "a", "value") {
+    ///     Err(error) => match error {
+    ///         TryInsertError::Insert(InsertError{ error, .. }) => {
+    ///             assert_eq!(error, ErrorKind::VacantK1AndOccupiedK2);
+    ///         }
+    ///         _ => unreachable!()
+    ///     }
+    ///     _ => unreachable!(),
+    /// }
+    ///
+    /// // Returns `ErrorKind::KeysPointsToDiffEntries` if both
+    /// // `K1` and `K2` keys already exist with some values,
+    /// // but point to different entries (values).
+    /// match map.try_insert(1, "b", "value") {
+    ///     Err(error) => match error {
+    ///         TryInsertError::Insert(InsertError{ error, .. }) => {
+    ///             assert_eq!(error, ErrorKind::KeysPointsToDiffEntries);
+    ///         }
+    ///         _ => unreachable!()
+    ///     }
+    ///     _ => unreachable!(),
+    /// }
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn try_insert(
         &mut self,
@@ -1653,6 +3401,33 @@ where
         }
     }
 
+    /// Removes element from the map using a first key `K1`,
+    /// returning the value corresponding to the key if the key was
+    /// previously in the map. Keeps the allocated memory for reuse.
+    ///
+    /// The key may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the key type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// let mut map = DHashMap::new();
+    /// map.insert(1, "One", "Pony");
+    ///
+    /// // We can see that DHashMap holds one elements
+    /// assert_eq!(map.len(), 1);
+    ///
+    /// // We remove element with key `K1` from the map and get corresponding value
+    /// assert_eq!(map.remove_key1(&1), Some("Pony"));
+    /// // If we try to remove the same element with key `K1` twice we get None,
+    /// // because that element was already removed
+    /// assert_eq!(map.remove_key1(&1), None);
+    /// // And the map is empty
+    /// assert!(map.is_empty());
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn remove_key1<Q1: ?Sized>(&mut self, k1: &Q1) -> Option<V>
     where
@@ -1665,6 +3440,33 @@ where
         }
     }
 
+    /// Removes element from the map using a second key `K2`,
+    /// returning the value corresponding to the key if the key was
+    /// previously in the map. Keeps the allocated memory for reuse.
+    ///
+    /// The key may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the key type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// let mut map = DHashMap::new();
+    /// map.insert(1, "One", "Pony");
+    ///
+    /// // We can see that DHashMap holds one elements
+    /// assert_eq!(map.len(), 1);
+    ///
+    /// // We remove element with key `K1` from the map and get corresponding value
+    /// assert_eq!(map.remove_key2(&"One"), Some("Pony"));
+    /// // If we try to remove the same element with key `K1` twice we get None,
+    /// // because that element was already removed
+    /// assert_eq!(map.remove_key2(&"One"), None);
+    /// // And the map is empty
+    /// assert!(map.is_empty());
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn remove_key2<Q2: ?Sized>(&mut self, k2: &Q2) -> Option<V>
     where
@@ -1677,6 +3479,48 @@ where
         }
     }
 
+    /// Removes element from the map corresponding to the given first `K1`
+    /// and second `K2` keys returning the value at the keys, if the keys was
+    /// previously in the map and refer to the same value. Keeps the allocated
+    /// memory for reuse.
+    ///
+    /// The key may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the key type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// // We create map with three elements
+    /// let mut map = dhashmap! {
+    ///     1, "One"   => "Pony",
+    ///     2, "Two"   => "Horse",
+    ///     3, "Three" => "Zebra",
+    /// };
+    ///
+    /// // We can see that DHashMap holds three elements
+    /// assert_eq!(map.len(), 3);
+    ///
+    /// // We remove element from the map and get corresponding value
+    /// assert_eq!(map.remove_keys(&1, &"One"), Some("Pony"));
+    ///
+    /// // If we try to remove the same element with these keys twice we get
+    /// // None, because that element was already removed
+    /// assert_eq!(map.remove_keys(&1, &"One"), None);
+    ///
+    /// // And the map contains two element
+    /// assert_eq!(map.len(), 2);
+    ///
+    /// // We get None if both keys don't exist in the map
+    /// assert_eq!(map.remove_keys(&4, &"Four"), None);
+    ///
+    /// // Also we get None if both keys exist but refer to the different value
+    /// assert_eq!(map.remove_keys(&2, &"Three"), None);
+    /// assert_eq!(map.get_key1(&2), Some(&"Horse"));
+    /// assert_eq!(map.get_key2(&"Three"), Some(&"Zebra"));
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn remove_keys<Q1, Q2>(&mut self, k1: &Q1, k2: &Q2) -> Option<V>
     where
@@ -1689,6 +3533,34 @@ where
         }
     }
 
+    /// Removes element from the map using a first key `K1`,
+    /// returning the stored keys and value if the key was
+    /// previously in the map. Keeps the allocated memory
+    /// for reuse.
+    ///
+    /// The key may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the key type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// let mut map = DHashMap::new();
+    /// map.insert(1, "One", "Pony");
+    ///
+    /// // We can see that DHashMap holds one elements
+    /// assert_eq!(map.len(), 1);
+    ///
+    /// // We remove element with key `K1` from the map and get corresponding value
+    /// assert_eq!(map.remove_entry_key1(&1), Some((1, "One", "Pony")));
+    /// // If we try to remove the same element with key `K1` twice we get None,
+    /// // because that element was already removed
+    /// assert_eq!(map.remove_entry_key1(&1), None);
+    /// // And the map is empty
+    /// assert!(map.is_empty());
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn remove_entry_key1<Q1: ?Sized>(&mut self, k1: &Q1) -> Option<(K1, K2, V)>
     where
@@ -1706,6 +3578,34 @@ where
         }
     }
 
+    /// Removes element from the map using a second key `K2`,
+    /// returning the stored keys and value if the key was
+    /// previously in the map. Keeps the allocated memory
+    /// for reuse.
+    ///
+    /// The key may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the key type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// let mut map = DHashMap::new();
+    /// map.insert(1, "One", "Pony");
+    ///
+    /// // We can see that DHashMap holds one elements
+    /// assert_eq!(map.len(), 1);
+    ///
+    /// // We remove element with key `K1` from the map and get corresponding value
+    /// assert_eq!(map.remove_entry_key2(&"One"), Some((1, "One", "Pony")));
+    /// // If we try to remove the same element with key `K1` twice we get None,
+    /// // because that element was already removed
+    /// assert_eq!(map.remove_entry_key2(&"One"), None);
+    /// // And the map is empty
+    /// assert!(map.is_empty());
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn remove_entry_key2<Q2: ?Sized>(&mut self, k2: &Q2) -> Option<(K1, K2, V)>
     where
@@ -1715,6 +3615,48 @@ where
         self.table.remove_entry_h2(hash2, equivalent_key2(k2))
     }
 
+    /// Removes element from the map corresponding to the given first `K1`
+    /// and second `K2` keys returning the stored keys and value, if the keys was
+    /// previously in the map and refer to the same value. Keeps the allocated
+    /// memory for reuse.
+    ///
+    /// The key may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the key type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// // We create map with three elements
+    /// let mut map = dhashmap! {
+    ///     1, "One"   => "Pony",
+    ///     2, "Two"   => "Horse",
+    ///     3, "Three" => "Zebra",
+    /// };
+    ///
+    /// // We can see that DHashMap holds three elements
+    /// assert_eq!(map.len(), 3);
+    ///
+    /// // We remove element from the map and get corresponding value
+    /// assert_eq!(map.remove_entry_keys(&1, &"One"), Some((1, "One", "Pony")));
+    ///
+    /// // If we try to remove the same element with these keys twice we get
+    /// // None, because that element was already removed
+    /// assert_eq!(map.remove_entry_keys(&1, &"One"), None);
+    ///
+    /// // And the map contains two element
+    /// assert_eq!(map.len(), 2);
+    ///
+    /// // We get None if both keys don't exist in the map
+    /// assert_eq!(map.remove_entry_keys(&4, &"Four"), None);
+    ///
+    /// // Also we get None if both keys exist but refer to the different value
+    /// assert_eq!(map.remove_entry_keys(&2, &"Three"), None);
+    /// assert_eq!(map.get_key1(&2), Some(&"Horse"));
+    /// assert_eq!(map.get_key2(&"Three"), Some(&"Zebra"));
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn remove_entry_keys<Q1, Q2>(&mut self, k1: &Q1, k2: &Q2) -> Option<(K1, K2, V)>
     where
@@ -1730,6 +3672,153 @@ where
 }
 
 impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
+    /// Creates a raw entry builder for the HashMap.
+    ///
+    /// Raw entries provide the lowest level of control for searching and
+    /// manipulating a map. They must be manually initialized with a hash and
+    /// then manually searched. After this, insertions into a vacant entry
+    /// still require an owned key to be provided.
+    ///
+    /// Raw entries are useful for such exotic situations as:
+    ///
+    /// * Hash memoization
+    /// * Deferring the creation of an owned key until it is known to be required
+    /// * Using a search key that doesn't work with the Borrow trait
+    /// * Using custom comparison logic without newtype wrappers
+    ///
+    /// Because raw entries provide much more low-level control, it's much easier
+    /// to put the HashMap into an inconsistent state which, while memory-safe,
+    /// will cause the map to produce seemingly random results. Higher-level and
+    /// more foolproof APIs like `entry` should be preferred when possible.
+    ///
+    /// In particular, the hash used to initialized the raw entry must still be
+    /// consistent with the hash of the key that is ultimately stored in the entry.
+    /// This is because implementations of HashMap may need to recompute hashes
+    /// when resizing, at which point only the keys are available.
+    ///
+    /// Raw entries give mutable access to the keys. This must not be used
+    /// to modify how the key would compare or hash, as the map will not re-evaluate
+    /// where the key should go, meaning the keys may become "lost" if their
+    /// location does not reflect their state. For instance, if you change a key
+    /// so that the map now contains keys which compare equal, search may start
+    /// acting erratically, with two keys randomly masking each other. Implementations
+    /// are free to assume this doesn't happen (within the limits of memory-safety).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use core::hash::{BuildHasher, Hash};
+    /// use double_map::dhash_map::{DHashMap, ErrorKind, RawEntryMut};
+    ///
+    /// let mut map = DHashMap::new();
+    /// map.extend([("a", "one", 100), ("b", "two", 200), ("c", "three", 300)]);
+    ///
+    /// fn compute_hash<K: Hash + ?Sized, S: BuildHasher>(hash_builder: &S, key: &K) -> u64 {
+    ///     use core::hash::Hasher;
+    ///     let mut state = hash_builder.build_hasher();
+    ///     key.hash(&mut state);
+    ///     state.finish()
+    /// }
+    ///
+    /// // Existing key (insert and update)
+    /// match map.raw_entry_mut().from_keys(&"a", &"one") {
+    ///     Ok(raw_entry) => match raw_entry {
+    ///         RawEntryMut::Vacant(_) => panic!(),
+    ///         RawEntryMut::Occupied(mut view) => {
+    ///             assert_eq!(view.get(), &100);
+    ///             let v = view.get_mut();
+    ///             let new_v = (*v) * 10;
+    ///             *v = new_v;
+    ///             assert_eq!(view.insert(1111), 1000);
+    ///         }
+    ///     },
+    ///     Err(_) => panic!(),
+    /// }
+    ///
+    /// assert_eq!(map[&"a"], 1111);
+    /// assert_eq!(map.len(), 3);
+    ///
+    /// // Existing key (take)
+    /// let hash1 = compute_hash(map.hasher(), &"c");
+    /// let hash2 = compute_hash(map.hasher(), &"three");
+    /// match map
+    ///     .raw_entry_mut()
+    ///     .from_keys_hashed_nocheck(hash1, &"c", hash2, &"three")
+    /// {
+    ///     Ok(raw_entry) => match raw_entry {
+    ///         RawEntryMut::Vacant(_) => panic!(),
+    ///         RawEntryMut::Occupied(view) => {
+    ///             assert_eq!(view.remove_entry(), ("c", "three", 300));
+    ///         }
+    ///     },
+    ///     Err(_) => panic!(),
+    /// }
+    /// assert_eq!(map.raw_entry().from_keys(&"c", &"three"), None);
+    /// assert_eq!(map.len(), 2);
+    ///
+    /// // Nonexistent key (insert and update)
+    /// let key1 = "d";
+    /// let hash1 = compute_hash(map.hasher(), &key1);
+    /// let key2 = "four";
+    /// let hash2 = compute_hash(map.hasher(), &key2);
+    /// match map
+    ///     .raw_entry_mut()
+    ///     .from_hash(hash1, |q| *q == key1, hash2, |q| *q == key2)
+    /// {
+    ///     Ok(raw_entry) => match raw_entry {
+    ///         RawEntryMut::Occupied(_) => panic!(),
+    ///         RawEntryMut::Vacant(view) => {
+    ///             let (k1, k2, value) = view.insert("d", "four", 4000);
+    ///             assert_eq!((*k1, *k2, *value), ("d", "four", 4000));
+    ///             *value = 40000;
+    ///         }
+    ///     },
+    ///     Err(_) => panic!(),
+    /// }
+    /// assert_eq!(map[&"d"], 40000);
+    /// assert_eq!(map.len(), 3);
+    ///
+    /// match map
+    ///     .raw_entry_mut()
+    ///     .from_hash(hash1, |q| *q == key1, hash2, |q| *q == key2)
+    /// {
+    ///     Ok(raw_entry) => match raw_entry {
+    ///         RawEntryMut::Vacant(_) => unreachable!(),
+    ///         RawEntryMut::Occupied(view) => {
+    ///             assert_eq!(view.remove_entry(), ("d", "four", 40000));
+    ///         }
+    ///     },
+    ///     Err(_) => panic!(),
+    /// }
+    /// assert_eq!(map.get_key1(&"d"), None);
+    /// assert_eq!(map.len(), 2);
+    ///
+    /// // Return `ErrorKind::OccupiedK1AndVacantK2` if `K1` key already
+    /// // exists with some value, but `K2` key is vacant.
+    /// let error_kind = map.raw_entry_mut().from_keys("a", "five").unwrap_err();
+    /// assert_eq!(error_kind, ErrorKind::OccupiedK1AndVacantK2);
+    ///
+    /// // Return `ErrorKind::VacantK1AndOccupiedK2` if `K1` key is vacant,
+    /// // but `K2` key already exists with some value.
+    /// let hash1 = compute_hash(map.hasher(), &"e");
+    /// let hash2 = compute_hash(map.hasher(), &"two");
+    /// let error_kind = map
+    ///     .raw_entry_mut()
+    ///     .from_keys_hashed_nocheck(hash1, "e", hash2, "two")
+    ///     .unwrap_err();
+    /// assert_eq!(error_kind, ErrorKind::VacantK1AndOccupiedK2);
+    ///
+    /// // Return `ErrorKind::KeysPointsToDiffEntries` if both
+    /// // `K1` key and `K2` key already exist with some values,
+    /// // but point to different entries (values).
+    /// let hash1 = compute_hash(map.hasher(), &"a");
+    /// let hash2 = compute_hash(map.hasher(), &"two");
+    /// let error_kind = map
+    ///     .raw_entry_mut()
+    ///     .from_hash(hash1, |q| *q == "a", hash2, |q| *q == "two")
+    ///     .unwrap_err();
+    /// assert_eq!(error_kind, ErrorKind::KeysPointsToDiffEntries);
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn raw_entry_mut(&mut self) -> RawEntryBuilderMut<'_, K1, K2, V, S, A> {
         RawEntryBuilderMut { map: self }

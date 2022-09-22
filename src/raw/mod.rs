@@ -319,7 +319,8 @@ impl TableLayout {
 
         // We need an additional check to ensure that the allocation doesn't
         // exceed `isize::MAX` (https://github.com/rust-lang/rust/pull/95295).
-        if len > isize::MAX as usize { // - (align - 1) {
+        if len > isize::MAX as usize {
+            // - (align - 1) {
             return None;
         }
 
@@ -396,7 +397,7 @@ impl<T> RawTable<T, Global> {
 
     /// Attempts to allocate a new hash table with at least enough capacity
     /// for inserting the given number of elements without reallocating.
-    // #[cfg(feature = "raw")]
+    #[cfg(feature = "raw")]
     pub fn try_with_capacity(capacity: usize) -> Result<Self, TryReserveError> {
         Self::try_with_capacity_in(capacity, Global)
     }
@@ -474,7 +475,7 @@ impl<T, A: Allocator + Clone> RawTable<T, A> {
     ///
     /// All control bytes for `data buckets` and `pointer buckets` are
     /// initialized as `empty`.
-    // #[cfg(feature = "raw")]
+    #[cfg(feature = "raw")]
     pub fn try_with_capacity_in(capacity: usize, alloc: A) -> Result<Self, TryReserveError> {
         Self::fallible_with_capacity(alloc, capacity, Fallibility::Fallible)
     }
@@ -582,7 +583,7 @@ impl<T, A: Allocator + Clone> RawTable<T, A> {
     // the "last" index actually one less than the given "buckets" number,
     // i.e. "last = buckets - 1".
     #[inline]
-    // #[cfg(feature = "nightly")]
+    #[cfg(feature = "nightly")]
     pub unsafe fn data_start(&self) -> *mut T {
         self.data_end().as_ptr().wrapping_sub(self.buckets())
     }
@@ -613,7 +614,7 @@ impl<T, A: Allocator + Clone> RawTable<T, A> {
     // the "last" index actually one less than the given "buckets" number,
     // i.e. "last = buckets - 1".
     #[inline]
-    // #[cfg(feature = "nightly")]
+    #[cfg(feature = "nightly")]
     pub unsafe fn pointers_start(&self) -> *mut DataBucket<T> {
         self.pointers_end().as_ptr().wrapping_sub(self.buckets())
     }
@@ -751,6 +752,7 @@ impl<T, A: Allocator + Clone> RawTable<T, A> {
     ///
     /// Do not use copies of the [`DataBucket<T>`] and the [`PointerBucket<DataBucket<T>>`]
     /// to the same element `T` after calling this function.
+    #[cfg(feature = "raw")]
     #[cfg_attr(feature = "inline-more", inline)]
     #[allow(clippy::needless_pass_by_value)]
     pub(crate) unsafe fn erase_with_both(
@@ -795,7 +797,7 @@ impl<T, A: Allocator + Clone> RawTable<T, A> {
     ///
     /// Do not use copies of the [`DataBucket<T>`] and the [`PointerBucket<DataBucket<T>>`]
     /// to the same element `T` after calling this function.
-    // #[cfg(feature = "raw")]
+    #[cfg(feature = "raw")]
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn erase_entry<F1, F2>(&mut self, hash1: u64, eq1: F1, hash2: u64, eq2: F2) -> bool
     where
@@ -818,7 +820,7 @@ impl<T, A: Allocator + Clone> RawTable<T, A> {
     ///
     /// Do not use copies of the [`DataBucket<T>`] and the [`PointerBucket<DataBucket<T>>`]
     /// to the same element `T` after calling this function.
-    // #[cfg(feature = "raw")]
+    #[cfg(feature = "raw")]
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn erase_entry_h2<F1, F2>(&mut self, hash2: u64, eq2: F2) -> bool
     where
@@ -1210,7 +1212,7 @@ impl<T, A: Allocator + Clone> RawTable<T, A> {
     /// check has passed, the [`try_insert_no_grow`](RawTable::try_insert_no_grow) function cannot be used.
     /// Instead, you should get a mutable reference to an element and change the
     /// element through this reference.
-    // #[cfg(feature = "raw")]
+    #[cfg(feature = "raw")]
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn try_insert_no_grow(
         &mut self,
@@ -1359,7 +1361,7 @@ impl<T, A: Allocator + Clone> RawTable<T, A> {
     /// Instead, you should get a mutable reference to an element and change the
     /// element through this reference.
     #[cfg_attr(feature = "inline-more", inline)]
-    // #[cfg(any(feature = "raw", feature = "rustc-internal-api"))]
+    #[cfg(feature = "raw")]
     pub unsafe fn insert_no_grow(
         &mut self,
         hash_1: u64,
@@ -1618,6 +1620,7 @@ impl<T, A: Allocator + Clone> RawTable<T, A> {
     /// is not equal to the given `const N`.
     ///
     /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
+    #[allow(clippy::explicit_counter_loop)]
     pub unsafe fn get_many_mut_from_h1_iter<const N: usize>(
         &mut self,
         hash1_iter: impl Iterator<Item = (u64, impl FnMut(&T) -> bool)>,
@@ -1695,6 +1698,7 @@ impl<T, A: Allocator + Clone> RawTable<T, A> {
     /// in the table.
     ///
     /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
+    #[allow(clippy::explicit_counter_loop)]
     unsafe fn get_many_mut_pointers_from_h1_iter<const N: usize>(
         &mut self,
         hash1_iter: impl Iterator<Item = (u64, impl FnMut(&T) -> bool)>,
@@ -1747,6 +1751,7 @@ impl<T, A: Allocator + Clone> RawTable<T, A> {
     /// is not equal to the given `const N`.
     ///
     /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
+    #[allow(clippy::explicit_counter_loop)]
     pub unsafe fn get_many_mut_from_h2_iter<const N: usize>(
         &mut self,
         hash2_iter: impl Iterator<Item = (u64, impl FnMut(&T) -> bool)>,
@@ -1824,6 +1829,7 @@ impl<T, A: Allocator + Clone> RawTable<T, A> {
     /// in the table.
     ///
     /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
+    #[allow(clippy::explicit_counter_loop)]
     unsafe fn get_many_mut_pointers_from_h2_iter<const N: usize>(
         &mut self,
         hash2_iter: impl Iterator<Item = (u64, impl FnMut(&T) -> bool)>,
@@ -1876,6 +1882,7 @@ impl<T, A: Allocator + Clone> RawTable<T, A> {
     /// - if given iterator length is not equal to the given `const N`.
     ///
     /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
+    #[allow(clippy::explicit_counter_loop)]
     pub unsafe fn get_many_mut_from_iter<const N: usize>(
         &mut self,
         hashes_iter: impl Iterator<Item = (u64, impl FnMut(&T) -> bool, u64, impl FnMut(&T) -> bool)>,
@@ -1955,6 +1962,7 @@ impl<T, A: Allocator + Clone> RawTable<T, A> {
     /// in the table.
     ///
     /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
+    #[allow(clippy::explicit_counter_loop)]
     unsafe fn get_many_mut_pointers_from_iter<const N: usize>(
         &mut self,
         hashes_iter: impl Iterator<Item = (u64, impl FnMut(&T) -> bool, u64, impl FnMut(&T) -> bool)>,
@@ -2023,6 +2031,7 @@ impl<T, A: Allocator + Clone> RawTable<T, A> {
     ///
     /// The caller must ensure `index` is less than the number of buckets.
     #[inline]
+    #[cfg(feature = "raw")]
     pub unsafe fn is_data_bucket_full(&self, index: usize) -> bool {
         self.table.is_data_bucket_full(index)
     }
@@ -2033,6 +2042,7 @@ impl<T, A: Allocator + Clone> RawTable<T, A> {
     ///
     /// The caller must ensure `index` is less than the number of buckets.
     #[inline]
+    #[cfg(feature = "raw")]
     pub unsafe fn is_pointer_bucket_full(&self, index: usize) -> bool {
         self.table.is_pointer_bucket_full(index)
     }
@@ -2135,6 +2145,7 @@ impl<T, A: Allocator + Clone> RawTable<T, A> {
     ///
     /// It is up to the caller to ensure that the iterator is valid for this
     /// `RawTable` and covers all items that remain in the table.
+    #[cfg(feature = "raw")]
     pub unsafe fn into_pointer_iter_from(
         self,
         iter: RawPointerIter<T>,
@@ -2157,6 +2168,7 @@ impl<T, A: Allocator + Clone> RawTable<T, A> {
     ///
     /// It is up to the caller to ensure that the iterator is valid for this
     /// `RawTable` and covers all items that remain in the table.
+    #[cfg(feature = "raw")]
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn into_pointer_iter(self) -> RawIntoPointerIter<T, A> {
         unsafe {
@@ -2374,7 +2386,7 @@ impl<T: Clone, A: Allocator + Clone> RawTable<T, A> {
     }
 
     /// Variant of `clone_from` to use when a hasher is available.
-    // #[cfg(feature = "raw")]
+    #[cfg(feature = "raw")]
     pub fn clone_from_with_hasher<F1, F2>(&mut self, source: &Self, hasher_1: F1, hasher_2: F2)
     where
         F1: Fn(&T) -> u64,
@@ -2662,6 +2674,7 @@ impl<A: Allocator + Clone> RawTableInner<A> {
     /// [`find_pointer_insert_slot`]: RawTableInner::find_pointer_insert_slot
     /// [`set_pointers_ctrl_h2`]: RawTableInner::set_pointers_ctrl_h2
     ///
+    #[cfg(feature = "raw")]
     #[inline]
     unsafe fn prepare_data_insert_slot_return_old_byte(&self, hash_1: u64) -> (usize, u8) {
         let index = self.find_data_insert_slot(hash_1);
@@ -2716,6 +2729,7 @@ impl<A: Allocator + Clone> RawTableInner<A> {
     /// [`prepare_data_insert_slot`]: RawTableInner::prepare_data_insert_slot
     /// [`find_data_insert_slot`]: RawTableInner::find_data_insert_slot
     /// [`set_ctrl_h2`]: RawTableInner::set_ctrl_h2
+    #[cfg(feature = "raw")]
     #[inline]
     unsafe fn prepare_pointer_insert_slot_return_old_byte(&self, hash_2: u64) -> (usize, u8) {
         let index = self.find_pointer_insert_slot(hash_2);
@@ -3116,7 +3130,7 @@ impl<A: Allocator + Clone> RawTableInner<A> {
     /// This function doesn't check existance of any `data` or `pointer`
     /// elements in the table, so the caller of this function must check
     /// that by themself.
-    // #[cfg(feature = "raw")]
+    #[cfg(feature = "raw")]
     #[inline]
     unsafe fn prepare_insert_no_grow(
         &mut self,
@@ -3315,6 +3329,7 @@ impl<A: Allocator + Clone> RawTableInner<A> {
     ///
     /// The caller must ensure `index` is less than the number of buckets.
     #[inline]
+    #[cfg(feature = "raw")]
     unsafe fn is_data_bucket_full(&self, index: usize) -> bool {
         debug_assert!(index < self.buckets());
         is_full(*self.data_ctrl(index))
@@ -3326,6 +3341,7 @@ impl<A: Allocator + Clone> RawTableInner<A> {
     ///
     /// The caller must ensure `index` is less than the number of buckets.
     #[inline]
+    #[cfg(feature = "raw")]
     unsafe fn is_pointer_bucket_full(&self, index: usize) -> bool {
         debug_assert!(index < self.buckets());
         is_full(*self.pointers_ctrl(index))
@@ -3752,7 +3768,7 @@ impl<T> RawDataIterRange<T> {
     /// Returns `None` if the remaining range is smaller than or equal to the
     /// group width.
     #[cfg_attr(feature = "inline-more", inline)]
-    // #[cfg(feature = "rayon")]
+    #[cfg(feature = "rayon")]
     pub(crate) fn split(mut self) -> (Self, Option<RawDataIterRange<T>>) {
         unsafe {
             if self.end <= self.next_ctrl {
@@ -3907,7 +3923,7 @@ impl<T> RawDataIter<T> {
     ///
     /// This method should be called _before_ the removal is made. It is not necessary to call this
     /// method if you are removing an item that this iterator yielded in the past.
-    // #[cfg(feature = "raw")]
+    #[cfg(feature = "raw")]
     pub fn reflect_remove(&mut self, b: &DataBucket<T>) {
         self.reflect_toggle_full(b, false);
     }
@@ -3921,13 +3937,13 @@ impl<T> RawDataIter<T> {
     /// index than the last one yielded will be reflected in the iterator.
     ///
     /// This method should be called _after_ the given insert is made.
-    // #[cfg(feature = "raw")]
+    #[cfg(feature = "raw")]
     pub fn reflect_insert(&mut self, b: &DataBucket<T>) {
         self.reflect_toggle_full(b, true);
     }
 
     /// Refresh the iterator so that it reflects a change to the state of the given bucket.
-    // #[cfg(feature = "raw")]
+    #[cfg(feature = "raw")]
     fn reflect_toggle_full(&mut self, b: &DataBucket<T>, is_insert: bool) {
         unsafe {
             if b.as_ptr() > self.iter.data.as_ptr() {
@@ -4139,7 +4155,7 @@ impl<T> RawPointerIterRange<T> {
     /// Returns `None` if the remaining range is smaller than or equal to the
     /// group width.
     #[cfg_attr(feature = "inline-more", inline)]
-    // #[cfg(feature = "rayon")]
+    #[cfg(feature = "rayon")]
     pub(crate) fn split(mut self) -> (Self, Option<RawPointerIterRange<T>>) {
         unsafe {
             if self.end <= self.next_ctrl {
@@ -4294,7 +4310,7 @@ impl<T> RawPointerIter<T> {
     ///
     /// This method should be called _before_ the removal is made. It is not necessary to call this
     /// method if you are removing an item that this iterator yielded in the past.
-    // #[cfg(feature = "raw")]
+    #[cfg(feature = "raw")]
     pub fn reflect_remove(&mut self, b: &PointerBucket<DataBucket<T>>) {
         self.reflect_toggle_full(b, false);
     }
@@ -4308,13 +4324,13 @@ impl<T> RawPointerIter<T> {
     /// index than the last one yielded will be reflected in the iterator.
     ///
     /// This method should be called _after_ the given insert is made.
-    // #[cfg(feature = "raw")]
+    #[cfg(feature = "raw")]
     pub fn reflect_insert(&mut self, b: &PointerBucket<DataBucket<T>>) {
         self.reflect_toggle_full(b, true);
     }
 
     /// Refresh the iterator so that it reflects a change to the state of the given bucket.
-    // #[cfg(feature = "raw")]
+    #[cfg(feature = "raw")]
     fn reflect_toggle_full(&mut self, b: &PointerBucket<DataBucket<T>>, is_insert: bool) {
         unsafe {
             if b.as_ptr() > self.iter.ptr_to_data.as_ptr() {
@@ -4530,6 +4546,7 @@ pub struct RawIntoPointerIter<T, A: Allocator + Clone = Global> {
     alloc: A,
 }
 
+#[cfg(feature = "raw")]
 impl<T, A: Allocator + Clone> RawIntoPointerIter<T, A> {
     /// Returns an iterator over every element `T` in the table / [`RawIntoPointerIter`].
     /// It is up to the caller to ensure that the [`RawIntoPointerIter`] outlives the [`RawPointerIter`].

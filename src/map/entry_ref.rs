@@ -206,9 +206,10 @@ where
     }
 }
 
-impl<'a, 'b, K1, Q1: ?Sized, K2, Q2: ?Sized, V: Default, S, A> EntryRef<'a, 'b, K1, Q1, K2, Q2, V, S, A>
+impl<'a, 'b, K1, Q1: ?Sized, K2, Q2: ?Sized, V: Default, S, A>
+    EntryRef<'a, 'b, K1, Q1, K2, Q2, V, S, A>
 where
-    A: Allocator + Clone
+    A: Allocator + Clone,
 {
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn or_default(self) -> &'a mut V
@@ -549,7 +550,8 @@ where
     }
 }
 
-impl<'a, 'b, K1, Q1: ?Sized, K2, Q2: ?Sized, V, S, A> VacantEntryRef<'a, 'b, K1, Q1, K2, Q2, V, S, A>
+impl<'a, 'b, K1, Q1: ?Sized, K2, Q2: ?Sized, V, S, A>
+    VacantEntryRef<'a, 'b, K1, Q1, K2, Q2, V, S, A>
 where
     A: Allocator + Clone,
 {

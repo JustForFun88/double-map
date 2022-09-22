@@ -2308,8 +2308,6 @@ fn test_drops() {
 
 #[test]
 fn test_into_iter_drops() {
-    use crate::raw::RawIntoPointerIter;
-
     DROP_VECTOR.with(|v| {
         *v.borrow_mut() = vec![0; 200];
     });
@@ -2369,6 +2367,16 @@ fn test_into_iter_drops() {
         for i in 0..200 {
             assert_eq!(v.borrow()[i], 0);
         }
+    });
+}
+
+#[cfg(feature = "raw")]
+#[test]
+fn test_into_pointer_iter_drops() {
+    use crate::raw::RawIntoPointerIter;
+
+    DROP_VECTOR.with(|v| {
+        *v.borrow_mut() = vec![0; 200];
     });
 
     let hm = {
@@ -2995,15 +3003,6 @@ fn test_empty_entry_ref() {
 
 #[test]
 fn test_empty_iter() {
-    use crate::raw::RawIntoPointerIter;
-
-    fn into_pointer_iter<K1, K2, V, S, A: Allocator + Clone>(
-        map: DHashMap<K1, K2, V, S, A>,
-    ) -> RawIntoPointerIter<(K1, K2, V), A> {
-        let DHashMap { table, .. } = map;
-        table.into_pointer_iter()
-    }
-
     let mut m: DHashMap<i32, i32, bool> = DHashMap::new();
     assert_eq!(m.drain().next(), None);
     assert_eq!(m.drain_filter(|_k1, _k2, _v| true).next(), None);
@@ -3033,7 +3032,19 @@ fn test_empty_iter() {
 
     assert!(m.is_empty());
     assert_eq!(m.into_iter().next(), None);
+}
 
+#[cfg(feature = "raw")]
+#[test]
+fn test_empty_into_pointer_iter() {
+    use crate::raw::RawIntoPointerIter;
+
+    fn into_pointer_iter<K1, K2, V, S, A: Allocator + Clone>(
+        map: DHashMap<K1, K2, V, S, A>,
+    ) -> RawIntoPointerIter<(K1, K2, V), A> {
+        let DHashMap { table, .. } = map;
+        table.into_pointer_iter()
+    }
     let m: DHashMap<i32, i32, bool> = DHashMap::new();
     assert_eq!(into_pointer_iter(m).next(), None);
 
@@ -4371,6 +4382,7 @@ fn test_into_values() {
     assert!(values.contains(&"Three"));
 }
 
+#[cfg(feature = "raw")]
 #[test]
 fn test_into_pointer_iter() {
     use crate::raw::RawIntoPointerIter;
@@ -7799,101 +7811,103 @@ fn test_key_without_hash_impl() {
     }
 }
 
-// #[test]
-// fn test_into_iter_refresh() {
-//     #[cfg(miri)]
-//     const N: usize = 32;
-//     #[cfg(not(miri))]
-//     const N: usize = 128;
+#[test]
+#[cfg(feature = "raw")]
+fn test_into_iter_refresh() {
+    #[cfg(miri)]
+    const N: usize = 32;
+    #[cfg(not(miri))]
+    const N: usize = 128;
 
-//     let mut rng = rand::thread_rng();
-//     for n in 0..N {
-//         let mut map = DHashMap::new();
-//         for i in 0..n {
-//             assert!(map.insert(i, i, 2 * i).is_none());
-//         }
-//         let hash_builder = map.hasher().clone();
+    let mut rng = rand::thread_rng();
+    for n in 0..N {
+        let mut map = DHashMap::new();
+        for i in 0..n {
+            assert!(map.insert(i, i, 2 * i).is_none());
+        }
+        let hash_builder = map.hasher().clone();
 
-//         let mut it = unsafe { map.table.iter() };
-//         assert_eq!(it.len(), n);
+        let mut it = unsafe { map.table.iter() };
+        assert_eq!(it.len(), n);
 
-//         let mut i = 0;
-//         let mut left = n;
-//         let mut removed_v = Vec::new();
-//         loop {
-//             // occasionally remove some elements
-//             if i < n && rng.gen_bool(0.1) {
-//                 let hash = super::make_insert_hash(&hash_builder, &i);
+        let mut i = 0;
+        let mut left = n;
+        let mut removed_v = Vec::new();
+        loop {
+            // occasionally remove some elements
+            if i < n && rng.gen_bool(0.1) {
+                let hash = super::make_insert_hash(&hash_builder, &i);
 
-//                 unsafe {
-//                     let bucket_v = map.table.find_h1(hash, |q| q.0.eq(&i));
-//                     let bucket_k = map.table.find_h2(hash, |q| q.1.eq(&i));
+                unsafe {
+                    let bucket_v = map.table.find_h1(hash, |q| q.0.eq(&i));
+                    let bucket_k = map.table.find_h2(hash, |q| q.1.eq(&i));
 
-//                     match (bucket_v, bucket_k) {
-//                         (Some(bucket_v), Some(bucket_k)) => {
-//                             it.reflect_remove(&bucket_v);
-//                             let t_v = map.table.remove(bucket_k);
-//                             removed_v.push(t_v);
+                    match (bucket_v, bucket_k) {
+                        (Some(bucket_v), Some(bucket_k)) => {
+                            it.reflect_remove(&bucket_v);
+                            let t_v = map.table.remove(bucket_k);
+                            removed_v.push(t_v);
 
-//                             left -= 1;
-//                         }
+                            left -= 1;
+                        }
 
-//                         (None, None) => {
-//                             assert!(
-//                                 removed_v.contains(&(i, i, 2 * i)),
-//                                 "{} not in {:?}",
-//                                 i,
-//                                 removed_v
-//                             );
+                        (None, None) => {
+                            assert!(
+                                removed_v.contains(&(i, i, 2 * i)),
+                                "{} not in {:?}",
+                                i,
+                                removed_v
+                            );
 
-//                             let (bucket_v, bucket_k) = map.table.insert(
-//                                 hash,
-//                                 hash,
-//                                 (i, i, 2 * i),
-//                                 super::make_hasher_key1::<usize, usize, usize, _>(&hash_builder),
-//                                 super::make_hasher_key2::<usize, usize, usize, _>(&hash_builder),
-//                             );
+                            let (bucket_v, _) = map.table.insert(
+                                hash,
+                                hash,
+                                (i, i, 2 * i),
+                                super::make_hasher_key1::<usize, usize, usize, _>(&hash_builder),
+                                super::make_hasher_key2::<usize, usize, usize, _>(&hash_builder),
+                            );
 
-//                             it.reflect_insert(&bucket_v);
-//                             let p_v = removed_v.iter().position(|e| e == &(i, i, 2 * i));
+                            it.reflect_insert(&bucket_v);
+                            let p_v = removed_v.iter().position(|e| e == &(i, i, 2 * i));
 
-//                             match p_v {
-//                                 Some(p_v) => {
-//                                     removed_v.swap_remove(p_v);
-//                                 }
-//                                 None => {}
-//                             }
-//                             left += 1;
-//                         }
-//                         _ => panic!(),
-//                     }
-//                 }
-//             }
+                            match p_v {
+                                Some(p_v) => {
+                                    removed_v.swap_remove(p_v);
+                                }
+                                None => {}
+                            }
+                            left += 1;
+                        }
+                        _ => panic!(),
+                    }
+                }
+            }
 
-//             let bucket_v = it.next();
+            let bucket_v = it.next();
 
-//             if bucket_v.is_none() {
-//                 break;
-//             }
+            if bucket_v.is_none() {
+                break;
+            }
 
-//             assert!(i < n);
-//             let t_v = unsafe { bucket_v.unwrap().as_ref() };
-//             assert!(!removed_v.contains(t_v));
+            assert!(i < n);
+            let t_v = unsafe { bucket_v.unwrap().as_ref() };
+            assert!(!removed_v.contains(t_v));
 
-//             let (key1, key2, value) = t_v;
+            let (key1, key2, value) = t_v;
 
-//             assert_eq!(*value, 2 * key1);
-//             assert_eq!(*value, 2 * key2);
-//             i += 1;
-//         }
-//         assert!(i <= n);
+            assert_eq!(*value, 2 * key1);
+            assert_eq!(*value, 2 * key2);
+            i += 1;
+        }
+        assert!(i <= n);
 
-//         // just for safety:
-//         assert_eq!(map.table.len(), left);
-//     }
-// }
+        // just for safety:
+        assert_eq!(map.table.len(), left);
+    }
+}
 
 #[test]
+#[cfg(feature = "raw")]
 fn test_into_iter_reflect_remove() {
     #[cfg(miri)]
     const N: usize = 32;
@@ -7982,6 +7996,7 @@ fn test_into_iter_reflect_remove() {
 }
 
 #[test]
+#[cfg(feature = "raw")]
 fn test_into_iter_reflect_insert() {
     #[cfg(miri)]
     const N: usize = 32;
@@ -8080,6 +8095,7 @@ fn test_into_iter_reflect_insert() {
 }
 
 #[test]
+#[cfg(feature = "raw")]
 fn test_into_pointer_iter_reflect_remove() {
     #[cfg(miri)]
     const N: usize = 32;
@@ -8168,6 +8184,7 @@ fn test_into_pointer_iter_reflect_remove() {
 }
 
 #[test]
+#[cfg(feature = "raw")]
 fn test_into_pointer_iter_reflect_insert() {
     #[cfg(miri)]
     const N: usize = 32;

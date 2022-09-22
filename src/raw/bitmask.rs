@@ -33,7 +33,7 @@ impl BitMask {
     /// Returns the bit's previous state.
     #[inline]
     #[allow(clippy::cast_ptr_alignment)]
-    // #[cfg(feature = "raw")]
+    #[cfg(feature = "raw")]
     pub unsafe fn flip(&mut self, index: usize) -> bool {
         // NOTE: The + BITMASK_STRIDE - 1 is to set the high bit.
         let mask = 1 << (index * BITMASK_STRIDE + BITMASK_STRIDE - 1);

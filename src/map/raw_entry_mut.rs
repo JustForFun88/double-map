@@ -159,6 +159,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawVacantEntryMut<'a, K1, K2, V, S,
     }
 
     /// Set the value of an entry with a custom hasher function.
+    #[allow(clippy::too_many_arguments)]
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn insert_with_hasher<H1, H2>(
         self,

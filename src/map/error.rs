@@ -38,7 +38,7 @@ impl fmt::Display for ErrorKind {
 ///
 /// Contains the [`ErrorKind`] enum, and the values of provided keys (that can be used for another
 /// purpose).
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EntryError<K1, K2> {
     /// A view into an error kind returned by [`entry`](DHashMap::entry),
     /// [`insert`](DHashMap::insert), [`try_insert`](DHashMap::try_insert) methods of the [`DHashMap`].
@@ -83,7 +83,7 @@ impl<K1: Debug, K2: Debug> fmt::Display for EntryError<K1, K2> {
 ///
 /// Contains the [`ErrorKind`] enum, the provided keys and value that were not inserted.
 /// These returned keys and value can be used for another purpose.
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct InsertError<K1, K2, V> {
     /// A view into an error kind returned by [`entry`](DHashMap::entry),
     /// [`insert`](DHashMap::insert), [`try_insert`](DHashMap::try_insert) methods of the [`DHashMap`].

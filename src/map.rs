@@ -124,6 +124,11 @@ impl<K1: Clone, K2: Clone, V: Clone, S: Clone, A: Allocator + Clone> Clone
     }
 }
 
+type EntryRefResult<'a, 'b, K1, Q1, K2, Q2, V, S, A> =
+    Result<EntryRef<'a, 'b, K1, Q1, K2, Q2, V, S, A>, ErrorKind>;
+
+type EntryResult<'a, K1, K2, V, S, A> = Result<Entry<'a, K1, K2, V, S, A>, EntryError<K1, K2>>;
+
 /// Ensures that a single closure type across uses of this which, in turn prevents multiple
 /// instances of any functions like RawTable::reserve from being generated
 #[cfg_attr(feature = "inline-more", inline)]
@@ -1504,11 +1509,8 @@ where
     /// assert_eq!(error_kind, ErrorKind::KeysPointsToDiffEntries);
     /// ```
     #[cfg_attr(feature = "inline-more", inline)]
-    pub fn entry(
-        &mut self,
-        k1: K1,
-        k2: K2,
-    ) -> Result<Entry<'_, K1, K2, V, S, A>, EntryError<K1, K2>> {
+    pub fn entry(&mut self, k1: K1, k2: K2) -> EntryResult<'_, K1, K2, V, S, A> {
+        // Result<Entry<'_, K1, K2, V, S, A>, EntryError<K1, K2>> {
         let hash_builder = &self.hash_builder;
         let hash1 = make_insert_hash::<K1, S>(hash_builder, &k1);
         let hash2 = make_insert_hash::<K2, S>(hash_builder, &k2);
@@ -1621,7 +1623,7 @@ where
         &'a mut self,
         k1: &'b Q1,
         k2: &'b Q2,
-    ) -> Result<EntryRef<'a, 'b, K1, Q1, K2, Q2, V, S, A>, ErrorKind>
+    ) -> EntryRefResult<'a, 'b, K1, Q1, K2, Q2, V, S, A>
     where
         Q1: ?Sized + Hash + Equivalent<K1>,
         Q2: ?Sized + Hash + Equivalent<K2>,
@@ -2801,7 +2803,7 @@ where
     /// Returns an array of length `N` with the results of each query.
     /// `None` will be returned if any of the keys are missing.
     ///
-    /// For a safe alternative see [`get_many_key1_value_mut`](`HashMap::get_many_key1_value_mut`).
+    /// For a safe alternative see [`get_many_key1_value_mut`](`DHashMap::get_many_key1_value_mut`).
     ///
     /// # Safety
     ///
@@ -2858,7 +2860,7 @@ where
     /// Returns an array of length `N` with the results of each query.
     /// `None` will be returned if any of the keys are missing.
     ///
-    /// For a safe alternative see [`get_many_key2_value_mut`](`HashMap::get_many_key2_value_mut`).
+    /// For a safe alternative see [`get_many_key2_value_mut`](`DHashMap::get_many_key2_value_mut`).
     ///
     /// # Safety
     ///
@@ -2911,7 +2913,7 @@ where
     /// Returns an array of length `N` with the results of each query.
     /// `None` will be returned if any of the keys are missing.
     ///
-    /// For a safe alternative see [`get_many_keys_value_mut`](`HashMap::get_many_keys_value_mut`).
+    /// For a safe alternative see [`get_many_keys_value_mut`](`DHashMap::get_many_keys_value_mut`).
     ///
     /// # Safety
     ///
@@ -3123,7 +3125,7 @@ where
     /// Returned [`InsertError`] structure also contains provided keys and value
     /// that were not inserted and can be used for another purpose.
     ///
-    /// [std module-level documentation]: std::collections#insert-and-complex-keys
+    /// [std module-level documentation]: https://doc.rust-lang.org/std/collections/index.html#insert-and-complex-keys
     ///
     /// # Examples
     ///
@@ -3672,7 +3674,7 @@ where
 }
 
 impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
-    /// Creates a raw entry builder for the HashMap.
+    /// Creates a raw entry builder for the [`DHashMap`].
     ///
     /// Raw entries provide the lowest level of control for searching and
     /// manipulating a map. They must be manually initialized with a hash and
@@ -3687,13 +3689,13 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// * Using custom comparison logic without newtype wrappers
     ///
     /// Because raw entries provide much more low-level control, it's much easier
-    /// to put the HashMap into an inconsistent state which, while memory-safe,
+    /// to put the `DHashMap` into an inconsistent state which, while memory-safe,
     /// will cause the map to produce seemingly random results. Higher-level and
     /// more foolproof APIs like `entry` should be preferred when possible.
     ///
     /// In particular, the hash used to initialized the raw entry must still be
     /// consistent with the hash of the key that is ultimately stored in the entry.
-    /// This is because implementations of HashMap may need to recompute hashes
+    /// This is because implementations of `DHashMap` may need to recompute hashes
     /// when resizing, at which point only the keys are available.
     ///
     /// Raw entries give mutable access to the keys. This must not be used
@@ -3824,12 +3826,128 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
         RawEntryBuilderMut { map: self }
     }
 
+    /// Creates a raw immutable entry builder for the [`DHashMap`].
+    ///
+    /// Raw entries provide the lowest level of control for searching and
+    /// manipulating a map. They must be manually initialized with a hash and
+    /// then manually searched.
+    ///
+    /// This is useful for
+    /// * Hash memoization
+    /// * Using a search key that doesn't work with the Borrow trait
+    /// * Using custom comparison logic without newtype wrappers
+    ///
+    /// Unless you are in such a situation, higher-level and more foolproof APIs like
+    /// `get` should be preferred.
+    ///
+    /// Immutable raw entries have very limited use; you might instead
+    /// want [`raw_entry_mut`](DHashMap::raw_entry_mut).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use core::hash::{BuildHasher, Hash};
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map: DHashMap<usize, &str, usize> = DHashMap::new();
+    /// map.extend([(1, "a", 100), (2, "b", 200), (3, "c", 300)]);
+    ///
+    /// fn compute_hash<K: Hash + ?Sized, S: BuildHasher>(hash_builder: &S, key: &K) -> u64 {
+    ///     use core::hash::Hasher;
+    ///     let mut state = hash_builder.build_hasher();
+    ///     key.hash(&mut state);
+    ///     state.finish()
+    /// }
+    ///
+    /// for (i, k2) in ["a", "b", "c", "d", "e", "f"].into_iter().enumerate() {
+    ///     let k1 = i + 1;
+    ///     let hash1 = compute_hash(map.hasher(), &k1);
+    ///     let hash2 = compute_hash(map.hasher(), &k2);
+    ///
+    ///     let value = map.get_key1(&k1).cloned();
+    ///     let tuple = value.as_ref().map(|v| (&k1, &k2, v));
+    ///
+    ///     println!("Key1: {}, key2: {} and value: {:?}", k1, k2, value);
+    ///
+    ///     assert_eq!(map.raw_entry().from_keys(&k1, k2), tuple);
+    ///     assert_eq!(
+    ///         map.raw_entry()
+    ///             .from_hash(hash1, |q| *q == k1, hash2, |q| *q == k2),
+    ///         tuple
+    ///     );
+    ///     assert_eq!(
+    ///         map.raw_entry()
+    ///             .from_keys_hashed_nocheck(hash1, &k1, hash2, &k2),
+    ///         tuple
+    ///     );
+    /// }
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn raw_entry(&self) -> RawEntryBuilder<'_, K1, K2, V, S, A> {
         RawEntryBuilder { map: self }
     }
 
-    // #[cfg(feature = "raw")]
+    /// Returns a mutable reference to the [`RawTable`] used underneath [`DHashMap`].
+    /// This function is only available if the `raw` feature of the crate is enabled.
+    ///
+    /// # Note
+    ///
+    /// Calling this function is safe, but using the raw hash table API may require
+    /// unsafe functions or blocks.
+    ///
+    /// `RawTable` API gives the lowest level of control under the map that can be useful
+    /// for extending the HashMap's API, but may lead to *[undefined behavior]*.
+    ///
+    /// [`DHashMap`]: struct.DHashMap.html
+    /// [`RawTable`]: raw/struct.RawTable.html
+    /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use core::hash::{BuildHasher, Hash};
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map = DHashMap::new();
+    /// map.extend([(1, "a", 10), (2, "b", 20), (3, "c", 30)]);
+    /// assert_eq!(map.len(), 3);
+    ///
+    /// // Let's imagine that we have a value and a hash of the key, but not the key itself.
+    /// // However, if you want to remove the value from the map by hash and value, and you
+    /// // know exactly that the value is unique, then you can create a function like this:
+    /// fn remove_by_hash<K1, K2, V, S, F>(
+    ///     map: &mut DHashMap<K1, K2, V, S>,
+    ///     hash2: u64,
+    ///     is_match2: F,
+    /// ) -> Option<(K1, K2, V)>
+    /// where
+    ///     F: Fn(&(K1, K2, V)) -> bool,
+    /// {
+    ///     let raw_table = map.raw_table();
+    ///     match raw_table.find_h2(hash2, is_match2) {
+    ///         Some(bucket) => Some(unsafe { raw_table.remove(bucket) }),
+    ///         None => None,
+    ///     }
+    /// }
+    ///
+    /// fn compute_hash<K: Hash + ?Sized, S: BuildHasher>(hash_builder: &S, key: &K) -> u64 {
+    ///     use core::hash::Hasher;
+    ///     let mut state = hash_builder.build_hasher();
+    ///     key.hash(&mut state);
+    ///     state.finish()
+    /// }
+    ///
+    /// let hash2 = compute_hash(map.hasher(), "a");
+    /// assert_eq!(
+    ///     remove_by_hash(&mut map, hash2, |(_, _, v)| *v == 10),
+    ///     Some((1, "a", 10))
+    /// );
+    /// assert_eq!(map.get_key1(&1), None);
+    /// assert_eq!(map.get_key2(&"a"), None);
+    /// assert_eq!(map.get_keys(&1, &"a"), None);
+    /// assert_eq!(map.len(), 2);
+    /// ```
+    #[cfg(feature = "raw")]
     #[cfg_attr(feature = "inline-more", inline)]
     pub fn raw_table(&mut self) -> &mut RawTable<(K1, K2, V), A> {
         &mut self.table
@@ -3910,6 +4028,8 @@ where
     }
 }
 
+// The default hasher is used to match the std implementation signature
+#[cfg(feature = "ahash")]
 impl<K1, K2, V, A, const N: usize> From<[(K1, K2, V); N]>
     for DHashMap<K1, K2, V, DefaultHashBuilder, A>
 where
@@ -4117,6 +4237,8 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> IntoIterator for &'a mut DHashMap<K
 /// assert_eq!(map2.get_key2(&"d"), Some(&"Four"));
 /// ```
 #[macro_export]
+// The default hasher is used to match the std implementation signature
+#[cfg(feature = "ahash")]
 macro_rules! dhashmap {
     () => (DHashMap::new());
     ($($key1:expr, $key2:expr => $value:expr),+ $(,)?) => (

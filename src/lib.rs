@@ -63,11 +63,14 @@ mod macros;
 /// `raw` feature is enabled.
 pub mod raw {
     // The RawTable API is still experimental and is not properly documented yet.
-    // #[allow(missing_docs)]
+    #[allow(missing_docs)]
+    #[allow(unused_imports)]
+    #[allow(dead_code)]
     #[path = "mod.rs"]
     mod inner;
     pub use inner::*;
 }
+#[allow(unused_imports)]
 #[cfg(not(feature = "raw"))]
 mod raw;
 
@@ -95,7 +98,7 @@ pub use crate::map::DHashMap;
 /// # Correctness
 ///
 /// Equivalent values must hash to the same value.
-/// 
+///
 // [`DHashMap`](crate::map::DHashMap)
 // [`DHashMap::get_key1`](crate::map::DHashMap::get_key1)
 // [`DHashMap::contains_key1`](crate::map::DHashMap::contains_key1)

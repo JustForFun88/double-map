@@ -126,7 +126,7 @@ impl<T> DataBucket<T> {
     ///
     /// [`read`]: https://doc.rust-lang.org/core/ptr/fn.read.html
     /// [violate memory safety]: https://doc.rust-lang.org/std/ptr/fn.read.html#ownership-of-the-returned-value
-    // #[cfg(feature = "raw")]
+    #[cfg(feature = "raw")]
     #[inline]
     pub unsafe fn copy_from_nonoverlapping(&self, other: &Self) {
         self.as_ptr().copy_from_nonoverlapping(other.as_ptr(), 1);
@@ -158,6 +158,7 @@ impl<T> Clone for PointerBucket<T> {
 
 impl<T> PointerBucket<DataBucket<T>> {
     /// Create correspondeng [`DataBucket`] from the given [`PointerBucket<DataBucket<T>>`].
+    #[cfg(feature = "raw")]
     #[inline]
     pub unsafe fn to_data_bucket(self) -> DataBucket<T> {
         let ptr = NonNull::new_unchecked((*self.as_ptr()).as_ptr().add(1));
@@ -171,7 +172,7 @@ impl<T> PointerBucket<DataBucket<T>> {
     }
 
     /// Executes the destructor (if any) of the pointed-to `data value`.
-    #[cfg_attr(feature = "inline-more", inline)]
+    #[inline]
     pub unsafe fn drop_data(&self) {
         (*self.as_ptr()).drop()
     }
@@ -184,7 +185,8 @@ impl<T> PointerBucket<DataBucket<T>> {
     }
 
     /// Overwrites a memory location with the given `data value` without reading
-    /// or dropping the old value.   
+    /// or dropping the old value.
+    #[cfg(feature = "raw")]
     #[inline]
     pub unsafe fn write_data(&self, val: T) {
         (*self.as_ptr()).write(val);
@@ -275,14 +277,5 @@ impl<T> PointerBucket<T> {
     #[inline]
     pub(super) unsafe fn as_mut<'a>(&self) -> &'a mut T {
         &mut *self.as_ptr()
-    }
-
-    /// Copies `count * size_of<T>` bytes from `other` to `self`. The source
-    /// and destination may *not* overlap. `T` actually is [`DataBucket<T>`].
-    // #[cfg(feature = "raw")]
-    #[allow(dead_code)]
-    #[inline]
-    pub(super) unsafe fn copy_from_nonoverlapping(&self, other: &Self) {
-        self.as_ptr().copy_from_nonoverlapping(other.as_ptr(), 1);
     }
 }

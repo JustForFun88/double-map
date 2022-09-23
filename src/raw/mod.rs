@@ -614,7 +614,7 @@ impl<T, A: Allocator + Clone> RawTable<T, A> {
     // the "last" index actually one less than the given "buckets" number,
     // i.e. "last = buckets - 1".
     #[inline]
-    #[cfg(feature = "nightly")]
+    #[cfg(all(feature = "raw", feature = "nightly"))]
     pub unsafe fn pointers_start(&self) -> *mut DataBucket<T> {
         self.pointers_end().as_ptr().wrapping_sub(self.buckets())
     }

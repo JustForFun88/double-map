@@ -7935,7 +7935,7 @@ fn test_into_iter_reflect_insert() {
     #[cfg(not(miri))]
     const N: usize = 128;
 
-    for n in 2..N {
+    for n in 10..N {
         let mut map = DHashMap::with_capacity(n);
 
         let mut left = 0_usize;
@@ -8123,7 +8123,7 @@ fn test_into_pointer_iter_reflect_insert() {
     #[cfg(not(miri))]
     const N: usize = 128;
 
-    for n in 2..N {
+    for n in 10..N {
         let mut map = DHashMap::with_capacity(n);
 
         let mut left = 0_usize;

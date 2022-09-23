@@ -3954,6 +3954,10 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     }
 }
 
+/// Equality comparisons which are
+/// [partial equivalence relations](https://en.wikipedia.org/wiki/Partial_equivalence_relation).
+///
+/// `x.eq(y)` can also be written `x == y`, and `x.ne(y)` can be written `x != y`.
 impl<K1, K2, V, S, A> PartialEq for DHashMap<K1, K2, V, S, A>
 where
     K1: Eq + Hash,
@@ -3962,6 +3966,28 @@ where
     S: BuildHasher,
     A: Allocator + Clone,
 {
+    /// This method tests for `self` and `other` values to be equal, and is used
+    /// by `==`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// let mut map1: DHashMap<i32, &str, &str> = dhashmap!{
+    ///     1, "a" => "One",
+    ///     2, "b" => "Two",
+    ///     3, "c" => "Three",
+    /// };
+    ///
+    /// let mut map2: DHashMap<i32, &str, &str> = dhashmap!{
+    ///     1, "a" => "One",
+    ///     2, "b" => "Two",
+    ///     3, "c" => "Three",
+    /// };
+    /// // map1 and map2 equal each other
+    /// assert_eq!(map1, map2);
+    /// ```
     fn eq(&self, other: &Self) -> bool {
         if self.len() != other.len() {
             return false;
@@ -4001,17 +4027,37 @@ where
     }
 }
 
+/// Creates an empty `DHashMap<K1, K2, V, S, A>`, with the `Default` value
+/// for the hasher and allocator.
 impl<K1, K2, V, S, A> Default for DHashMap<K1, K2, V, S, A>
 where
     S: Default,
     A: Default + Allocator + Clone,
 {
+    /// Creates an empty `DHashMap<K1, K2, V, S, A>`, with the `Default` value
+    /// for the hasher and allocator.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    /// use std::collections::hash_map::RandomState;
+    ///
+    /// // You can specify all types of HashMap, including hasher and allocator.
+    /// // Created map is empty and don't allocate memory
+    /// let map: DHashMap<u32, String, String> = Default::default();
+    /// assert_eq!(map.capacity(), 0);
+    /// let map: DHashMap<u32, String, String, RandomState> = DHashMap::default();
+    /// assert_eq!(map.capacity(), 0);
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     fn default() -> Self {
         Self::with_hasher_in(Default::default(), Default::default())
     }
 }
 
+/// Get a reference to the value through indexing operations (`DHashMap[index]`)
+/// in immutable contexts.
 impl<K1, K2, Q1: ?Sized, V, S, A> Index<&Q1> for DHashMap<K1, K2, V, S, A>
 where
     K1: Eq + Hash,
@@ -4022,12 +4068,38 @@ where
 {
     type Output = V;
 
+    /// Returns a reference to the value corresponding to the supplied
+    /// first `K1` key.
+    ///
+    /// The key may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the key type.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the key is not present in the `DHashMap`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// let map = dhashmap!{
+    ///     1, "a" => "One",
+    ///     2, "b" => "Two",
+    /// };
+    ///
+    /// assert_eq!(map[&1], "One");
+    /// assert_eq!(map[&2], "Two");
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     fn index(&self, key: &Q1) -> &V {
         self.get_key1(key).expect("no entry found for key")
     }
 }
 
+/// Create a new [`DHashMap<K1, K2, V, DefaultHashBuilder, A>`]
+/// from an array list of sequentially given keys and values.
 // The default hasher is used to match the std implementation signature
 #[cfg(feature = "ahash")]
 impl<K1, K2, V, A, const N: usize> From<[(K1, K2, V); N]>
@@ -4037,11 +4109,27 @@ where
     K2: Eq + Hash,
     A: Default + Allocator + Clone,
 {
+    /// Create a new [`DHashMap<K1, K2, V, DefaultHashBuilder, A>`]
+    /// from an array list of sequentially given keys and values.
+    ///
+    /// You can specify the type of `allocator`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let map1 = DHashMap::from([(1, 2, 3), (4, 5, 6)]);
+    /// let map2: DHashMap<_, _, _> = [(1, 2, 3), (4, 5, 6)].into();
+    /// assert_eq!(map1, map2);
+    /// ```
     fn from(arr: [(K1, K2, V); N]) -> Self {
         Self::from_iter(arr)
     }
 }
 
+/// Creates an new `DHashMap<K1, K2, V, S, A>` from an iterator, with the
+/// `Default` value for the hasher and allocator.
 impl<K1, K2, V, S, A> FromIterator<(K1, K2, V)> for DHashMap<K1, K2, V, S, A>
 where
     K1: Eq + Hash,
@@ -4049,6 +4137,40 @@ where
     S: BuildHasher + Default,
     A: Default + Allocator + Clone,
 {
+    /// Creates an new `DHashMap<K1, K2, V, S, A>` from an iterator, with the
+    /// `Default` value for the hasher and allocator.
+    ///
+    /// You can specify the type of `hasher` and `allocator`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    /// use std::collections::hash_map::RandomState;
+    ///
+    /// let mut number = 0;
+    /// let some_iter = std::iter::repeat_with(move || {
+    ///     number +=1;
+    ///     (number, number, number * 10)
+    /// }).take(5);
+    /// // You can specify hasher
+    /// let map: DHashMap<_, _, _, RandomState> = DHashMap::from_iter(some_iter.clone());
+    /// assert_eq!(map.get_key1(&1), Some(&10));
+    /// assert_eq!(map.get_key1(&5), Some(&50));
+    /// assert_eq!(map.get_key1(&6), None);
+    ///
+    /// let some_vec: Vec<_> = some_iter.collect();
+    /// let map: DHashMap<_, _, _, RandomState> = DHashMap::from_iter(some_vec);
+    /// assert_eq!(map.get_key1(&1), Some(&10));
+    /// assert_eq!(map.get_key1(&5), Some(&50));
+    /// assert_eq!(map.get_key1(&6), None);
+    ///
+    /// let some_arr = [(1, 1, 10), (2, 2, 20), (3, 3, 30), (4, 4, 40), (5, 5, 50)];
+    /// let map: DHashMap<_, _, _> = DHashMap::from_iter(some_arr);
+    /// assert_eq!(map.get_key1(&1), Some(&10));
+    /// assert_eq!(map.get_key1(&5), Some(&50));
+    /// assert_eq!(map.get_key1(&6), None);
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     fn from_iter<T: IntoIterator<Item = (K1, K2, V)>>(iter: T) -> Self {
         let iter = iter.into_iter();
@@ -4061,6 +4183,8 @@ where
     }
 }
 
+/// Inserts all new keys and values from the iterator and replaces values
+/// with existing keys with new values returned from the iterator.
 impl<K1, K2, V, S, A> Extend<(K1, K2, V)> for DHashMap<K1, K2, V, S, A>
 where
     K1: Eq + Hash,
@@ -4068,6 +4192,52 @@ where
     S: BuildHasher,
     A: Allocator + Clone,
 {
+    /// Inserts all new keys and values from the iterator to existing
+    /// `DHashMap<K1, K2, V, S, A>`. Replace values with existing
+    /// keys with new values returned from the iterator.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map = DHashMap::new();
+    /// map.insert(1, 10, 1000);
+    ///
+    /// let some_iter = [(1, 10, 100), (2, 20, 200)].into_iter();
+    /// map.extend(some_iter);
+    /// // Replace values with existing keys with new values returned from the iterator.
+    /// // So that the map.get_key1(&1) doesn't return Some(&1000).
+    /// assert_eq!(map.get_key1(&1), Some(&100));
+    ///
+    /// let some_vec: Vec<_> = vec![(3, 30, 300), (4, 40, 400)];
+    /// map.extend(some_vec);
+    ///
+    /// let some_arr = [(5, 50, 500), (6, 60, 600)];
+    /// map.extend(some_arr);
+    /// let old_map_len = map.len();
+    ///
+    /// // You can also extend from another `DHashMap`
+    /// let mut new_map = DHashMap::new();
+    /// new_map.extend(map);
+    /// assert_eq!(new_map.len(), old_map_len);
+    ///
+    /// let mut vec: Vec<_> = new_map.into_iter().collect();
+    /// // The `IntoIter` iterator produces items in arbitrary order, so the
+    /// // items must be sorted to test them against a sorted array.
+    /// vec.sort_unstable();
+    /// assert_eq!(
+    ///     vec,
+    ///     [
+    ///         (1, 10, 100),
+    ///         (2, 20, 200),
+    ///         (3, 30, 300),
+    ///         (4, 40, 400),
+    ///         (5, 50, 500),
+    ///         (6, 60, 600),
+    ///     ]
+    /// );
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     fn extend<T: IntoIterator<Item = (K1, K2, V)>>(&mut self, iter: T) {
         // Keys may be already present or show multiple times in the iterator.
@@ -4108,6 +4278,8 @@ where
     }
 }
 
+/// Inserts all new keys and values from the iterator and replaces values
+/// with existing keys with new values returned from the iterator.
 impl<'a, K1, K2, V, S, A> Extend<(&'a K1, &'a K2, &'a V)> for DHashMap<K1, K2, V, S, A>
 where
     K1: Eq + Hash + Copy,
@@ -4116,6 +4288,55 @@ where
     S: BuildHasher,
     A: Allocator + Clone,
 {
+    /// Inserts all new keys and values from the iterator to existing
+    /// `DHashMap<K1, K2, V, S, A>`. Replace values with existing
+    /// keys with new values returned from the iterator.
+    /// The keys and values must implement [`Copy`] trait.
+    ///
+    /// [`Copy`]: https://doc.rust-lang.org/core/marker/trait.Copy.html
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map = DHashMap::new();
+    /// map.insert(1, 10, 1000);
+    ///
+    /// let arr = [(1, 10, 100), (2, 20, 200)];
+    /// let some_iter = arr.iter().map(|(k1, k2, v)| (k1, k2, v));
+    /// map.extend(some_iter);
+    /// // Replace values with existing keys with new values returned from the iterator.
+    /// // So that the map.get_key1(&1) doesn't return Some(&1000).
+    /// assert_eq!(map.get_key1(&1), Some(&100));
+    ///
+    /// let some_vec: Vec<_> = vec![(3, 30, 300), (4, 40, 400)];
+    /// map.extend(some_vec.iter().map(|(k1, k2, v)| (k1, k2, v)));
+    ///
+    /// let some_arr = [(5, 50, 500), (6, 60, 600)];
+    /// map.extend(some_arr.iter().map(|(k1, k2, v)| (k1, k2, v)));
+    ///
+    /// // You can also extend from another HashMap
+    /// let mut new_map = DHashMap::new();
+    /// new_map.extend(&map);
+    /// assert_eq!(new_map.len(), map.len());
+    ///
+    /// let mut vec: Vec<_> = new_map.into_iter().collect();
+    /// // The `IntoIter` iterator produces items in arbitrary order, so the
+    /// // items must be sorted to test them against a sorted array.
+    /// vec.sort_unstable();
+    /// assert_eq!(
+    ///     vec,
+    ///     [
+    ///         (1, 10, 100),
+    ///         (2, 20, 200),
+    ///         (3, 30, 300),
+    ///         (4, 40, 400),
+    ///         (5, 50, 500),
+    ///         (6, 60, 600),
+    ///     ]
+    /// );
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     fn extend<T: IntoIterator<Item = (&'a K1, &'a K2, &'a V)>>(&mut self, iter: T) {
         self.extend(iter.into_iter().map(|(&k1, &k2, &v)| (k1, k2, v)))
@@ -4143,6 +4364,50 @@ where
     S: BuildHasher,
     A: Allocator + Clone,
 {
+    /// Inserts all new keys and values from the iterator to existing
+    /// `DHashMap<K1, K2, V, S, A>`. Replace values with existing
+    /// keys with new values returned from the iterator.
+    /// The keys and values must implement [`Copy`] trait.
+    ///
+    /// [`Copy`]: https://doc.rust-lang.org/core/marker/trait.Copy.html
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map = DHashMap::new();
+    /// map.insert(1, 10, 1000);
+    ///
+    /// let arr = [(1, 10, 100), (2, 20, 200)];
+    /// let some_iter = arr.iter();
+    /// map.extend(some_iter);
+    /// // Replace values with existing keys with new values returned from the iterator.
+    /// // So that the map.get_key1(&1) doesn't return Some(&1000).
+    /// assert_eq!(map.get_key1(&1), Some(&100));
+    ///
+    /// let some_vec: Vec<_> = vec![(3, 30, 300), (4, 40, 400)];
+    /// map.extend(&some_vec);
+    ///
+    /// let some_arr = [(5, 50, 500), (6, 60, 600)];
+    /// map.extend(&some_arr);
+    ///
+    /// let mut vec: Vec<_> = map.into_iter().collect();
+    /// // The `IntoIter` iterator produces items in arbitrary order, so the
+    /// // items must be sorted to test them against a sorted array.
+    /// vec.sort_unstable();
+    /// assert_eq!(
+    ///     vec,
+    ///     [
+    ///         (1, 10, 100),
+    ///         (2, 20, 200),
+    ///         (3, 30, 300),
+    ///         (4, 40, 400),
+    ///         (5, 50, 500),
+    ///         (6, 60, 600),
+    ///     ]
+    /// );
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     fn extend<T: IntoIterator<Item = &'a (K1, K2, V)>>(&mut self, iter: T) {
         self.extend(iter.into_iter().map(|&(k1, k2, v)| (k1, k2, v)));
@@ -4165,6 +4430,28 @@ impl<K1, K2, V, S, A: Allocator + Clone> IntoIterator for DHashMap<K1, K2, V, S,
     type Item = (K1, K2, V);
     type IntoIter = IntoIter<K1, K2, V, A>;
 
+    /// Creates a consuming iterator, that is, one that moves each keys-value
+    /// tuple out of the map in arbitrary order. The map cannot be used after
+    /// calling this.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// let mut map = dhashmap!{
+    ///     1, "a" => "One",
+    ///     2, "b" => "Two",
+    ///     3, "c" => "Three",
+    /// };
+    ///
+    /// // Not possible with .iter()
+    /// let mut vec: Vec<(i32, &str, &str)> = map.into_iter().collect();
+    /// // The `IntoIter` iterator produces tuples in arbitrary order, so
+    /// // the tuples must be sorted to test them against a sorted array.
+    /// vec.sort_unstable();
+    /// assert_eq!(vec, [(1, "a", "One"), (2, "b", "Two"), (3, "c", "Three")])
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     fn into_iter(self) -> IntoIter<K1, K2, V, A> {
         IntoIter {
@@ -4177,6 +4464,34 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> IntoIterator for &'a DHashMap<K1, K
     type Item = (&'a K1, &'a K2, &'a V);
     type IntoIter = Iter<'a, K1, K2, V>;
 
+    /// Creates an iterator visiting all keys-value tuples in arbitrary order.
+    /// The iterator element is tuple of type `(&'a K1, &'a K2, &'a V)`.
+    ///
+    /// Return the same `Iter` struct as by the [`iter`] method on [`DHashMap`].
+    ///
+    /// [`iter`]: struct.DHashMap.html#method.iter
+    /// [`DHashMap`]: struct.DHashMap.html
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::{DHashMap, dhashmap};
+    ///
+    /// let mut map_one = dhashmap!{
+    ///     "a", 1 => "One",
+    ///     "b", 2 => "Two",
+    ///     "c", 3 => "Three",
+    /// };
+    /// assert_eq!(map_one.len(), 3);
+    /// let mut map_two = DHashMap::new();
+    ///
+    /// for (key1, key2, value) in &map_one {
+    ///     println!("Key1: {}, key2: {}, value: {}", key1, key2, value);
+    ///     map_two.insert_unique_unchecked(*key1, *key2, *value);
+    /// }
+    ///
+    /// assert_eq!(map_one, map_two);
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     fn into_iter(self) -> Iter<'a, K1, K2, V> {
         self.iter()
@@ -4187,6 +4502,39 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> IntoIterator for &'a mut DHashMap<K
     type Item = (&'a K1, &'a K2, &'a mut V);
     type IntoIter = IterMut<'a, K1, K2, V>;
 
+    /// Creates an iterator visiting all keys-value tuples in arbitrary order,
+    /// with mutable references to the values. The iterator element is tuple
+    /// of type `(&'a K1, &'a K2, &'a mut V)`.
+    ///
+    /// Return the same `IterMut` struct as by the [`iter_mut`] method on
+    /// [`DHashMap`].
+    ///
+    /// [`iter_mut`]: struct.DHashMap.html#method.iter_mut
+    /// [`DHashMap`]: struct.DHashMap.html
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use double_map::DHashMap;
+    ///
+    /// let mut map = DHashMap::<_, _, _>::from([("a", "One", 1), ("b", "Two", 2), ("c", "Three", 3)]);
+    ///
+    /// assert_eq!(map.len(), 3);
+    ///
+    /// // Update all values
+    /// for (_, _, value) in &mut map {
+    ///     *value *= 2;
+    /// }
+    ///
+    /// let mut vec = map.iter().collect::<Vec<_>>();
+    /// // The `Iter` iterator produces items in arbitrary order, so the
+    /// // items must be sorted to test them against a sorted array.
+    /// vec.sort_unstable();
+    /// assert_eq!(
+    ///     vec,
+    ///     [(&"a", &"One", &2), (&"b", &"Two", &4), (&"c", &"Three", &6)]
+    /// );
+    /// ```
     #[cfg_attr(feature = "inline-more", inline)]
     fn into_iter(self) -> IterMut<'a, K1, K2, V> {
         self.iter_mut()
@@ -4236,15 +4584,15 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> IntoIterator for &'a mut DHashMap<K
 /// assert_eq!(map2.get_key2(&"c"), Some(&"Three"));
 /// assert_eq!(map2.get_key2(&"d"), Some(&"Four"));
 /// ```
-#[macro_export]
 // The default hasher is used to match the std implementation signature
 #[cfg(feature = "ahash")]
+#[macro_export]
 macro_rules! dhashmap {
     () => (DHashMap::new());
     ($($key1:expr, $key2:expr => $value:expr),+ $(,)?) => (
-        DHashMap::<_, _, _, double_map::dhash_map::DefaultHashBuilder>::from_iter([$(($key1, $key2, $value)),+])
+        DHashMap::<_, _, _>::from_iter([$(($key1, $key2, $value)),+])
     );
     ($(($key1:expr, $key2:expr) => $value:expr),+ $(,)?) => (
-        DHashMap::<_, _, _, double_map::dhash_map::DefaultHashBuilder>::from_iter([$(($key1, $key2, $value)),+])
+        DHashMap::<_, _, _>::from_iter([$(($key1, $key2, $value)),+])
     );
 }

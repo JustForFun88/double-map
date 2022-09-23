@@ -3768,6 +3768,7 @@ impl<T> RawDataIterRange<T> {
     /// Returns `None` if the remaining range is smaller than or equal to the
     /// group width.
     #[cfg_attr(feature = "inline-more", inline)]
+    #[allow(dead_code)]
     #[cfg(feature = "rayon")]
     pub(crate) fn split(mut self) -> (Self, Option<RawDataIterRange<T>>) {
         unsafe {
@@ -4155,6 +4156,7 @@ impl<T> RawPointerIterRange<T> {
     /// Returns `None` if the remaining range is smaller than or equal to the
     /// group width.
     #[cfg_attr(feature = "inline-more", inline)]
+    #[allow(dead_code)]
     #[cfg(feature = "rayon")]
     pub(crate) fn split(mut self) -> (Self, Option<RawPointerIterRange<T>>) {
         unsafe {

@@ -271,12 +271,12 @@ where
     for (index, (k1, _)) in keys.iter().enumerate() {
         let (lsplit, rsplit) = keys.split_at(index);
         for (_, k2) in lsplit {
-            if !match_insert_error(map, (k1, k2), &val, ErrorKind::KeysPointsToDiffEntries) {
+            if !match_insert_error(map, (k1, k2), val, ErrorKind::KeysPointsToDiffEntries) {
                 return false;
             }
         }
         for (_, k2) in rsplit.iter().skip(1) {
-            if !match_insert_error(map, (k1, k2), &val, ErrorKind::KeysPointsToDiffEntries) {
+            if !match_insert_error(map, (k1, k2), val, ErrorKind::KeysPointsToDiffEntries) {
                 return false;
             }
         }
@@ -300,22 +300,14 @@ where
     for (index, (k1, _)) in keys.iter().enumerate() {
         let (lsplit, rsplit) = keys.split_at(index);
         for (_, k2) in lsplit {
-            if !match_try_insert_error(
-                map,
-                (k1, k2),
-                &val,
-                Some(ErrorKind::KeysPointsToDiffEntries),
-            ) {
+            if !match_try_insert_error(map, (k1, k2), val, Some(ErrorKind::KeysPointsToDiffEntries))
+            {
                 return false;
             }
         }
         for (_, k2) in rsplit.iter().skip(1) {
-            if !match_try_insert_error(
-                map,
-                (k1, k2),
-                &val,
-                Some(ErrorKind::KeysPointsToDiffEntries),
-            ) {
+            if !match_try_insert_error(map, (k1, k2), val, Some(ErrorKind::KeysPointsToDiffEntries))
+            {
                 return false;
             }
         }
@@ -706,7 +698,7 @@ fn test_insert() {
             && matches!( m.get_keys(&i, &(i * 10)), Some(num) if *num == i * 100 ))
     );
 
-    assert_eq!(m.is_empty(), false);
+    assert!(!m.is_empty());
     assert!((1..=3).all(|i| m.contains_key1(&i)
         && m.contains_key2(&(i * 10))
         && m.contains_keys(&i, &(i * 10))));
@@ -723,7 +715,7 @@ fn test_insert() {
             && matches!( m.get_key2(&(i * 10)), Some(num) if *num == i * 1000 )
             && matches!( m.get_keys(&i, &(i * 10)), Some(num) if *num == i * 1000 )
     ));
-    assert_eq!(m.is_empty(), false);
+    assert!(!m.is_empty());
     assert!((1..=3).all(|i| m.contains_key1(&i)
         && m.contains_key2(&(i * 10))
         && m.contains_keys(&i, &(i * 10))));
@@ -756,7 +748,7 @@ fn test_insert() {
             && matches!( m.get_key2(&(i * 10)), Some(num) if *num == i * 1000 )
             && matches!( m.get_keys(&i, &(i * 10)), Some(num) if *num == i * 1000 )
     ));
-    assert_eq!(m.is_empty(), false);
+    assert!(!m.is_empty());
     assert!((1..=3).all(|i| m.contains_key1(&i)
         && m.contains_key2(&(i * 10))
         && m.contains_keys(&i, &(i * 10))));
@@ -779,7 +771,7 @@ fn test_insert() {
             && matches!( m.get_key2(&(i * 10)), Some(num) if *num == i * 1000 )
             && matches!( m.get_keys(&i, &(i * 10)), Some(num) if *num == i * 1000 )
     ));
-    assert_eq!(m.is_empty(), false);
+    assert!(!m.is_empty());
     assert!((1..=6).all(|i| m.contains_key1(&i)
         && m.contains_key2(&(i * 10))
         && m.contains_keys(&i, &(i * 10))));
@@ -795,7 +787,7 @@ fn test_insert() {
             && matches!( m.get_key2(&(i * 10)), Some(num) if *num == i * 10000 )
             && matches!( m.get_keys(&i, &(i * 10)), Some(num) if *num == i * 10000 )
     ));
-    assert_eq!(m.is_empty(), false);
+    assert!(!m.is_empty());
     assert!((1..=6).all(|i| m.contains_key1(&i)
         && m.contains_key2(&(i * 10))
         && m.contains_keys(&i, &(i * 10))));
@@ -828,7 +820,7 @@ fn test_insert() {
             && matches!( m.get_key2(&(i * 10)), Some(num) if *num == i * 10000 )
             && matches!( m.get_keys(&i, &(i * 10)), Some(num) if *num == i * 10000 )
     ));
-    assert_eq!(m.is_empty(), false);
+    assert!(!m.is_empty());
     assert!((1..=6).all(|i| m.contains_key1(&i)
         && m.contains_key2(&(i * 10))
         && m.contains_keys(&i, &(i * 10))));
@@ -851,7 +843,7 @@ fn test_insert() {
             && matches!( m.get_key2(&(i * 10)), Some(num) if *num == i * 10000 )
             && matches!( m.get_keys(&i, &(i * 10)), Some(num) if *num == i * 10000 )
     ));
-    assert_eq!(m.is_empty(), false);
+    assert!(!m.is_empty());
     assert!((1..=9).all(|i| m.contains_key1(&i)
         && m.contains_key2(&(i * 10))
         && m.contains_keys(&i, &(i * 10))));
@@ -867,7 +859,7 @@ fn test_insert() {
             && matches!( m.get_key2(&(i * 10)), Some(num) if *num == i * 100000 )
             && matches!( m.get_keys(&i, &(i * 10)), Some(num) if *num == i * 100000 )
     ));
-    assert_eq!(m.is_empty(), false);
+    assert!(!m.is_empty());
     assert!((1..=9).all(|i| m.contains_key1(&i)
         && m.contains_key2(&(i * 10))
         && m.contains_keys(&i, &(i * 10))));
@@ -910,7 +902,7 @@ fn test_insert() {
             && matches!( m.get_key2(&(i * 10)), Some(num) if *num == i * 100000 )
             && matches!( m.get_keys(&i, &(i * 10)), Some(num) if *num == i * 100000 )
     ));
-    assert_eq!(m.is_empty(), false);
+    assert!(!m.is_empty());
     assert!((1..=9).all(|i| m.contains_key1(&i)
         && m.contains_key2(&(i * 10))
         && m.contains_keys(&i, &(i * 10))));
@@ -940,7 +932,7 @@ fn test_insert_unique_unchecked() {
             && matches!( m.get_keys(&i, &(i * 10)), Some(num) if *num == i * 100 ))
     );
 
-    assert_eq!(m.is_empty(), false);
+    assert!(!m.is_empty());
     assert!((1..=3).all(|i| m.contains_key1(&i)
         && m.contains_key2(&(i * 10))
         && m.contains_keys(&i, &(i * 10))));
@@ -962,7 +954,7 @@ fn test_insert_unique_unchecked() {
             && matches!( m.get_key2(&(i * 10)), Some(num) if *num == i * 100 )
             && matches!( m.get_keys(&i, &(i * 10)), Some(num) if *num == i * 100 ))
     );
-    assert_eq!(m.is_empty(), false);
+    assert!(!m.is_empty());
     assert!((1..=6).all(|i| m.contains_key1(&i)
         && m.contains_key2(&(i * 10))
         && m.contains_keys(&i, &(i * 10))));
@@ -985,7 +977,7 @@ fn test_insert_unique_unchecked() {
             && matches!( m.get_key2(&(i * 10)), Some(num) if *num == i * 100 )
             && matches!( m.get_keys(&i, &(i * 10)), Some(num) if *num == i * 100 ))
     );
-    assert_eq!(m.is_empty(), false);
+    assert!(!m.is_empty());
     assert!((1..=9).all(|i| m.contains_key1(&i)
         && m.contains_key2(&(i * 10))
         && m.contains_keys(&i, &(i * 10))));
@@ -1004,7 +996,7 @@ fn test_insert_unique_unchecked() {
             && matches!( m.get_key2(&(i * 10)), Some(num) if *num == i * 100000 )
             && matches!( m.get_keys(&i, &(i * 10)), Some(num) if *num == i * 100000 )
     ));
-    assert_eq!(m.is_empty(), false);
+    assert!(!m.is_empty());
     assert!((1..=9).all(|i| m.contains_key1(&i)
         && m.contains_key2(&(i * 10))
         && m.contains_keys(&i, &(i * 10))));
@@ -1047,7 +1039,7 @@ fn test_insert_unique_unchecked() {
             && matches!( m.get_key2(&(i * 10)), Some(num) if *num == i * 100000 )
             && matches!( m.get_keys(&i, &(i * 10)), Some(num) if *num == i * 100000 )
     ));
-    assert_eq!(m.is_empty(), false);
+    assert!(!m.is_empty());
     assert!((1..=9).all(|i| m.contains_key1(&i)
         && m.contains_key2(&(i * 10))
         && m.contains_keys(&i, &(i * 10))));
@@ -1077,7 +1069,7 @@ fn test_try_insert() {
             && matches!( m.get_key2(&(i * 10)), Some(num) if *num == i * 100 )
             && matches!( m.get_keys(&i, &(i * 10)), Some(num) if *num == i * 100 ))
     );
-    assert_eq!(m.is_empty(), false);
+    assert!(!m.is_empty());
     assert!((1..=3).all(|i| m.contains_key1(&i)
         && m.contains_key2(&(i * 10))
         && m.contains_keys(&i, &(i * 10))));
@@ -1112,7 +1104,7 @@ fn test_try_insert() {
             && matches!( m.get_key2(&(i * 10)), Some(num) if *num == i * 100 )
             && matches!( m.get_keys(&i, &(i * 10)), Some(num) if *num == i * 100 ))
     );
-    assert_eq!(m.is_empty(), false);
+    assert!(!m.is_empty());
     assert!((1..=3).all(|i| m.contains_key1(&i)
         && m.contains_key2(&(i * 10))
         && m.contains_keys(&i, &(i * 10))));
@@ -1135,7 +1127,7 @@ fn test_try_insert() {
             && matches!( m.get_key2(&(i * 10)), Some(num) if *num == i * 100 )
             && matches!( m.get_keys(&i, &(i * 10)), Some(num) if *num == i * 100 ))
     );
-    assert_eq!(m.is_empty(), false);
+    assert!(!m.is_empty());
     assert!((1..=6).all(|i| m.contains_key1(&i)
         && m.contains_key2(&(i * 10))
         && m.contains_keys(&i, &(i * 10))));
@@ -1170,7 +1162,7 @@ fn test_try_insert() {
             && matches!( m.get_key2(&(i * 10)), Some(num) if *num == i * 100 )
             && matches!( m.get_keys(&i, &(i * 10)), Some(num) if *num == i * 100 ))
     );
-    assert_eq!(m.is_empty(), false);
+    assert!(!m.is_empty());
     assert!((1..=6).all(|i| m.contains_key1(&i)
         && m.contains_key2(&(i * 10))
         && m.contains_keys(&i, &(i * 10))));
@@ -1193,7 +1185,7 @@ fn test_try_insert() {
             && matches!( m.get_key2(&(i * 10)), Some(num) if *num == i * 100 )
             && matches!( m.get_keys(&i, &(i * 10)), Some(num) if *num == i * 100 ))
     );
-    assert_eq!(m.is_empty(), false);
+    assert!(!m.is_empty());
     assert!((1..=9).all(|i| m.contains_key1(&i)
         && m.contains_key2(&(i * 10))
         && m.contains_keys(&i, &(i * 10))));
@@ -1238,7 +1230,7 @@ fn test_try_insert() {
             && matches!( m.get_key2(&(i * 10)), Some(num) if *num == i * 100 )
             && matches!( m.get_keys(&i, &(i * 10)), Some(num) if *num == i * 100 ))
     );
-    assert_eq!(m.is_empty(), false);
+    assert!(!m.is_empty());
     assert!((1..=9).all(|i| m.contains_key1(&i)
         && m.contains_key2(&(i * 10))
         && m.contains_keys(&i, &(i * 10))));
@@ -2504,7 +2496,7 @@ fn test_empty_entry() {
             && matches!( m.get_key2(&(i * 10)), Some(num) if *num == i * 100 )
             && matches!( m.get_keys(&i, &(i * 10)), Some(num) if *num == i * 100 ))
     );
-    assert_eq!(m.is_empty(), false);
+    assert!(!m.is_empty());
     assert!((1..=3).all(|i| m.contains_key1(&i)
         && m.contains_key2(&(i * 10))
         && m.contains_keys(&i, &(i * 10))));
@@ -2543,7 +2535,7 @@ fn test_empty_entry() {
             && matches!( m.get_key2(&(i * 10)), Some(num) if *num == i * 100 )
             && matches!( m.get_keys(&i, &(i * 10)), Some(num) if *num == i * 100 ))
     );
-    assert_eq!(m.is_empty(), false);
+    assert!(!m.is_empty());
     assert!((1..=3).all(|i| m.contains_key1(&i)
         && m.contains_key2(&(i * 10))
         && m.contains_keys(&i, &(i * 10))));
@@ -2581,7 +2573,7 @@ fn test_empty_entry() {
             && matches!( m.get_key2(&(i * 10)), Some(num) if *num == i * 100 )
             && matches!( m.get_keys(&i, &(i * 10)), Some(num) if *num == i * 100 ))
     );
-    assert_eq!(m.is_empty(), false);
+    assert!(!m.is_empty());
     assert!((1..=6).all(|i| m.contains_key1(&i)
         && m.contains_key2(&(i * 10))
         && m.contains_keys(&i, &(i * 10))));
@@ -2620,7 +2612,7 @@ fn test_empty_entry() {
             && matches!( m.get_key2(&(i * 10)), Some(num) if *num == i * 100 )
             && matches!( m.get_keys(&i, &(i * 10)), Some(num) if *num == i * 100 ))
     );
-    assert_eq!(m.is_empty(), false);
+    assert!(!m.is_empty());
     assert!((1..=6).all(|i| m.contains_key1(&i)
         && m.contains_key2(&(i * 10))
         && m.contains_keys(&i, &(i * 10))));
@@ -2658,7 +2650,7 @@ fn test_empty_entry() {
             && matches!( m.get_key2(&(i * 10)), Some(num) if *num == i * 100 )
             && matches!( m.get_keys(&i, &(i * 10)), Some(num) if *num == i * 100 ))
     );
-    assert_eq!(m.is_empty(), false);
+    assert!(!m.is_empty());
     assert!((1..=9).all(|i| m.contains_key1(&i)
         && m.contains_key2(&(i * 10))
         && m.contains_keys(&i, &(i * 10))));
@@ -2707,7 +2699,7 @@ fn test_empty_entry() {
             && matches!( m.get_key2(&(i * 10)), Some(num) if *num == i * 100 )
             && matches!( m.get_keys(&i, &(i * 10)), Some(num) if *num == i * 100 ))
     );
-    assert_eq!(m.is_empty(), false);
+    assert!(!m.is_empty());
     assert!((1..=9).all(|i| m.contains_key1(&i)
         && m.contains_key2(&(i * 10))
         && m.contains_keys(&i, &(i * 10))));
@@ -2761,7 +2753,7 @@ fn test_empty_entry_ref() {
             && matches!( m.get_key2(k2), Some(num) if num == v )
             && matches!( m.get_keys(k1, k2), Some(num) if num == v )
     ));
-    assert_eq!(m.is_empty(), false);
+    assert!(!m.is_empty());
     assert!(vec
         .iter()
         .take(3)
@@ -2804,7 +2796,7 @@ fn test_empty_entry_ref() {
             && matches!( m.get_key2(k2), Some(num) if num == v )
             && matches!( m.get_keys(k1, k2), Some(num) if num == v )
     ));
-    assert_eq!(m.is_empty(), false);
+    assert!(!m.is_empty());
     assert!(vec
         .iter()
         .take(3)
@@ -2851,7 +2843,7 @@ fn test_empty_entry_ref() {
             && matches!( m.get_key2(k2), Some(num) if num == v )
             && matches!( m.get_keys(k1, k2), Some(num) if num == v )
     ));
-    assert_eq!(m.is_empty(), false);
+    assert!(!m.is_empty());
     assert!(vec
         .iter()
         .take(6)
@@ -2901,7 +2893,7 @@ fn test_empty_entry_ref() {
             && matches!( m.get_key2(k2), Some(num) if num == v )
             && matches!( m.get_keys(k1, k2), Some(num) if num == v )
     ));
-    assert_eq!(m.is_empty(), false);
+    assert!(!m.is_empty());
     assert!(vec
         .iter()
         .take(6)
@@ -2946,7 +2938,7 @@ fn test_empty_entry_ref() {
             && matches!( m.get_key2(k2), Some(num) if num == v )
             && matches!( m.get_keys(k1, k2), Some(num) if num == v )
     ));
-    assert_eq!(m.is_empty(), false);
+    assert!(!m.is_empty());
     assert!(vec
         .iter()
         .all(|(k1, k2, _)| m.contains_key1(k1) && m.contains_key2(k2) && m.contains_keys(k1, k2)));
@@ -2995,7 +2987,7 @@ fn test_empty_entry_ref() {
             && matches!( m.get_key2(k2), Some(num) if num == v )
             && matches!( m.get_keys(k1, k2), Some(num) if num == v )
     ));
-    assert_eq!(m.is_empty(), false);
+    assert!(!m.is_empty());
     assert!(vec
         .iter()
         .all(|(k1, k2, _)| m.contains_key1(k1) && m.contains_key2(k2) && m.contains_keys(k1, k2)));
@@ -3054,166 +3046,166 @@ fn test_empty_into_pointer_iter() {
     assert_eq!(into_pointer_iter(m).next(), None);
 }
 
-// #[test]
-// #[cfg_attr(miri, ignore)]
-// fn test_lots_of_insertions() {
-//     let mut m = DHashMap::new();
+#[test]
+#[cfg_attr(miri, ignore)]
+fn test_lots_of_insertions() {
+    let mut m = DHashMap::new();
 
-//     // Try this a few times to make sure we never screw up the hashmap's
-//     // internal state.
-//     for _ in 0..10 {
-//         assert!(m.is_empty());
+    // Try this a few times to make sure we never screw up the hashmap's
+    // internal state.
+    for _ in 0..10 {
+        assert!(m.is_empty());
 
-//         for i in 1..1001 {
-//             assert!(m.insert(i, i, i).is_none());
+        for i in 1..1001 {
+            assert!(m.insert(i, i, i).is_none());
 
-//             for j in 1..=i {
-//                 let r = m.get_key1(&j);
-//                 assert_eq!(r, Some(&j));
-//             }
+            for j in 1..=i {
+                let r = m.get_key1(&j);
+                assert_eq!(r, Some(&j));
+            }
 
-//             for j in 1..=i {
-//                 let r = m.get_key2(&j);
-//                 assert_eq!(r, Some(&j));
-//             }
+            for j in 1..=i {
+                let r = m.get_key2(&j);
+                assert_eq!(r, Some(&j));
+            }
 
-//             for j in 1..=i {
-//                 let r = m.get_keys(&j, &j);
-//                 assert_eq!(r, Some(&j));
-//             }
+            for j in 1..=i {
+                let r = m.get_keys(&j, &j);
+                assert_eq!(r, Some(&j));
+            }
 
-//             for j in i + 1..1001 {
-//                 let r = m.get_key1(&j);
-//                 assert_eq!(r, None);
-//             }
+            for j in i + 1..1001 {
+                let r = m.get_key1(&j);
+                assert_eq!(r, None);
+            }
 
-//             for j in i + 1..1001 {
-//                 let r = m.get_key2(&j);
-//                 assert_eq!(r, None);
-//             }
+            for j in i + 1..1001 {
+                let r = m.get_key2(&j);
+                assert_eq!(r, None);
+            }
 
-//             for j in i + 1..1001 {
-//                 let r = m.get_keys(&j, &j);
-//                 assert_eq!(r, None);
-//             }
-//         }
+            for j in i + 1..1001 {
+                let r = m.get_keys(&j, &j);
+                assert_eq!(r, None);
+            }
+        }
 
-//         for i in 1001..2001 {
-//             assert!(!m.contains_key1(&i));
-//         }
+        for i in 1001..2001 {
+            assert!(!m.contains_key1(&i));
+        }
 
-//         for i in 1001..2001 {
-//             assert!(!m.contains_key2(&i));
-//         }
+        for i in 1001..2001 {
+            assert!(!m.contains_key2(&i));
+        }
 
-//         for i in 1001..2001 {
-//             assert!(!m.contains_keys(&i, &i));
-//         }
+        for i in 1001..2001 {
+            assert!(!m.contains_keys(&i, &i));
+        }
 
-//         // remove forwards with key #1
-//         for i in 1..1001 {
-//             assert!(m.remove_key1(&i).is_some());
+        // remove forwards with key #1
+        for i in 1..1001 {
+            assert!(m.remove_key1(&i).is_some());
 
-//             for j in 1..=i {
-//                 assert!(!m.contains_key1(&j));
-//             }
+            for j in 1..=i {
+                assert!(!m.contains_key1(&j));
+            }
 
-//             for j in i + 1..1001 {
-//                 assert!(m.contains_key1(&j));
-//             }
-//         }
+            for j in i + 1..1001 {
+                assert!(m.contains_key1(&j));
+            }
+        }
 
-//         for i in 1..1001 {
-//             assert!(m.insert(i, i, i).is_none());
-//         }
+        for i in 1..1001 {
+            assert!(m.insert(i, i, i).is_none());
+        }
 
-//         // remove forwards with key #2
-//         for i in 1..1001 {
-//             assert!(m.remove_key2(&i).is_some());
+        // remove forwards with key #2
+        for i in 1..1001 {
+            assert!(m.remove_key2(&i).is_some());
 
-//             for j in 1..=i {
-//                 assert!(!m.contains_key2(&j));
-//             }
+            for j in 1..=i {
+                assert!(!m.contains_key2(&j));
+            }
 
-//             for j in i + 1..1001 {
-//                 assert!(m.contains_key2(&j));
-//             }
-//         }
+            for j in i + 1..1001 {
+                assert!(m.contains_key2(&j));
+            }
+        }
 
-//         for i in 1..1001 {
-//             assert!(m.insert(i, i, i).is_none());
-//         }
+        for i in 1..1001 {
+            assert!(m.insert(i, i, i).is_none());
+        }
 
-//         // remove forwards with both keys
-//         for i in 1..1001 {
-//             assert!(m.remove_keys(&i, &i).is_some());
+        // remove forwards with both keys
+        for i in 1..1001 {
+            assert!(m.remove_keys(&i, &i).is_some());
 
-//             for j in 1..=i {
-//                 assert!(!m.contains_keys(&j, &j));
-//             }
+            for j in 1..=i {
+                assert!(!m.contains_keys(&j, &j));
+            }
 
-//             for j in i + 1..1001 {
-//                 assert!(m.contains_keys(&j, &j));
-//             }
-//         }
-//         for i in 1..1001 {
-//             assert!(!m.contains_key1(&i));
-//             assert!(!m.contains_key2(&i));
-//             assert!(!m.contains_keys(&i, &i));
-//         }
+            for j in i + 1..1001 {
+                assert!(m.contains_keys(&j, &j));
+            }
+        }
+        for i in 1..1001 {
+            assert!(!m.contains_key1(&i));
+            assert!(!m.contains_key2(&i));
+            assert!(!m.contains_keys(&i, &i));
+        }
 
-//         for i in 1..1001 {
-//             assert!(m.insert(i, i, i).is_none());
-//         }
+        for i in 1..1001 {
+            assert!(m.insert(i, i, i).is_none());
+        }
 
-//         // remove backwards with key #1
-//         for i in (1..1001).rev() {
-//             assert!(m.remove_key1(&i).is_some());
+        // remove backwards with key #1
+        for i in (1..1001).rev() {
+            assert!(m.remove_key1(&i).is_some());
 
-//             for j in i..1001 {
-//                 assert!(!m.contains_key1(&j));
-//             }
+            for j in i..1001 {
+                assert!(!m.contains_key1(&j));
+            }
 
-//             for j in 1..i {
-//                 assert!(m.contains_key1(&j));
-//             }
-//         }
+            for j in 1..i {
+                assert!(m.contains_key1(&j));
+            }
+        }
 
-//         for i in 1..1001 {
-//             assert!(m.insert(i, i, i).is_none());
-//         }
+        for i in 1..1001 {
+            assert!(m.insert(i, i, i).is_none());
+        }
 
-//         // remove backwards with key #2
-//         for i in (1..1001).rev() {
-//             assert!(m.remove_key2(&i).is_some());
+        // remove backwards with key #2
+        for i in (1..1001).rev() {
+            assert!(m.remove_key2(&i).is_some());
 
-//             for j in i..1001 {
-//                 assert!(!m.contains_key2(&j));
-//             }
+            for j in i..1001 {
+                assert!(!m.contains_key2(&j));
+            }
 
-//             for j in 1..i {
-//                 assert!(m.contains_key2(&j));
-//             }
-//         }
+            for j in 1..i {
+                assert!(m.contains_key2(&j));
+            }
+        }
 
-//         for i in 1..1001 {
-//             assert!(m.insert(i, i, i).is_none());
-//         }
+        for i in 1..1001 {
+            assert!(m.insert(i, i, i).is_none());
+        }
 
-//         // remove backwards with both keys
-//         for i in (1..1001).rev() {
-//             assert!(m.remove_keys(&i, &i).is_some());
+        // remove backwards with both keys
+        for i in (1..1001).rev() {
+            assert!(m.remove_keys(&i, &i).is_some());
 
-//             for j in i..1001 {
-//                 assert!(!m.contains_keys(&j, &j));
-//             }
+            for j in i..1001 {
+                assert!(!m.contains_keys(&j, &j));
+            }
 
-//             for j in 1..i {
-//                 assert!(m.contains_keys(&j, &j));
-//             }
-//         }
-//     }
-// }
+            for j in 1..i {
+                assert!(m.contains_keys(&j, &j));
+            }
+        }
+    }
+}
 
 #[test]
 fn test_find_mut() {
@@ -3285,7 +3277,7 @@ fn test_insert_overwrite() {
     assert_eq!(*m.get_key2(&10).unwrap(), 100);
     assert_eq!(*m.get_keys(&1, &10).unwrap(), 100);
 
-    assert!(!m.insert(1, 10, 200).is_none());
+    assert!(m.insert(1, 10, 200).is_some());
     assert_eq!(*m.get_key1(&1).unwrap(), 200);
     assert_eq!(*m.get_key2(&10).unwrap(), 200);
     assert_eq!(*m.get_keys(&1, &10).unwrap(), 200);
@@ -4341,7 +4333,7 @@ fn test_values_mut() {
     let vec = vec![(1, 1, 1), (2, 2, 2), (3, 3, 3)];
     let mut map: DHashMap<_, _, _> = vec.into_iter().collect();
     for value in map.values_mut() {
-        *value = (*value) * 2
+        *value *= 2
     }
     let values: Vec<_> = map.values().cloned().collect();
     assert_eq!(values.len(), 3);
@@ -4517,7 +4509,7 @@ fn test_show() {
 
     let map_str = format!("{:?}", map);
 
-    assert!(map_str == "{(1, 2): 3, (3, 4): 5}" || map_str == "{(1, 2): 3, (3, 4): 5}");
+    assert!(map_str == "{(1, 2): 3, (3, 4): 5}" || map_str == "{(3, 4): 5, (1, 2): 3}");
     assert_eq!(format!("{:?}", empty), "{}");
 }
 
@@ -4873,12 +4865,9 @@ fn test_entry() {
     assert_eq!(m.capacity(), 0);
 
     match m.entry(1, 10) {
-        Ok(entry) => match entry {
-            Entry::Vacant(_vacant) => {
-                assert_eq!(m.capacity(), 0);
-            }
-            _ => panic!(),
-        },
+        Ok(Entry::Vacant(_vacant)) => {
+            assert_eq!(m.capacity(), 0);
+        }
         _ => panic!(),
     }
 
@@ -4886,22 +4875,16 @@ fn test_entry() {
     assert_eq!(m.capacity(), 0);
 
     match m.entry(1, 10) {
-        Ok(entry) => match entry {
-            Entry::Vacant(vacant) => {
-                assert_eq!(vacant.insert(100), &mut 100);
-            }
-            _ => panic!(),
-        },
+        Ok(Entry::Vacant(vacant)) => {
+            assert_eq!(vacant.insert(100), &mut 100);
+        }
         _ => panic!(),
     }
 
     match m.entry(2, 20) {
-        Ok(entry) => match entry {
-            Entry::Vacant(vacant) => {
-                assert_eq!(vacant.insert(200), &mut 200);
-            }
-            _ => panic!(),
-        },
+        Ok(Entry::Vacant(vacant)) => {
+            assert_eq!(vacant.insert(200), &mut 200);
+        }
         _ => panic!(),
     }
 
@@ -4910,38 +4893,29 @@ fn test_entry() {
 
     assert_eq!(*m.get_key2(&10).unwrap(), 100);
     assert_eq!(*m.get_key2(&20).unwrap(), 200);
-    assert_eq!(m.is_empty(), false);
+    assert!(!m.is_empty());
     assert_eq!(m.len(), 2);
     let old_cap = m.capacity();
     assert!(old_cap >= 2);
 
     match m.entry(1, 10) {
-        Ok(entry) => match entry {
-            Entry::Occupied(_occupied) => {
-                assert_eq!(old_cap, m.capacity());
-            }
-            _ => panic!(),
-        },
+        Ok(Entry::Occupied(_occupied)) => {
+            assert_eq!(old_cap, m.capacity());
+        }
         _ => panic!(),
     }
 
     match m.entry(1, 10) {
-        Ok(entry) => match entry {
-            Entry::Occupied(mut occupied) => {
-                assert_eq!(occupied.insert(1000), 100);
-            }
-            _ => panic!(),
-        },
+        Ok(Entry::Occupied(mut occupied)) => {
+            assert_eq!(occupied.insert(1000), 100);
+        }
         _ => panic!(),
     }
 
     match m.entry(2, 20) {
-        Ok(entry) => match entry {
-            Entry::Occupied(mut occupied) => {
-                assert_eq!(occupied.insert(2000), 200);
-            }
-            _ => panic!(),
-        },
+        Ok(Entry::Occupied(mut occupied)) => {
+            assert_eq!(occupied.insert(2000), 200);
+        }
         _ => panic!(),
     }
 
@@ -5026,13 +5000,10 @@ fn test_entry() {
 
     // Existing key (insert)
     match map.entry(1, 10) {
-        Ok(entry) => match entry {
-            Entry::Occupied(mut view) => {
-                assert_eq!(view.get(), &100);
-                assert_eq!(view.insert(1000), 100);
-            }
-            _ => panic!(),
-        },
+        Ok(Entry::Occupied(mut view)) => {
+            assert_eq!(view.get(), &100);
+            assert_eq!(view.insert(1000), 100);
+        }
         _ => panic!(),
     }
     assert_eq!(map.get_key1(&1).unwrap(), &1000);
@@ -5040,14 +5011,11 @@ fn test_entry() {
 
     // Existing key (update)
     match map.entry(2, 20) {
-        Ok(entry) => match entry {
-            Entry::Occupied(mut view) => {
-                let v = view.get_mut();
-                let new_v = (*v) * 10;
-                *v = new_v;
-            }
-            _ => panic!(),
-        },
+        Ok(Entry::Occupied(mut view)) => {
+            let v = view.get_mut();
+            let new_v = (*v) * 10;
+            *v = new_v;
+        }
         _ => panic!(),
     }
     assert_eq!(map.get_key1(&2).unwrap(), &2000);
@@ -5055,12 +5023,9 @@ fn test_entry() {
 
     // Existing key (take)
     match map.entry(3, 30) {
-        Ok(entry) => match entry {
-            Entry::Occupied(view) => {
-                assert_eq!(view.remove(), 300);
-            }
-            _ => panic!(),
-        },
+        Ok(Entry::Occupied(view)) => {
+            assert_eq!(view.remove(), 300);
+        }
         _ => panic!(),
     }
     assert_eq!(map.get_key1(&3), None);
@@ -5068,12 +5033,9 @@ fn test_entry() {
 
     // Inexistent key (insert)
     match map.entry(10, 100) {
-        Ok(entry) => match entry {
-            Entry::Vacant(view) => {
-                assert_eq!(*view.insert(10000), 10000);
-            }
-            _ => panic!(),
-        },
+        Ok(Entry::Vacant(view)) => {
+            assert_eq!(*view.insert(10000), 10000);
+        }
         _ => panic!(),
     }
     assert_eq!(map.get_key1(&10).unwrap(), &10000);
@@ -5191,12 +5153,9 @@ fn test_entry_ref() {
     assert_eq!(m.capacity(), 0);
 
     match m.entry_ref("One", "Second One") {
-        Ok(entry) => match entry {
-            EntryRef::Vacant(_vacant) => {
-                assert_eq!(m.capacity(), 0);
-            }
-            _ => panic!(),
-        },
+        Ok(EntryRef::Vacant(_vacant)) => {
+            assert_eq!(m.capacity(), 0);
+        }
         _ => panic!(),
     }
 
@@ -5204,22 +5163,16 @@ fn test_entry_ref() {
     assert_eq!(m.capacity(), 0);
 
     match m.entry_ref("One", "Second One") {
-        Ok(entry) => match entry {
-            EntryRef::Vacant(vacant) => {
-                assert_eq!(vacant.insert(100), &mut 100);
-            }
-            _ => panic!(),
-        },
+        Ok(EntryRef::Vacant(vacant)) => {
+            assert_eq!(vacant.insert(100), &mut 100);
+        }
         _ => panic!(),
     }
 
     match m.entry_ref("Two", "Second Two") {
-        Ok(entry) => match entry {
-            EntryRef::Vacant(vacant) => {
-                assert_eq!(vacant.insert(200), &mut 200);
-            }
-            _ => panic!(),
-        },
+        Ok(EntryRef::Vacant(vacant)) => {
+            assert_eq!(vacant.insert(200), &mut 200);
+        }
         _ => panic!(),
     }
 
@@ -5228,38 +5181,29 @@ fn test_entry_ref() {
 
     assert_eq!(*m.get_key2("Second One").unwrap(), 100);
     assert_eq!(*m.get_key2("Second Two").unwrap(), 200);
-    assert_eq!(m.is_empty(), false);
+    assert!(!m.is_empty());
     assert_eq!(m.len(), 2);
     let old_cap = m.capacity();
     assert!(old_cap >= 2);
 
     match m.entry_ref("One", "Second One") {
-        Ok(entry) => match entry {
-            EntryRef::Occupied(_occupied) => {
-                assert_eq!(old_cap, m.capacity());
-            }
-            _ => panic!(),
-        },
+        Ok(EntryRef::Occupied(_occupied)) => {
+            assert_eq!(old_cap, m.capacity());
+        }
         _ => panic!(),
     }
 
     match m.entry_ref("One", "Second One") {
-        Ok(entry) => match entry {
-            EntryRef::Occupied(mut occupied) => {
-                assert_eq!(occupied.insert(1000), 100);
-            }
-            _ => panic!(),
-        },
+        Ok(EntryRef::Occupied(mut occupied)) => {
+            assert_eq!(occupied.insert(1000), 100);
+        }
         _ => panic!(),
     }
 
     match m.entry_ref("Two", "Second Two") {
-        Ok(entry) => match entry {
-            EntryRef::Occupied(mut occupied) => {
-                assert_eq!(occupied.insert(2000), 200);
-            }
-            _ => panic!(),
-        },
+        Ok(EntryRef::Occupied(mut occupied)) => {
+            assert_eq!(occupied.insert(2000), 200);
+        }
         _ => panic!(),
     }
 
@@ -5338,13 +5282,10 @@ fn test_entry_ref() {
 
     // Existing key (insert)
     match map.entry_ref("One", "10") {
-        Ok(entry) => match entry {
-            EntryRef::Occupied(mut view) => {
-                assert_eq!(view.get(), &100);
-                assert_eq!(view.insert(1000), 100);
-            }
-            _ => panic!(),
-        },
+        Ok(EntryRef::Occupied(mut view)) => {
+            assert_eq!(view.get(), &100);
+            assert_eq!(view.insert(1000), 100);
+        }
         _ => panic!(),
     }
     assert_eq!(map.get_key1("One").unwrap(), &1000);
@@ -5352,14 +5293,11 @@ fn test_entry_ref() {
 
     // Existing key (update)
     match map.entry_ref("Two", "20") {
-        Ok(entry) => match entry {
-            EntryRef::Occupied(mut view) => {
-                let v = view.get_mut();
-                let new_v = (*v) * 10;
-                *v = new_v;
-            }
-            _ => panic!(),
-        },
+        Ok(EntryRef::Occupied(mut view)) => {
+            let v = view.get_mut();
+            let new_v = (*v) * 10;
+            *v = new_v;
+        }
         _ => panic!(),
     }
     assert_eq!(map.get_key1("Two").unwrap(), &2000);
@@ -5367,12 +5305,9 @@ fn test_entry_ref() {
 
     // Existing key (take)
     match map.entry_ref("Three", "30") {
-        Ok(entry) => match entry {
-            EntryRef::Occupied(view) => {
-                assert_eq!(view.remove(), 300);
-            }
-            _ => panic!(),
-        },
+        Ok(EntryRef::Occupied(view)) => {
+            assert_eq!(view.remove(), 300);
+        }
         _ => panic!(),
     }
     assert_eq!(map.get_key1("Three"), None);
@@ -5380,12 +5315,9 @@ fn test_entry_ref() {
 
     // Inexistent key (insert)
     match map.entry_ref("Ten", "100") {
-        Ok(entry) => match entry {
-            EntryRef::Vacant(view) => {
-                assert_eq!(*view.insert(10000), 10000);
-            }
-            _ => panic!(),
-        },
+        Ok(EntryRef::Vacant(view)) => {
+            assert_eq!(*view.insert(10000), 10000);
+        }
         _ => panic!(),
     }
     assert_eq!(map.get_key1("Ten").unwrap(), &10000);
@@ -7090,7 +7022,7 @@ fn test_replace_entry_with_doesnt_corrupt() {
         m.insert(x, x, ());
     }
 
-    assert!(m.len() > 0);
+    assert!(!m.is_empty());
 
     for _ in 0..1000 {
         let x = rng.gen_range(-10..10);
@@ -7112,7 +7044,7 @@ fn test_replace_entry_with_doesnt_corrupt() {
         m.insert(x, x, ());
     }
 
-    assert!(m.len() > 0);
+    assert!(!m.is_empty());
 
     for _ in 0..1000 {
         let x = rng.gen_range(-10..10);
@@ -7134,7 +7066,7 @@ fn test_replace_entry_with_doesnt_corrupt() {
         m.insert(x, x, ());
     }
 
-    assert!(m.len() > 0);
+    assert!(!m.is_empty());
 
     for _ in 0..1000 {
         let x = rng.gen_range(-10..10);
@@ -7174,7 +7106,7 @@ fn test_replace_entry_ref_with_doesnt_corrupt() {
         m.insert(x.clone(), x, ());
     }
 
-    assert!(m.len() > 0);
+    assert!(!m.is_empty());
 
     for _ in 0..1000 {
         let mut x = std::string::String::with_capacity(1);
@@ -7197,7 +7129,7 @@ fn test_replace_entry_ref_with_doesnt_corrupt() {
         m.insert(x.clone(), x, ());
     }
 
-    assert!(m.len() > 0);
+    assert!(!m.is_empty());
 
     for _ in 0..1000 {
         let mut x = std::string::String::with_capacity(1);
@@ -7220,7 +7152,7 @@ fn test_replace_entry_ref_with_doesnt_corrupt() {
         m.insert(x.clone(), x, ());
     }
 
-    assert!(m.len() > 0);
+    assert!(!m.is_empty());
 
     for _ in 0..1000 {
         let mut x = std::string::String::with_capacity(1);
@@ -7259,7 +7191,7 @@ fn test_replace_raw_entry_with_doesnt_corrupt() {
         m.insert(x, x, ());
     }
 
-    assert!(m.len() > 0);
+    assert!(!m.is_empty());
 
     for _ in 0..1000 {
         let x = rng.gen_range(-10..10);
@@ -7280,7 +7212,7 @@ fn test_replace_raw_entry_with_doesnt_corrupt() {
         m.insert(x, x, ());
     }
 
-    assert!(m.len() > 0);
+    assert!(!m.is_empty());
 
     for _ in 0..1000 {
         let x = rng.gen_range(-10..10);
@@ -7301,7 +7233,7 @@ fn test_replace_raw_entry_with_doesnt_corrupt() {
         m.insert(x, x, ());
     }
 
-    assert!(m.len() > 0);
+    assert!(!m.is_empty());
 
     for _ in 0..1000 {
         let x = rng.gen_range(-10..10);
@@ -7793,7 +7725,10 @@ fn test_key_without_hash_impl() {
             },
             Err(_) => panic!(),
         };
-        assert_eq!(occupied_entry.remove(), ());
+        assert_eq!(
+            occupied_entry.remove_entry(),
+            (IntWrapper(0), IntWrapper(0), ())
+        );
     }
     {
         assert!(m
@@ -7870,11 +7805,8 @@ fn test_into_iter_refresh() {
                             it.reflect_insert(&bucket_v);
                             let p_v = removed_v.iter().position(|e| e == &(i, i, 2 * i));
 
-                            match p_v {
-                                Some(p_v) => {
-                                    removed_v.swap_remove(p_v);
-                                }
-                                None => {}
+                            if let Some(p_v) = p_v {
+                                removed_v.swap_remove(p_v);
                             }
                             left += 1;
                         }
@@ -7951,7 +7883,7 @@ fn test_into_iter_reflect_remove() {
                             let position = removed_data
                                 .iter()
                                 .position(|e| e == &(index, 2 * index as u32, 4 * index))
-                                .expect(&format!("{} not in {:?}", index, removed_data));
+                                .unwrap_or_else(|| panic!("{} not in {:?}", index, removed_data));
 
                             removed_data.swap_remove(position);
 
@@ -8139,7 +8071,7 @@ fn test_into_pointer_iter_reflect_remove() {
                             let position = removed_data
                                 .iter()
                                 .position(|e| e == &(index, 2 * index as u32, 4 * index))
-                                .expect(&format!("{} not in {:?}", index, removed_data));
+                                .unwrap_or_else(|| panic!("{} not in {:?}", index, removed_data));
 
                             removed_data.swap_remove(position);
 

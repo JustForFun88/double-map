@@ -55,7 +55,7 @@ fn map_rehash() {
         table.insert(i, i, i, hasher_1, hasher_2);
     }
 
-    for i in 0_64..N {
+    for i in 0..N {
         unsafe {
             assert_eq!(table.find_h1(i, |x| *x == i).map(|b| b.read()), Some(i));
         }
@@ -74,23 +74,23 @@ fn map_rehash() {
                 Some((i, i))
             );
         }
-        assert!(table.find_h1(i + 100, |x| *x == i + 100).is_none());
-        assert!(table.find_h2(i + 100, |x| *x == i + 100).is_none());
+        assert!(table.find_h1(i + 150, |x| *x == i + 150).is_none());
+        assert!(table.find_h2(i + 150, |x| *x == i + 150).is_none());
 
         assert!(table
-            .find(i, |x| *x == i, i + 100, |x| *x == i + 100)
+            .find(i, |x| *x == i, i + 150, |x| *x == i + 150)
             .is_none());
         assert!(table
-            .find(i + 100, |x| *x == i + 100, i, |x| *x == i)
+            .find(i + 150, |x| *x == i + 150, i, |x| *x == i)
             .is_none());
         assert!(table
-            .find(i + 100, |x| *x == i + 100, i + 100, |x| *x == i + 100)
+            .find(i + 150, |x| *x == i + 150, i + 150, |x| *x == i + 150)
             .is_none());
     }
 
     rehash_in_place(&mut table, hasher_1, hasher_2);
 
-    for i in 0_64..N {
+    for i in 0..N {
         unsafe {
             assert_eq!(table.find_h1(i, |x| *x == i).map(|b| b.read()), Some(i));
         }
@@ -109,17 +109,17 @@ fn map_rehash() {
                 Some((i, i))
             );
         }
-        assert!(table.find_h1(i + 100, |x| *x == i + 100).is_none());
-        assert!(table.find_h2(i + 100, |x| *x == i + 100).is_none());
+        assert!(table.find_h1(i + 150, |x| *x == i + 150).is_none());
+        assert!(table.find_h2(i + 150, |x| *x == i + 150).is_none());
 
         assert!(table
-            .find(i, |x| *x == i, i + 100, |x| *x == i + 100)
+            .find(i, |x| *x == i, i + 150, |x| *x == i + 150)
             .is_none());
         assert!(table
-            .find(i + 100, |x| *x == i + 100, i, |x| *x == i)
+            .find(i + 150, |x| *x == i + 150, i, |x| *x == i)
             .is_none());
         assert!(table
-            .find(i + 100, |x| *x == i + 100, i + 100, |x| *x == i + 100)
+            .find(i + 150, |x| *x == i + 150, i + 150, |x| *x == i + 150)
             .is_none());
     }
 }
@@ -136,7 +136,7 @@ fn map_clone() {
     let table_two = table.clone();
 
     // and we can use table_two
-    for i in 0_64..N {
+    for i in 0..N {
         unsafe {
             assert_eq!(table_two.find_h1(i, |x| *x == i).map(|b| b.read()), Some(i));
         }
@@ -155,17 +155,17 @@ fn map_clone() {
                 Some((i, i))
             );
         }
-        assert!(table_two.find_h1(i + 100, |x| *x == i + 100).is_none());
-        assert!(table_two.find_h2(i + 100, |x| *x == i + 100).is_none());
+        assert!(table_two.find_h1(i + 150, |x| *x == i + 150).is_none());
+        assert!(table_two.find_h2(i + 150, |x| *x == i + 150).is_none());
 
         assert!(table_two
-            .find(i, |x| *x == i, i + 100, |x| *x == i + 100)
+            .find(i, |x| *x == i, i + 150, |x| *x == i + 150)
             .is_none());
         assert!(table_two
-            .find(i + 100, |x| *x == i + 100, i, |x| *x == i)
+            .find(i + 150, |x| *x == i + 150, i, |x| *x == i)
             .is_none());
         assert!(table_two
-            .find(i + 100, |x| *x == i + 100, i + 100, |x| *x == i + 100)
+            .find(i + 150, |x| *x == i + 150, i + 150, |x| *x == i + 150)
             .is_none());
     }
 }

@@ -1621,31 +1621,33 @@ impl<T, A: Allocator + Clone> RawTable<T, A> {
     ///
     /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
     #[allow(clippy::explicit_counter_loop)]
-    pub unsafe fn get_many_mut_from_h1_iter<const N: usize>(
+    pub unsafe fn get_many_mut_from_h1_iter<I, F1, const N: usize>(
         &mut self,
-        hash1_iter: impl Iterator<Item = (u64, impl FnMut(&T) -> bool)>,
-    ) -> Option<[&'_ mut T; N]> {
-        unsafe {
-            let ptrs = self.get_many_mut_pointers_from_h1_iter::<N>(hash1_iter)?;
+        hash1_iter: I,
+    ) -> Option<[&'_ mut T; N]>
+    where
+        I: Iterator<Item = (u64, F1)>,
+        F1: FnMut(&T) -> bool,
+    {
+        let ptrs = self.get_many_mut_pointers_from_h1_iter::<_, _, N>(hash1_iter)?;
 
-            // Avoid using `Iterator::enumerate` because of double checking
-            let mut index = 0_usize;
-            for &cur in ptrs.iter() {
-                if ptrs
-                    .get_unchecked(..index) // safety we now exactly that the `index` in `ptrs` index range
-                    .iter()
-                    .any(|&prev| ptr::eq::<T>(prev, cur))
-                {
-                    return None;
-                }
-                index += 1;
+        // Avoid using `Iterator::enumerate` because of double checking
+        let mut index = 0_usize;
+        for &cur in ptrs.iter() {
+            if ptrs
+                .get_unchecked(..index) // safety we now exactly that the `index` in `ptrs` index range
+                .iter()
+                .any(|&prev| ptr::eq::<T>(prev, cur))
+            {
+                return None;
             }
-            // All bucket are distinct from all previous buckets so we're clear to return the result
-            // of the lookup.
-
-            // TODO use `MaybeUninit::array_assume_init` here instead once that's stable.
-            Some(mem::transmute_copy(&ptrs))
+            index += 1;
         }
+        // All bucket are distinct from all previous buckets so we're clear to return the result
+        // of the lookup.
+
+        // TODO use `MaybeUninit::array_assume_init` here instead once that's stable.
+        Some(mem::transmute_copy(&ptrs))
     }
 
     /// Attempts to get mutable references to `N element` in the table at once
@@ -1668,11 +1670,15 @@ impl<T, A: Allocator + Clone> RawTable<T, A> {
     /// are not used.
     ///
     /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
-    pub unsafe fn get_many_unchecked_mut_from_h1_iter<const N: usize>(
+    pub unsafe fn get_many_unchecked_mut_from_h1_iter<I, F1, const N: usize>(
         &mut self,
-        hash1_iter: impl Iterator<Item = (u64, impl FnMut(&T) -> bool)>,
-    ) -> Option<[&'_ mut T; N]> {
-        let ptrs = self.get_many_mut_pointers_from_h1_iter::<N>(hash1_iter)?;
+        hash1_iter: I,
+    ) -> Option<[&'_ mut T; N]>
+    where
+        I: Iterator<Item = (u64, F1)>,
+        F1: FnMut(&T) -> bool,
+    {
+        let ptrs = self.get_many_mut_pointers_from_h1_iter::<_, _, N>(hash1_iter)?;
         Some(mem::transmute_copy(&ptrs))
     }
 
@@ -1699,10 +1705,14 @@ impl<T, A: Allocator + Clone> RawTable<T, A> {
     ///
     /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
     #[allow(clippy::explicit_counter_loop)]
-    unsafe fn get_many_mut_pointers_from_h1_iter<const N: usize>(
+    unsafe fn get_many_mut_pointers_from_h1_iter<I, F1, const N: usize>(
         &mut self,
-        hash1_iter: impl Iterator<Item = (u64, impl FnMut(&T) -> bool)>,
-    ) -> Option<[*mut T; N]> {
+        hash1_iter: I,
+    ) -> Option<[*mut T; N]>
+    where
+        I: Iterator<Item = (u64, F1)>,
+        F1: FnMut(&T) -> bool,
+    {
         // Check trivial cases
         if N == 0 || N > self.len() {
             return None;
@@ -1752,31 +1762,33 @@ impl<T, A: Allocator + Clone> RawTable<T, A> {
     ///
     /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
     #[allow(clippy::explicit_counter_loop)]
-    pub unsafe fn get_many_mut_from_h2_iter<const N: usize>(
+    pub unsafe fn get_many_mut_from_h2_iter<I, F2, const N: usize>(
         &mut self,
-        hash2_iter: impl Iterator<Item = (u64, impl FnMut(&T) -> bool)>,
-    ) -> Option<[&'_ mut T; N]> {
-        unsafe {
-            let ptrs = self.get_many_mut_pointers_from_h2_iter::<N>(hash2_iter)?;
+        hash2_iter: I,
+    ) -> Option<[&'_ mut T; N]>
+    where
+        I: Iterator<Item = (u64, F2)>,
+        F2: FnMut(&T) -> bool,
+    {
+        let ptrs = self.get_many_mut_pointers_from_h2_iter::<_, _, N>(hash2_iter)?;
 
-            // Avoid using `Iterator::enumerate` because of double checking
-            let mut index = 0_usize;
-            for &cur in ptrs.iter() {
-                if ptrs
-                    .get_unchecked(..index) // safety we now exactly that the `index` in `ptrs` index range
-                    .iter()
-                    .any(|&prev| ptr::eq::<T>(prev, cur))
-                {
-                    return None;
-                }
-                index += 1;
+        // Avoid using `Iterator::enumerate` because of double checking
+        let mut index = 0_usize;
+        for &cur in ptrs.iter() {
+            if ptrs
+                .get_unchecked(..index) // safety we now exactly that the `index` in `ptrs` index range
+                .iter()
+                .any(|&prev| ptr::eq::<T>(prev, cur))
+            {
+                return None;
             }
-            // All bucket are distinct from all previous buckets so we're clear to return the result
-            // of the lookup.
-
-            // TODO use `MaybeUninit::array_assume_init` here instead once that's stable.
-            Some(mem::transmute_copy(&ptrs))
+            index += 1;
         }
+        // All bucket are distinct from all previous buckets so we're clear to return the result
+        // of the lookup.
+
+        // TODO use `MaybeUninit::array_assume_init` here instead once that's stable.
+        Some(mem::transmute_copy(&ptrs))
     }
 
     /// Attempts to get mutable references to `N element` in the table at once
@@ -1799,11 +1811,15 @@ impl<T, A: Allocator + Clone> RawTable<T, A> {
     /// are not used.
     ///
     /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
-    pub unsafe fn get_many_unchecked_mut_from_h2_iter<const N: usize>(
+    pub unsafe fn get_many_unchecked_mut_from_h2_iter<I, F2, const N: usize>(
         &mut self,
-        hash2_iter: impl Iterator<Item = (u64, impl FnMut(&T) -> bool)>,
-    ) -> Option<[&'_ mut T; N]> {
-        let ptrs = self.get_many_mut_pointers_from_h2_iter::<N>(hash2_iter)?;
+        hash2_iter: I,
+    ) -> Option<[&'_ mut T; N]>
+    where
+        I: Iterator<Item = (u64, F2)>,
+        F2: FnMut(&T) -> bool,
+    {
+        let ptrs = self.get_many_mut_pointers_from_h2_iter::<_, _, N>(hash2_iter)?;
         Some(mem::transmute_copy(&ptrs))
     }
 
@@ -1830,10 +1846,14 @@ impl<T, A: Allocator + Clone> RawTable<T, A> {
     ///
     /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
     #[allow(clippy::explicit_counter_loop)]
-    unsafe fn get_many_mut_pointers_from_h2_iter<const N: usize>(
+    unsafe fn get_many_mut_pointers_from_h2_iter<I, F2, const N: usize>(
         &mut self,
-        hash2_iter: impl Iterator<Item = (u64, impl FnMut(&T) -> bool)>,
-    ) -> Option<[*mut T; N]> {
+        hash2_iter: I,
+    ) -> Option<[*mut T; N]>
+    where
+        I: Iterator<Item = (u64, F2)>,
+        F2: FnMut(&T) -> bool,
+    {
         // Check trivial cases
         if N == 0 || N > self.len() {
             return None;
@@ -1883,31 +1903,34 @@ impl<T, A: Allocator + Clone> RawTable<T, A> {
     ///
     /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
     #[allow(clippy::explicit_counter_loop)]
-    pub unsafe fn get_many_mut_from_iter<const N: usize>(
+    pub unsafe fn get_many_mut_from_iter<I, F1, F2, const N: usize>(
         &mut self,
-        hashes_iter: impl Iterator<Item = (u64, impl FnMut(&T) -> bool, u64, impl FnMut(&T) -> bool)>,
-    ) -> Option<[&'_ mut T; N]> {
-        unsafe {
-            let ptrs = self.get_many_mut_pointers_from_iter::<N>(hashes_iter)?;
+        hashes_iter: I,
+    ) -> Option<[&'_ mut T; N]>
+    where
+        I: Iterator<Item = (u64, F1, u64, F2)>,
+        F1: FnMut(&T) -> bool,
+        F2: FnMut(&T) -> bool,
+    {
+        let ptrs = self.get_many_mut_pointers_from_iter::<_, _, _, N>(hashes_iter)?;
 
-            // Avoid using `Iterator::enumerate` because of double checking
-            let mut index = 0_usize;
-            for &cur in ptrs.iter() {
-                if ptrs
-                    .get_unchecked(..index) // safety we now exactly that the `index` in `ptrs` index range
-                    .iter()
-                    .any(|&prev| ptr::eq::<T>(prev, cur))
-                {
-                    return None;
-                }
-                index += 1;
+        // Avoid using `Iterator::enumerate` because of double checking
+        let mut index = 0_usize;
+        for &cur in ptrs.iter() {
+            if ptrs
+                .get_unchecked(..index) // safety we now exactly that the `index` in `ptrs` index range
+                .iter()
+                .any(|&prev| ptr::eq::<T>(prev, cur))
+            {
+                return None;
             }
-            // All bucket are distinct from all previous buckets so we're clear to return the result
-            // of the lookup.
-
-            // TODO use `MaybeUninit::array_assume_init` here instead once that's stable.
-            Some(mem::transmute_copy(&ptrs))
+            index += 1;
         }
+        // All bucket are distinct from all previous buckets so we're clear to return the result
+        // of the lookup.
+
+        // TODO use `MaybeUninit::array_assume_init` here instead once that's stable.
+        Some(mem::transmute_copy(&ptrs))
     }
 
     /// Attempts to get mutable references to `N element` in the table at once
@@ -1931,11 +1954,16 @@ impl<T, A: Allocator + Clone> RawTable<T, A> {
     /// are not used.
     ///
     /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
-    pub unsafe fn get_many_unchecked_mut_from_iter<const N: usize>(
+    pub unsafe fn get_many_unchecked_mut_from_iter<I, F1, F2, const N: usize>(
         &mut self,
-        hashes_iter: impl Iterator<Item = (u64, impl FnMut(&T) -> bool, u64, impl FnMut(&T) -> bool)>,
-    ) -> Option<[&'_ mut T; N]> {
-        let ptrs = self.get_many_mut_pointers_from_iter::<N>(hashes_iter)?;
+        hashes_iter: I,
+    ) -> Option<[&'_ mut T; N]>
+    where
+        I: Iterator<Item = (u64, F1, u64, F2)>,
+        F1: FnMut(&T) -> bool,
+        F2: FnMut(&T) -> bool,
+    {
+        let ptrs = self.get_many_mut_pointers_from_iter::<_, _, _, N>(hashes_iter)?;
         Some(mem::transmute_copy(&ptrs))
     }
 
@@ -1963,10 +1991,15 @@ impl<T, A: Allocator + Clone> RawTable<T, A> {
     ///
     /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
     #[allow(clippy::explicit_counter_loop)]
-    unsafe fn get_many_mut_pointers_from_iter<const N: usize>(
+    unsafe fn get_many_mut_pointers_from_iter<I, F1, F2, const N: usize>(
         &mut self,
-        hashes_iter: impl Iterator<Item = (u64, impl FnMut(&T) -> bool, u64, impl FnMut(&T) -> bool)>,
-    ) -> Option<[*mut T; N]> {
+        hashes_iter: I,
+    ) -> Option<[*mut T; N]>
+    where
+        I: Iterator<Item = (u64, F1, u64, F2)>,
+        F1: FnMut(&T) -> bool,
+        F2: FnMut(&T) -> bool,
+    {
         // Check trivial cases
         if N == 0 || N > self.len() {
             return None;

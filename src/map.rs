@@ -2992,7 +2992,7 @@ where
         });
 
         // Safety: we know that given iterator length is equal to the given `const N`.
-        unsafe { self.table.get_many_mut_from_h1_iter::<N>(hash1_iter) }
+        unsafe { self.table.get_many_mut_from_h1_iter::<_, _, N>(hash1_iter) }
     }
 
     unsafe fn get_many_unchecked_mut_inner_key1<Q1, const N: usize>(
@@ -3013,7 +3013,7 @@ where
 
         // we know only that given iterator length is equal to the given `const N`.
         self.table
-            .get_many_unchecked_mut_from_h1_iter::<N>(hash1_iter)
+            .get_many_unchecked_mut_from_h1_iter::<_, _, N>(hash1_iter)
     }
 
     fn get_many_mut_inner_key2<Q2, const N: usize>(
@@ -3033,7 +3033,7 @@ where
         });
 
         // Safety: we know that given iterator length is equal to the given `const N`.
-        unsafe { self.table.get_many_mut_from_h2_iter::<N>(hash2_iter) }
+        unsafe { self.table.get_many_mut_from_h2_iter::<_, _, N>(hash2_iter) }
     }
 
     unsafe fn get_many_unchecked_mut_inner_key2<Q2, const N: usize>(
@@ -3054,7 +3054,7 @@ where
 
         // we know only that given iterator length is equal to the given `const N`.
         self.table
-            .get_many_unchecked_mut_from_h2_iter::<N>(hash2_iter)
+            .get_many_unchecked_mut_from_h2_iter::<_, _, N>(hash2_iter)
     }
 
     fn get_many_mut_inner_keys<Q1, Q2, const N: usize>(
@@ -3076,7 +3076,7 @@ where
         });
 
         // Safety: we know that given iterator length is equal to the given `const N`.
-        unsafe { self.table.get_many_mut_from_iter::<N>(hashes_iter) }
+        unsafe { self.table.get_many_mut_from_iter::<_, _, _, N>(hashes_iter) }
     }
 
     unsafe fn get_many_unchecked_mut_inner_keys<Q1, Q2, const N: usize>(
@@ -3099,7 +3099,7 @@ where
 
         // we know only that given iterator length is equal to the given `const N`.
         self.table
-            .get_many_unchecked_mut_from_iter::<N>(hashes_iter)
+            .get_many_unchecked_mut_from_iter::<_, _, _, N>(hashes_iter)
     }
 
     /// Tries to insert given keys and value into the map. Update the value

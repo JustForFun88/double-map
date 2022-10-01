@@ -1410,7 +1410,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     ///     match i {
     ///         1..=3 => match map.raw_entry_mut().from_keys(k1, k2) {
     ///             Ok(RawEntryMut::Occupied(o)) => {
-    ///                 (inside_key1, inside_key2) = o.into_keys();
+    ///                 let (in_key1, in_key2) = o.into_keys();
+    ///                 inside_key1 = in_key1;
+    ///                 inside_key2 = in_key2;
     ///             }
     ///             _ => panic!(),
     ///         },
@@ -1422,7 +1424,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     ///                 .from_keys_hashed_nocheck(hash1, k1, hash2, k2)
     ///             {
     ///                 Ok(RawEntryMut::Occupied(o)) => {
-    ///                     (inside_key1, inside_key2) = o.into_keys();
+    ///                     let (in_key1, in_key2) = o.into_keys();
+    ///                     inside_key1 = in_key1;
+    ///                     inside_key2 = in_key2;
     ///                 }
     ///                 _ => panic!(),
     ///             }
@@ -1435,7 +1439,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     ///                 .from_hashes(hash1, |q| q == k1, hash2, |q| q == k2)
     ///             {
     ///                 Ok(RawEntryMut::Occupied(o)) => {
-    ///                     (inside_key1, inside_key2) = o.into_keys();
+    ///                     let (in_key1, in_key2) = o.into_keys();
+    ///                     inside_key1 = in_key1;
+    ///                     inside_key2 = in_key2;
     ///                 }
     ///                 _ => panic!(),
     ///             }
@@ -1738,7 +1744,10 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     ///     match i {
     ///         1..=3 => match map.raw_entry_mut().from_keys(k1, k2) {
     ///             Ok(RawEntryMut::Occupied(o)) => {
-    ///                 (inside_key1, inside_key2, inside_value) = o.into_keys_value();
+    ///                 let (in_key1, in_key2, in_value) = o.into_keys_value();
+    ///                 inside_key1 = in_key1;
+    ///                 inside_key2 = in_key2;
+    ///                 inside_value = in_value;
     ///             }
     ///             _ => panic!(),
     ///         },
@@ -1750,7 +1759,10 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     ///                 .from_keys_hashed_nocheck(hash1, k1, hash2, k2)
     ///             {
     ///                 Ok(RawEntryMut::Occupied(o)) => {
-    ///                     (inside_key1, inside_key2, inside_value) = o.into_keys_value();
+    ///                     let (in_key1, in_key2, in_value) = o.into_keys_value();
+    ///                     inside_key1 = in_key1;
+    ///                     inside_key2 = in_key2;
+    ///                     inside_value = in_value;
     ///                 }
     ///                 _ => panic!(),
     ///             }
@@ -1763,7 +1775,10 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     ///                 .from_hashes(hash1, |q| q == k1, hash2, |q| q == k2)
     ///             {
     ///                 Ok(RawEntryMut::Occupied(o)) => {
-    ///                     (inside_key1, inside_key2, inside_value) = o.into_keys_value();
+    ///                     let (in_key1, in_key2, in_value) = o.into_keys_value();
+    ///                     inside_key1 = in_key1;
+    ///                     inside_key2 = in_key2;
+    ///                     inside_value = in_value;
     ///                 }
     ///                 _ => panic!(),
     ///             }

@@ -1,20 +1,20 @@
 use super::*;
 
-/// A builder for computing where in a [`DHashMap`] a tuple of
+/// A builder for computing where in a [`DoubleMap`] a tuple of
 /// keys and value `(K1, K2, V)` would be stored.
 ///
-/// See the [`DHashMap::raw_entry_mut`] docs for usage examples.
+/// See the [`DoubleMap::raw_entry_mut`] docs for usage examples.
 ///
-/// [`DHashMap::raw_entry_mut`]: struct.DHashMap.html#method.raw_entry_mut
+/// [`DoubleMap::raw_entry_mut`]: struct.DoubleMap.html#method.raw_entry_mut
 ///
 /// # Examples
 ///
 /// ```
 /// use core::hash::{BuildHasher, Hash};
-/// use double_map::dhash_map::{RawEntryBuilderMut, RawEntryMut::Occupied, RawEntryMut::Vacant};
-/// use double_map::DHashMap;
+/// use double_map::shash_map::{RawEntryBuilderMut, RawEntryMut::Occupied, RawEntryMut::Vacant};
+/// use double_map::DoubleMap;
 ///
-/// let mut map = DHashMap::new();
+/// let mut map = DoubleMap::new();
 /// map.extend([
 ///     (1, 11, 51),
 ///     (2, 12, 52),
@@ -74,7 +74,7 @@ use super::*;
 /// assert_eq!(map.len(), 6);
 /// ```
 pub struct RawEntryBuilderMut<'a, K1, K2, V, S, A: Allocator + Clone = Global> {
-    pub(super) map: &'a mut DHashMap<K1, K2, V, S, A>,
+    pub(super) map: &'a mut DoubleMap<K1, K2, V, S, A>,
 }
 
 impl<K1, K2, V, S, A: Allocator + Clone> Debug for RawEntryBuilderMut<'_, K1, K2, V, S, A> {
@@ -105,9 +105,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawEntryBuilderMut<'a, K1, K2, V, S
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, ErrorKind, RawEntryMut};
+    /// use double_map::shash_map::{DoubleMap, ErrorKind, RawEntryMut};
     ///
-    /// let mut map: DHashMap<&str, u32, u32> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, u32, u32> = DoubleMap::new();
     /// let key1 = "a";
     /// let key2 = 1;
     /// let entry: RawEntryMut<&str, u32, u32, _> =
@@ -176,7 +176,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawEntryBuilderMut<'a, K1, K2, V, S
     ///
     /// ```
     /// use core::hash::{BuildHasher, Hash};
-    /// use double_map::dhash_map::{DHashMap, ErrorKind, RawEntryMut};
+    /// use double_map::shash_map::{DoubleMap, ErrorKind, RawEntryMut};
     ///
     /// fn compute_hash<K: Hash + ?Sized, S: BuildHasher>(hash_builder: &S, key: &K) -> u64 {
     ///     use core::hash::Hasher;
@@ -185,7 +185,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawEntryBuilderMut<'a, K1, K2, V, S
     ///     state.finish()
     /// }
     ///
-    /// let mut map: DHashMap<&str, u32, u32> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, u32, u32> = DoubleMap::new();
     /// let key1 = "a";
     /// let hash1 = compute_hash(map.hasher(), &key1);
     /// let key2 = 1;
@@ -288,7 +288,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawEntryBuilderMut<'a, K1, K2, V, S
     ///
     /// ```
     /// use core::hash::{BuildHasher, Hash};
-    /// use double_map::dhash_map::{DHashMap, ErrorKind, RawEntryMut};
+    /// use double_map::shash_map::{DoubleMap, ErrorKind, RawEntryMut};
     ///
     /// fn compute_hash<K: Hash + ?Sized, S: BuildHasher>(hash_builder: &S, key: &K) -> u64 {
     ///     use core::hash::Hasher;
@@ -297,7 +297,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawEntryBuilderMut<'a, K1, K2, V, S
     ///     state.finish()
     /// }
     ///
-    /// let mut map: DHashMap<&str, u32, u32> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, u32, u32> = DoubleMap::new();
     /// let key1 = "a";
     /// let hash1 = compute_hash(map.hasher(), &key1);
     /// let key2 = 1;
@@ -415,7 +415,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawEntryBuilderMut<'a, K1, K2, V, S
     }
 }
 
-/// A view into a vacant entry in a `DHashMap`.
+/// A view into a vacant entry in a `DoubleMap`.
 /// It is part of the [`RawEntryMut`] enum.
 ///
 /// [`RawEntryMut`]: enum.RawEntryMut.html
@@ -424,9 +424,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawEntryBuilderMut<'a, K1, K2, V, S
 ///
 /// ```
 /// use core::hash::{BuildHasher, Hash};
-/// use double_map::dhash_map::{DHashMap, RawEntryMut, RawVacantEntryMut};
+/// use double_map::shash_map::{DoubleMap, RawEntryMut, RawVacantEntryMut};
 ///
-/// let mut map = DHashMap::<&str, i32, i32>::new();
+/// let mut map = DoubleMap::<&str, i32, i32>::new();
 ///
 /// fn compute_hash<K: Hash + ?Sized, S: BuildHasher>(hash_builder: &S, key: &K) -> u64 {
 ///     use core::hash::Hasher;
@@ -489,9 +489,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawVacantEntryMut<'a, K1, K2, V, S,
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, RawEntryMut};
+    /// use double_map::shash_map::{DoubleMap, RawEntryMut};
     ///
-    /// let mut map: DHashMap<&str, u32, u32> = [("a", 10, 100), ("b", 20, 200)].into();
+    /// let mut map: DoubleMap<&str, u32, u32> = [("a", 10, 100), ("b", 20, 200)].into();
     ///
     /// match map.raw_entry_mut().from_keys(&"c", &30) {
     ///     Ok(RawEntryMut::Vacant(v)) => {
@@ -525,7 +525,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawVacantEntryMut<'a, K1, K2, V, S,
     ///
     /// ```
     /// use core::hash::{BuildHasher, Hash};
-    /// use double_map::dhash_map::{DHashMap, RawEntryMut};
+    /// use double_map::shash_map::{DoubleMap, RawEntryMut};
     ///
     /// fn compute_hash<K: Hash + ?Sized, S: BuildHasher>(hash_builder: &S, key: &K) -> u64 {
     ///     use core::hash::Hasher;
@@ -534,7 +534,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawVacantEntryMut<'a, K1, K2, V, S,
     ///     state.finish()
     /// }
     ///
-    /// let mut map: DHashMap<&str, u32, u32> = [("a", 10, 100), ("b", 20, 200)].into();
+    /// let mut map: DoubleMap<&str, u32, u32> = [("a", 10, 100), ("b", 20, 200)].into();
     /// let key1 = "c";
     /// let hash1 = compute_hash(map.hasher(), &key1);
     /// let key2 = 30;
@@ -585,7 +585,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawVacantEntryMut<'a, K1, K2, V, S,
     ///
     /// ```
     /// use core::hash::{BuildHasher, Hash};
-    /// use double_map::dhash_map::{DHashMap, RawEntryMut};
+    /// use double_map::shash_map::{DoubleMap, RawEntryMut};
     ///
     /// fn make_hasher<K, S>(hash_builder: &S) -> impl Fn(&K) -> u64 + '_
     /// where
@@ -600,7 +600,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawVacantEntryMut<'a, K1, K2, V, S,
     ///     }
     /// }
     ///
-    /// let mut map: DHashMap<&str, u32, u32> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, u32, u32> = DoubleMap::new();
     /// let hash_builder = map.hasher().clone();
     ///
     /// for (mut k1, mut k2, mut v) in ["a", "b", "c", "d", "e", "f"]
@@ -700,7 +700,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawVacantEntryMut<'a, K1, K2, V, S,
     }
 }
 
-/// A view into an occupied entry in a `DHashMap`.
+/// A view into an occupied entry in a `DoubleMap`.
 /// It is part of the [`RawEntryMut`] enum.
 ///
 /// [`RawEntryMut`]: enum.RawEntryMut.html
@@ -709,9 +709,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawVacantEntryMut<'a, K1, K2, V, S,
 ///
 /// ```
 /// use core::hash::{BuildHasher, Hash};
-/// use double_map::dhash_map::{DHashMap, RawEntryMut, RawOccupiedEntryMut};
+/// use double_map::shash_map::{DoubleMap, RawEntryMut, RawOccupiedEntryMut};
 ///
-/// let mut map = DHashMap::new();
+/// let mut map = DoubleMap::new();
 /// map.extend([("a", 10, 100), ("b", 20, 200), ("c", 30, 300)]);
 ///
 /// fn compute_hash<K: Hash + ?Sized, S: BuildHasher>(hash_builder: &S, key: &K) -> u64 {
@@ -819,7 +819,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     ///
     /// ```
     /// use core::hash::{BuildHasher, Hash};
-    /// use double_map::dhash_map::{DHashMap, RawEntryMut};
+    /// use double_map::shash_map::{DoubleMap, RawEntryMut};
     ///
     /// fn compute_hash<K: Hash + ?Sized, S: BuildHasher>(hash_builder: &S, key: &K) -> u64 {
     ///     use core::hash::Hasher;
@@ -828,7 +828,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     ///     state.finish()
     /// }
     ///
-    /// let mut map: DHashMap<&str, u32, u32> = [("a", 10, 100), ("b", 20, 200), ("c", 30, 300)].into();
+    /// let mut map: DoubleMap<&str, u32, u32> = [("a", 10, 100), ("b", 20, 200), ("c", 30, 300)].into();
     ///
     /// match map.raw_entry_mut().from_keys(&"a", &10) {
     ///     Ok(RawEntryMut::Occupied(o)) => assert_eq!(o.key1(), &"a"),
@@ -866,7 +866,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     ///
     /// ```
     /// use core::hash::{BuildHasher, Hash};
-    /// use double_map::dhash_map::{DHashMap, RawEntryMut};
+    /// use double_map::shash_map::{DoubleMap, RawEntryMut};
     ///
     /// fn compute_hash<K: Hash + ?Sized, S: BuildHasher>(hash_builder: &S, key: &K) -> u64 {
     ///     use core::hash::Hasher;
@@ -875,7 +875,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     ///     state.finish()
     /// }
     ///
-    /// let mut map: DHashMap<&str, u32, u32> = [("a", 10, 100), ("b", 20, 200), ("c", 30, 300)].into();
+    /// let mut map: DoubleMap<&str, u32, u32> = [("a", 10, 100), ("b", 20, 200), ("c", 30, 300)].into();
     ///
     /// match map.raw_entry_mut().from_keys(&"a", &10) {
     ///     Ok(RawEntryMut::Occupied(o)) => assert_eq!(o.key2(), &10),
@@ -913,7 +913,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     ///
     /// ```
     /// use core::hash::{BuildHasher, Hash};
-    /// use double_map::dhash_map::{DHashMap, RawEntryMut};
+    /// use double_map::shash_map::{DoubleMap, RawEntryMut};
     ///
     /// fn compute_hash<K: Hash + ?Sized, S: BuildHasher>(hash_builder: &S, key: &K) -> u64 {
     ///     use core::hash::Hasher;
@@ -922,7 +922,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     ///     state.finish()
     /// }
     ///
-    /// let mut map: DHashMap<&str, u32, u32> = [("a", 10, 100), ("b", 20, 200), ("c", 30, 300)].into();
+    /// let mut map: DoubleMap<&str, u32, u32> = [("a", 10, 100), ("b", 20, 200), ("c", 30, 300)].into();
     ///
     /// match map.raw_entry_mut().from_keys(&"a", &10) {
     ///     Ok(RawEntryMut::Occupied(o)) => assert_eq!(o.keys(), (&"a", &10)),
@@ -961,7 +961,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     ///
     /// ```
     /// use core::hash::{BuildHasher, Hash};
-    /// use double_map::dhash_map::{DHashMap, RawEntryMut};
+    /// use double_map::shash_map::{DoubleMap, RawEntryMut};
     /// use std::rc::Rc;
     ///
     /// fn compute_hash<K: Hash + ?Sized, S: BuildHasher>(hash_builder: &S, key: &K) -> u64 {
@@ -971,7 +971,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     ///     state.finish()
     /// }
     ///
-    /// let mut map = DHashMap::<Rc<&str>, usize, usize>::new();
+    /// let mut map = DoubleMap::<Rc<&str>, usize, usize>::new();
     ///
     /// let array = ["a", "b", "c", "d", "e", "f", "g", "h", "i"];
     /// let keys_vec_one: Vec<_> = array.into_iter().map(|k1| Rc::new(k1)).collect();
@@ -1033,7 +1033,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     ///
     /// ```
     /// use core::hash::{BuildHasher, Hash};
-    /// use double_map::dhash_map::{DHashMap, RawEntryMut};
+    /// use double_map::shash_map::{DoubleMap, RawEntryMut};
     /// use std::rc::Rc;
     ///
     /// fn compute_hash<K: Hash + ?Sized, S: BuildHasher>(hash_builder: &S, key: &K) -> u64 {
@@ -1043,7 +1043,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     ///     state.finish()
     /// }
     ///
-    /// let mut map = DHashMap::<&str, Rc<i32>, usize>::new();
+    /// let mut map = DoubleMap::<&str, Rc<i32>, usize>::new();
     ///
     /// let array = ["a", "b", "c", "d", "e", "f", "g", "h", "i"];
     /// let keys_vec_one: Vec<_> = (1..=9).into_iter().map(|k1| Rc::new(k1 * 127)).collect();
@@ -1106,7 +1106,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     ///
     /// ```
     /// use core::hash::{BuildHasher, Hash};
-    /// use double_map::dhash_map::{DHashMap, RawEntryMut};
+    /// use double_map::shash_map::{DoubleMap, RawEntryMut};
     /// use std::rc::Rc;
     ///
     /// fn compute_hash<K: Hash + ?Sized, S: BuildHasher>(hash_builder: &S, key: &K) -> u64 {
@@ -1116,7 +1116,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     ///     state.finish()
     /// }
     ///
-    /// let mut map = DHashMap::<Rc<&str>, Rc<i32>, usize>::new();
+    /// let mut map = DoubleMap::<Rc<&str>, Rc<i32>, usize>::new();
     ///
     /// let array = ["a", "b", "c", "d", "e", "f", "g", "h", "i"];
     /// let keys_vec_one: Vec<_> = array
@@ -1208,7 +1208,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     ///
     /// ```
     /// use core::hash::{BuildHasher, Hash};
-    /// use double_map::dhash_map::{DHashMap, RawEntryMut};
+    /// use double_map::shash_map::{DoubleMap, RawEntryMut};
     /// use std::rc::Rc;
     ///
     /// fn compute_hash<K: Hash + ?Sized, S: BuildHasher>(hash_builder: &S, key: &K) -> u64 {
@@ -1218,7 +1218,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     ///     state.finish()
     /// }
     ///
-    /// let mut map = DHashMap::<Rc<&str>, usize, usize>::new();
+    /// let mut map = DoubleMap::<Rc<&str>, usize, usize>::new();
     ///
     /// let array = [
     ///     "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
@@ -1284,7 +1284,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     ///
     /// ```
     /// use core::hash::{BuildHasher, Hash};
-    /// use double_map::dhash_map::{DHashMap, RawEntryMut};
+    /// use double_map::shash_map::{DoubleMap, RawEntryMut};
     /// use std::rc::Rc;
     ///
     /// fn compute_hash<K: Hash + ?Sized, S: BuildHasher>(hash_builder: &S, key: &K) -> u64 {
@@ -1294,7 +1294,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     ///     state.finish()
     /// }
     ///
-    /// let mut map = DHashMap::<&str, Rc<i32>, usize>::new();
+    /// let mut map = DoubleMap::<&str, Rc<i32>, usize>::new();
     ///
     /// let array = [
     ///     "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
@@ -1362,7 +1362,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     ///
     /// ```
     /// use core::hash::{BuildHasher, Hash};
-    /// use double_map::dhash_map::{DHashMap, RawEntryMut};
+    /// use double_map::shash_map::{DoubleMap, RawEntryMut};
     /// use std::rc::Rc;
     ///
     /// fn compute_hash<K: Hash + ?Sized, S: BuildHasher>(hash_builder: &S, key: &K) -> u64 {
@@ -1372,7 +1372,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     ///     state.finish()
     /// }
     ///
-    /// let mut map = DHashMap::<Rc<&str>, Rc<i32>, usize>::new();
+    /// let mut map = DoubleMap::<Rc<&str>, Rc<i32>, usize>::new();
     ///
     /// let array = [
     ///     "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
@@ -1469,7 +1469,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     ///
     /// ```
     /// use core::hash::{BuildHasher, Hash};
-    /// use double_map::dhash_map::{DHashMap, RawEntryMut};
+    /// use double_map::shash_map::{DoubleMap, RawEntryMut};
     ///
     /// fn compute_hash<K: Hash + ?Sized, S: BuildHasher>(hash_builder: &S, key: &K) -> u64 {
     ///     use core::hash::Hasher;
@@ -1478,7 +1478,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     ///     state.finish()
     /// }
     ///
-    /// let mut map: DHashMap<&str, u32, u32> =
+    /// let mut map: DoubleMap<&str, u32, u32> =
     ///     [("first", 11, 100), ("second", 22, 200), ("third", 33, 300)].into();
     ///
     /// match map.raw_entry_mut().from_keys(&"first", &11) {
@@ -1518,9 +1518,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, RawEntryMut};
+    /// use double_map::shash_map::{DoubleMap, RawEntryMut};
     ///
-    /// let mut map: DHashMap<&str, u32, u32> = [("a", 10, 100), ("b", 20, 200)].into();
+    /// let mut map: DoubleMap<&str, u32, u32> = [("a", 10, 100), ("b", 20, 200)].into();
     ///
     /// let value: &mut u32;
     ///
@@ -1541,9 +1541,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, RawEntryMut};
+    /// use double_map::shash_map::{DoubleMap, RawEntryMut};
     ///
-    /// let mut map: DHashMap<&str, u32, u32> = [("a", 10, 100), ("b", 20, 200)].into();
+    /// let mut map: DoubleMap<&str, u32, u32> = [("a", 10, 100), ("b", 20, 200)].into();
     ///
     /// match map.raw_entry_mut().from_keys(&"a", &10) {
     ///     Ok(RawEntryMut::Occupied(mut o)) => *o.get_mut() += 900,
@@ -1561,9 +1561,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, RawEntryMut};
+    /// use double_map::shash_map::{DoubleMap, RawEntryMut};
     ///
-    /// let mut map: DHashMap<&str, u32, u32> = [("a", 10, 100), ("b", 20, 200)].into();
+    /// let mut map: DoubleMap<&str, u32, u32> = [("a", 10, 100), ("b", 20, 200)].into();
     ///
     /// match map.raw_entry_mut().from_keys(&"a", &10) {
     ///     Ok(RawEntryMut::Occupied(o)) => assert_eq!(o.get_keys_value(), (&"a", &10, &100)),
@@ -1585,7 +1585,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     ///
     /// ```
     /// use core::hash::{BuildHasher, Hash};
-    /// use double_map::dhash_map::{DHashMap, RawEntryMut};
+    /// use double_map::shash_map::{DoubleMap, RawEntryMut};
     /// use std::rc::Rc;
     ///
     /// fn compute_hash<K: Hash + ?Sized, S: BuildHasher>(hash_builder: &S, key: &K) -> u64 {
@@ -1595,7 +1595,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     ///     state.finish()
     /// }
     ///
-    /// let mut map = DHashMap::<Rc<&str>, Rc<i32>, usize>::new();
+    /// let mut map = DoubleMap::<Rc<&str>, Rc<i32>, usize>::new();
     ///
     /// let array = ["a1", "b2", "c3", "d4", "e5", "f6", "g7", "h8", "i9"];
     /// let keys_vec_one: Vec<_> = array
@@ -1695,7 +1695,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     ///
     /// ```
     /// use core::hash::{BuildHasher, Hash};
-    /// use double_map::dhash_map::{DHashMap, RawEntryMut};
+    /// use double_map::shash_map::{DoubleMap, RawEntryMut};
     /// use std::rc::Rc;
     ///
     /// fn compute_hash<K: Hash + ?Sized, S: BuildHasher>(hash_builder: &S, key: &K) -> u64 {
@@ -1705,7 +1705,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     ///     state.finish()
     /// }
     ///
-    /// let mut map = DHashMap::<Rc<&str>, Rc<i32>, usize>::new();
+    /// let mut map = DoubleMap::<Rc<&str>, Rc<i32>, usize>::new();
     ///
     /// let array = [
     ///     "a11", "b22", "c33", "d44", "e55", "f66", "g77", "h88", "i99",
@@ -1812,7 +1812,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     ///
     /// ```
     /// use core::hash::{BuildHasher, Hash};
-    /// use double_map::dhash_map::{DHashMap, RawEntryMut};
+    /// use double_map::shash_map::{DoubleMap, RawEntryMut};
     ///
     /// fn compute_hash<K: Hash + ?Sized, S: BuildHasher>(hash_builder: &S, key: &K) -> u64 {
     ///     use core::hash::Hasher;
@@ -1821,7 +1821,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     ///     state.finish()
     /// }
     ///
-    /// let mut map: DHashMap<&str, u32, u32> =
+    /// let mut map: DoubleMap<&str, u32, u32> =
     ///     [("a1", 51, 100), ("a2", 52, 200), ("a3", 53, 300)].into();
     ///
     /// match map.raw_entry_mut().from_keys(&"a1", &51) {
@@ -1863,13 +1863,13 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, RawEntryMut};
+    /// use double_map::shash_map::{DoubleMap, RawEntryMut};
     /// use std::rc::Rc;
     ///
     /// let key_one = Rc::new("a");
     /// let key_two = Rc::new("a");
     ///
-    /// let mut map: DHashMap<Rc<&str>, u32, u32> = DHashMap::new();
+    /// let mut map: DoubleMap<Rc<&str>, u32, u32> = DoubleMap::new();
     /// map.insert(key_one.clone(), 10, 100);
     ///
     /// assert_eq!(map[&key_one], 100);
@@ -1895,13 +1895,13 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, RawEntryMut};
+    /// use double_map::shash_map::{DoubleMap, RawEntryMut};
     /// use std::rc::Rc;
     ///
     /// let key_one = Rc::new(10);
     /// let key_two = Rc::new(10);
     ///
-    /// let mut map: DHashMap<&str, Rc<u32>, u32> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, Rc<u32>, u32> = DoubleMap::new();
     /// map.insert("a", key_one.clone(), 100);
     ///
     /// assert_eq!(map.get_key2(&key_one), Some(&100));
@@ -1927,7 +1927,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, RawEntryMut};
+    /// use double_map::shash_map::{DoubleMap, RawEntryMut};
     /// use std::rc::Rc;
     ///
     /// let key1_one = Rc::new("a");
@@ -1935,7 +1935,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     /// let key2_one = Rc::new(10);
     /// let key2_two = Rc::new(10);
     ///
-    /// let mut map: DHashMap<Rc<&str>, Rc<u32>, u32> = DHashMap::new();
+    /// let mut map: DoubleMap<Rc<&str>, Rc<u32>, u32> = DoubleMap::new();
     /// map.insert(key1_one.clone(), key2_one.clone(), 100);
     ///
     /// assert_eq!(map[&key1_one], 100);
@@ -1967,9 +1967,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, RawEntryMut};
+    /// use double_map::shash_map::{DoubleMap, RawEntryMut};
     ///
-    /// let mut map: DHashMap<&str, u32, u32> = [("a", 10, 100), ("b", 20, 200)].into();
+    /// let mut map: DoubleMap<&str, u32, u32> = [("a", 10, 100), ("b", 20, 200)].into();
     ///
     /// match map.raw_entry_mut().from_keys(&"a", &10) {
     ///     Ok(RawEntryMut::Occupied(o)) => assert_eq!(o.remove(), 100),
@@ -1987,9 +1987,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, RawEntryMut};
+    /// use double_map::shash_map::{DoubleMap, RawEntryMut};
     ///
-    /// let mut map: DHashMap<&str, u32, u32> = [("a", 10, 100), ("b", 20, 200)].into();
+    /// let mut map: DoubleMap<&str, u32, u32> = [("a", 10, 100), ("b", 20, 200)].into();
     ///
     /// match map.raw_entry_mut().from_keys(&"a", &10) {
     ///     Ok(RawEntryMut::Occupied(o)) => assert_eq!(o.remove_entry(), ("a", 10, 100)),
@@ -2009,9 +2009,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, RawEntryMut};
+    /// use double_map::shash_map::{DoubleMap, RawEntryMut};
     ///
-    /// let mut map: DHashMap<&str, u32, u32> = [("a", 10, 100), ("b", 20, 200)].into();
+    /// let mut map: DoubleMap<&str, u32, u32> = [("a", 10, 100), ("b", 20, 200)].into();
     ///
     /// let raw_entry = match map.raw_entry_mut().from_keys(&"a", &10) {
     ///     Ok(RawEntryMut::Occupied(o)) => o.replace_entry_with_key1(|k1, v| {
@@ -2067,9 +2067,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, RawEntryMut};
+    /// use double_map::shash_map::{DoubleMap, RawEntryMut};
     ///
-    /// let mut map: DHashMap<&str, u32, u32> = [("one", 11, 100), ("two", 22, 200)].into();
+    /// let mut map: DoubleMap<&str, u32, u32> = [("one", 11, 100), ("two", 22, 200)].into();
     ///
     /// let raw_entry = match map.raw_entry_mut().from_keys(&"two", &22) {
     ///     Ok(RawEntryMut::Occupied(o)) => o.replace_entry_with_key2(|k2, v| {
@@ -2125,9 +2125,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, RawEntryMut};
+    /// use double_map::shash_map::{DoubleMap, RawEntryMut};
     ///
-    /// let mut map: DHashMap<&str, u32, u32> = [("first", 17, 100), ("second", 27, 200)].into();
+    /// let mut map: DoubleMap<&str, u32, u32> = [("first", 17, 100), ("second", 27, 200)].into();
     ///
     /// let raw_entry = match map.raw_entry_mut().from_keys(&"first", &17) {
     ///     Ok(RawEntryMut::Occupied(o)) => o.replace_entry_with_keys(|k1, k2, v| {
@@ -2183,21 +2183,21 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
 ///
 /// This is a lower-level version of [`Entry`].
 ///
-/// This `enum` is constructed through the [`raw_entry_mut`] method on [`DHashMap`],
+/// This `enum` is constructed through the [`raw_entry_mut`] method on [`DoubleMap`],
 /// then calling one of the methods of that [`RawEntryBuilderMut`].
 ///
-/// [`DHashMap`]: struct.DHashMap.html
+/// [`DoubleMap`]: struct.DoubleMap.html
 /// [`Entry`]: enum.Entry.html
-/// [`raw_entry_mut`]: struct.DHashMap.html#method.raw_entry_mut
+/// [`raw_entry_mut`]: struct.DoubleMap.html#method.raw_entry_mut
 /// [`RawEntryBuilderMut`]: struct.RawEntryBuilderMut.html
 ///
 /// # Examples
 ///
 /// ```
 /// use core::hash::{BuildHasher, Hash};
-/// use double_map::dhash_map::{DHashMap, RawEntryMut, RawOccupiedEntryMut};
+/// use double_map::shash_map::{DoubleMap, RawEntryMut, RawOccupiedEntryMut};
 ///
-/// let mut map = DHashMap::new();
+/// let mut map = DoubleMap::new();
 /// map.extend([('a', 1, 100), ('b', 2, 200), ('c', 3, 300)]);
 /// assert_eq!(map.len(), 3);
 ///
@@ -2266,7 +2266,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawOccupiedEntryMut<'a, K1, K2, V, 
 /// assert_eq!(kv, (&mut 'f', &mut 6, &mut 60));
 /// assert_eq!(map.len(), 6);
 ///
-/// println!("Our DHashMap: {:?}", map);
+/// println!("Our DoubleMap: {:?}", map);
 ///
 /// let mut vec: Vec<_> = map.into_iter().collect();
 /// // The `Iter` iterator produces items in arbitrary order, so the
@@ -2290,8 +2290,8 @@ pub enum RawEntryMut<'a, K1, K2, V, S, A: Allocator + Clone = Global> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, RawEntryMut};
-    /// let mut map: DHashMap<_, _, _> = [("a", 10, 100), ("b", 20, 200)].into();
+    /// use double_map::shash_map::{DoubleMap, RawEntryMut};
+    /// let mut map: DoubleMap<_, _, _> = [("a", 10, 100), ("b", 20, 200)].into();
     ///
     /// match map.raw_entry_mut().from_keys(&"a", &10) {
     ///     Ok(RawEntryMut::Occupied(_)) => {}
@@ -2305,8 +2305,8 @@ pub enum RawEntryMut<'a, K1, K2, V, S, A: Allocator + Clone = Global> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, RawEntryMut};
-    /// let mut map: DHashMap<&str, i32, i32> = DHashMap::new();
+    /// use double_map::shash_map::{DoubleMap, RawEntryMut};
+    /// let mut map: DoubleMap<&str, i32, i32> = DoubleMap::new();
     ///
     /// match map.raw_entry_mut().from_keys(&"a", &10) {
     ///     Ok(RawEntryMut::Vacant(_)) => {}
@@ -2331,9 +2331,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawEntryMut<'a, K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map: DHashMap<&str, u32, u32> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, u32, u32> = DoubleMap::new();
     /// let entry = map
     ///     .raw_entry_mut()
     ///     .from_keys("horseyland", &1)
@@ -2365,9 +2365,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawEntryMut<'a, K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map: DHashMap<&str, u32, u32> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, u32, u32> = DoubleMap::new();
     ///
     /// map.raw_entry_mut()
     ///     .from_keys("poneyland", &11)
@@ -2406,9 +2406,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawEntryMut<'a, K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map: DHashMap<&str, i128, String> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, i128, String> = DoubleMap::new();
     ///
     /// let (_, _, v) = map
     ///     .raw_entry_mut()
@@ -2442,9 +2442,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawEntryMut<'a, K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map: DHashMap<&str, i64, i128> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, i64, i128> = DoubleMap::new();
     ///
     /// map.raw_entry_mut()
     ///     .from_keys("poneyland", &10)
@@ -2484,9 +2484,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawEntryMut<'a, K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, RawEntryMut};
+    /// use double_map::shash_map::{DoubleMap, RawEntryMut};
     ///
-    /// let mut map: DHashMap<&str, u32, u32> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, u32, u32> = DoubleMap::new();
     ///
     /// let entry = map
     ///     .raw_entry_mut()
@@ -2553,9 +2553,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawEntryMut<'a, K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, RawEntryMut};
+    /// use double_map::shash_map::{DoubleMap, RawEntryMut};
     ///
-    /// let mut map: DHashMap<&str, u32, u32> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, u32, u32> = DoubleMap::new();
     ///
     /// let entry = map
     ///     .raw_entry_mut()
@@ -2622,9 +2622,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawEntryMut<'a, K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, RawEntryMut};
+    /// use double_map::shash_map::{DoubleMap, RawEntryMut};
     ///
-    /// let mut map: DHashMap<&str, u32, u32> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, u32, u32> = DoubleMap::new();
     ///
     /// let entry = map
     ///     .raw_entry_mut()

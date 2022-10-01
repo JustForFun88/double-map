@@ -1,22 +1,22 @@
 use super::*;
 
-/// An owning iterator over the entries of a `DHashMap` in arbitrary order.
+/// An owning iterator over the entries of a `DoubleMap` in arbitrary order.
 /// The iterator element type is `(K1, K2, V)`.
 ///
-/// This `struct` is created by the [`into_iter`] method on [`DHashMap`]
+/// This `struct` is created by the [`into_iter`] method on [`DoubleMap`]
 /// (provided by the [`IntoIterator`] trait). See its documentation for more.
 /// The map cannot be used after calling that method.
 ///
-/// [`into_iter`]: struct.DHashMap.html#method.into_iter
-/// [`DHashMap`]: struct.DHashMap.html
+/// [`into_iter`]: struct.DoubleMap.html#method.into_iter
+/// [`DoubleMap`]: struct.DoubleMap.html
 /// [`IntoIterator`]: https://doc.rust-lang.org/core/iter/trait.IntoIterator.html
 ///
 /// # Example
 ///
 /// ```
-/// use double_map::{dhashmap, DHashMap};
+/// use double_map::{doublemap, DoubleMap};
 ///
-/// let map = dhashmap! {
+/// let map = doublemap! {
 ///     1, "a" => "One",
 ///     2, "b" => "Two",
 ///     3, "c" => "Three",

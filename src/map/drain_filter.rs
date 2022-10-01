@@ -1,20 +1,20 @@
 use super::*;
 
-/// A draining iterator over entries of a `DHashMap` which don't satisfy the predicate
+/// A draining iterator over entries of a `DoubleMap` which don't satisfy the predicate
 /// `f(&K1, &K2, &mut V)` in arbitrary order. The iterator element type is `(K1, K2, V)`.
 ///
-/// This `struct` is created by the [`drain_filter`] method on [`DHashMap`]. See its
+/// This `struct` is created by the [`drain_filter`] method on [`DoubleMap`]. See its
 /// documentation for more.
 ///
-/// [`drain_filter`]: struct.DHashMap.html#method.drain_filter
-/// [`DHashMap`]: struct.DHashMap.html
+/// [`drain_filter`]: struct.DoubleMap.html#method.drain_filter
+/// [`DoubleMap`]: struct.DoubleMap.html
 ///
 /// # Examples
 ///
 /// ```
-/// use double_map::DHashMap;
+/// use double_map::DoubleMap;
 ///
-/// let mut map = DHashMap::<i32, i32, &str>::from([
+/// let mut map = DoubleMap::<i32, i32, &str>::from([
 ///     (1, 2, "a"),
 ///     (2, 5, "b"),
 ///     (3, 8, "c"),

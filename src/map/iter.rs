@@ -1,17 +1,17 @@
 use super::*;
 
-/// An iterator over the entries of a `DHashMap` in arbitrary order.
+/// An iterator over the entries of a `DoubleMap` in arbitrary order.
 /// The iterator element type is `(&'a K1, &'a K2, &'a V)`.
 ///
-/// This `struct` is created by the [`iter`](DHashMap::iter) method
-/// on [`DHashMap`]. See its documentation for more.
+/// This `struct` is created by the [`iter`](DoubleMap::iter) method
+/// on [`DoubleMap`]. See its documentation for more.
 ///
 /// # Example
 ///
 /// ```
-/// use double_map::{dhashmap, DHashMap};
+/// use double_map::{doublemap, DoubleMap};
 ///
-/// let map = dhashmap! {
+/// let map = doublemap! {
 ///     1, "a" => "One",
 ///     2, "b" => "Two",
 ///     3, "c" => "Three",

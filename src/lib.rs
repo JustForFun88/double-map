@@ -10,7 +10,7 @@
 //! unique ID as the key. However, finding the element throughout the name will be
 //! performed with `O(n)` time. The same is true for the reverse case.
 //!
-//! This crate try to resolve this contradiction by providing a [`DHashMap`] structure -
+//! This crate try to resolve this contradiction by providing a [`DoubleMap`] structure -
 //! a map where you can add, look up and remove elements using either the first
 //! key of type `K1` or the second key of type `K2`.
 //!
@@ -78,18 +78,18 @@ mod scopeguard;
 
 mod map;
 
-pub mod dhash_map {
+pub mod shash_map {
     //! A hash map implemented with quadratic probing and SIMD lookup.
     pub use crate::map::*;
 }
 
-pub use crate::map::DHashMap;
+pub use crate::map::DoubleMap;
 
 /// Key equivalence trait.
 ///
 /// This trait defines the function used to compare the input value with the
-/// map keys (or set values) during a lookup operation such as [`DHashMap::get_key1`]
-/// or [`DHashMap::contains_key1`].
+/// map keys (or set values) during a lookup operation such as [`DoubleMap::get_key1`]
+/// or [`DoubleMap::contains_key1`].
 /// It is provided with a blanket implementation based on the
 /// [`Borrow`](core::borrow::Borrow) trait.
 ///
@@ -97,9 +97,9 @@ pub use crate::map::DHashMap;
 ///
 /// Equivalent values must hash to the same value.
 ///
-// [`DHashMap`](crate::map::DHashMap)
-// [`DHashMap::get_key1`](crate::map::DHashMap::get_key1)
-// [`DHashMap::contains_key1`](crate::map::DHashMap::contains_key1)
+// [`DoubleMap`](crate::map::DoubleMap)
+// [`DoubleMap::get_key1`](crate::map::DoubleMap::get_key1)
+// [`DoubleMap::contains_key1`](crate::map::DoubleMap::contains_key1)
 pub trait Equivalent<K: ?Sized> {
     /// Checks if this value is equivalent to the given key.
     ///
@@ -137,7 +137,7 @@ pub enum TryReserveError {
 }
 
 /// Wrapper around `Bump` which allows it to be used as an allocator for
-/// `DHashMap` and `RawTable`.
+/// `DoubleMap` and `RawTable`.
 ///
 /// `Bump` can be used directly without this wrapper on nightly if you enable
 /// the `allocator-api` feature of the `bumpalo` crate.
@@ -150,6 +150,6 @@ pub struct BumpWrapper<'a>(pub &'a bumpalo::Bump);
 fn test_bumpalo() {
     use bumpalo::Bump;
     let bump = Bump::new();
-    let mut map = DHashMap::new_in(BumpWrapper(&bump));
+    let mut map = DoubleMap::new_in(BumpWrapper(&bump));
     map.insert(0, 1, 10);
 }

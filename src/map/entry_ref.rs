@@ -3,14 +3,14 @@ use super::*;
 /// A view into a single entry in a map, which may either be vacant or occupied,
 /// with any borrowed form of the map's keys type.
 ///
-/// This `enum` is constructed from the [`entry_ref`] method on [`DHashMap`].
+/// This `enum` is constructed from the [`entry_ref`] method on [`DoubleMap`].
 ///
 /// [`Hash`] and [`Eq`] on the borrowed form of the map's keys type *must* match those
 /// for the keys type. It also require that keys may be constructed from the borrowed
 /// form through the [`From`] trait.
 ///
-/// [`DHashMap`]: struct.DHashMap.html
-/// [`entry_ref`]: struct.DHashMap.html#method.entry_ref
+/// [`DoubleMap`]: struct.DoubleMap.html
+/// [`entry_ref`]: struct.DoubleMap.html#method.entry_ref
 /// [`Eq`]: https://doc.rust-lang.org/core/cmp/trait.Eq.html
 /// [`Hash`]: https://doc.rust-lang.org/core/hash/trait.Hash.html
 /// [`From`]: https://doc.rust-lang.org/core/convert/trait.From.html
@@ -18,7 +18,7 @@ use super::*;
 /// # Examples
 ///
 /// ```
-/// use double_map::dhash_map::{DHashMap, EntryRef, OccupiedEntryRef};
+/// use double_map::shash_map::{DoubleMap, EntryRef, OccupiedEntryRef};
 ///
 /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 /// struct Wrapper<T>(T);
@@ -29,7 +29,7 @@ use super::*;
 ///     }
 /// }
 ///
-/// let mut map = DHashMap::new();
+/// let mut map = DoubleMap::new();
 /// map.extend([
 ///     (Wrapper(1), "a".to_owned(), 10),
 ///     (Wrapper(2), "b".into(), 20),
@@ -57,7 +57,7 @@ use super::*;
 /// // Nonexistent key (or_insert_with)
 /// map.entry_ref(&Wrapper(6), "f").unwrap().or_insert_with(|| 6);
 ///
-/// println!("Our DHashMap: {:?}", map);
+/// println!("Our DoubleMap: {:?}", map);
 ///
 /// let mut vec: Vec<_> = map.iter().map(|(k1, k2, v)| (k1, k2.as_str(), v)).collect();
 /// // The `Iter` iterator produces items in arbitrary order, so the
@@ -84,8 +84,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, EntryRef};
-    /// let mut map = DHashMap::<String, String, i32>::from([
+    /// use double_map::shash_map::{DoubleMap, EntryRef};
+    /// let mut map = DoubleMap::<String, String, i32>::from([
     ///     ("a".to_owned(), "one".into(), 100),
     ///     ("b".into(), "two".into(), 200),
     /// ]);
@@ -102,8 +102,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, EntryRef};
-    /// let mut map = DHashMap::<String, String, i32>::new();
+    /// use double_map::shash_map::{DoubleMap, EntryRef};
+    /// let mut map = DoubleMap::<String, String, i32>::new();
     ///
     /// match map.entry_ref("a", "one") {
     ///     Ok(EntryRef::Vacant(_)) => {}
@@ -139,7 +139,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
     /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
     /// struct Wrapper<T>(T);
@@ -150,7 +150,7 @@ where
     ///     }
     /// }
     ///
-    /// let mut map: DHashMap<Wrapper<usize>, String, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<Wrapper<usize>, String, i32> = DoubleMap::new();
     /// let entry = map.entry_ref(&Wrapper(1), "horseyland").unwrap().insert(37);
     ///
     /// assert_eq!(entry.key1(), &Wrapper(1));
@@ -179,7 +179,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
     /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
     /// struct Wrapper<T>(T);
@@ -190,7 +190,7 @@ where
     ///     }
     /// }
     ///
-    /// let mut map: DHashMap<String, Wrapper<usize>, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<String, Wrapper<usize>, i32> = DoubleMap::new();
     ///
     /// // nonexistent key
     /// match map.entry_ref("poneyland", &Wrapper(0)) {
@@ -226,7 +226,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
     /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
     /// struct Wrapper<T>(T);
@@ -237,7 +237,7 @@ where
     ///     }
     /// }
     ///
-    /// let mut map: DHashMap<String, Wrapper<usize>, String> = DHashMap::new();
+    /// let mut map: DoubleMap<String, Wrapper<usize>, String> = DoubleMap::new();
     /// let s = "hoho".to_owned();
     ///
     /// // nonexistent key
@@ -276,7 +276,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
     /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
     /// struct Wrapper<T>(T);
@@ -287,7 +287,7 @@ where
     ///     }
     /// }
     ///
-    /// let mut map: DHashMap<String, Wrapper<usize>, u64> = DHashMap::new();
+    /// let mut map: DoubleMap<String, Wrapper<usize>, u64> = DoubleMap::new();
     ///
     /// // nonexistent key
     /// match map.entry_ref("poneyland", &Wrapper(0)) {
@@ -334,7 +334,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
     /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
     /// struct Wrapper<T>(T);
@@ -345,7 +345,7 @@ where
     ///     }
     /// }
     ///
-    /// let mut map: DHashMap<String, Wrapper<usize>, u64> = DHashMap::new();
+    /// let mut map: DoubleMap<String, Wrapper<usize>, u64> = DoubleMap::new();
     ///
     /// // nonexistent key
     /// match map.entry_ref("poneyland", &Wrapper(10)) {
@@ -395,7 +395,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
     /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
     /// struct Wrapper<T>(T);
@@ -406,7 +406,7 @@ where
     ///     }
     /// }
     ///
-    /// let mut map: DHashMap<String, Wrapper<usize>, u64> = DHashMap::new();
+    /// let mut map: DoubleMap<String, Wrapper<usize>, u64> = DoubleMap::new();
     ///
     /// // nonexistent key
     /// match map.entry_ref("poneyland", &Wrapper(10)) {
@@ -451,7 +451,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
     /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
     /// struct Wrapper<T>(T);
@@ -462,7 +462,7 @@ where
     ///     }
     /// }
     ///
-    /// let mut map: DHashMap<String, Wrapper<usize>, u64> = DHashMap::new();
+    /// let mut map: DoubleMap<String, Wrapper<usize>, u64> = DoubleMap::new();
     ///
     /// // It is VacantEntryRef
     /// match map.entry_ref("poneyland", &Wrapper(0)) {
@@ -505,7 +505,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
     /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
     /// struct Wrapper<T>(T);
@@ -516,7 +516,7 @@ where
     ///     }
     /// }
     ///
-    /// let mut map: DHashMap<String, Wrapper<usize>, u64> = DHashMap::new();
+    /// let mut map: DoubleMap<String, Wrapper<usize>, u64> = DoubleMap::new();
     ///
     /// // It is VacantEntryRef
     /// match map.entry_ref("poneyland", &Wrapper(10)) {
@@ -560,7 +560,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
     /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
     /// struct Wrapper<T>(T);
@@ -571,7 +571,7 @@ where
     ///     }
     /// }
     ///
-    /// let mut map: DHashMap<String, Wrapper<usize>, u64> = DHashMap::new();
+    /// let mut map: DoubleMap<String, Wrapper<usize>, u64> = DoubleMap::new();
     ///
     /// // It is VacantEntryRef
     /// match map.entry_ref("poneyland", &Wrapper(10)) {
@@ -616,7 +616,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
     /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
     /// struct Wrapper<T>(T);
@@ -627,7 +627,7 @@ where
     ///     }
     /// }
     ///
-    /// let mut map: DHashMap<String, Wrapper<usize>, u64> = DHashMap::new();
+    /// let mut map: DoubleMap<String, Wrapper<usize>, u64> = DoubleMap::new();
     ///
     /// let _ = map
     ///     .entry_ref("poneyland", &Wrapper(1))
@@ -660,7 +660,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, EntryRef};
+    /// use double_map::shash_map::{DoubleMap, EntryRef};
     ///
     /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
     /// struct Wrapper<T>(T);
@@ -671,7 +671,7 @@ where
     ///     }
     /// }
     ///
-    /// let mut map: DHashMap<String, Wrapper<usize>, String> = DHashMap::new();
+    /// let mut map: DoubleMap<String, Wrapper<usize>, String> = DoubleMap::new();
     ///
     /// let entry = map
     ///     .entry_ref("poneyland", &Wrapper(1))
@@ -743,7 +743,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, EntryRef};
+    /// use double_map::shash_map::{DoubleMap, EntryRef};
     ///
     /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
     /// struct Wrapper<T>(T);
@@ -754,7 +754,7 @@ where
     ///     }
     /// }
     ///
-    /// let mut map: DHashMap<String, Wrapper<usize>, String> = DHashMap::new();
+    /// let mut map: DoubleMap<String, Wrapper<usize>, String> = DoubleMap::new();
     ///
     /// let entry = map
     ///     .entry_ref("poneyland", &Wrapper(1))
@@ -826,7 +826,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, EntryRef};
+    /// use double_map::shash_map::{DoubleMap, EntryRef};
     ///
     /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
     /// struct Wrapper<T>(T);
@@ -837,7 +837,7 @@ where
     ///     }
     /// }
     ///
-    /// let mut map: DHashMap<String, Wrapper<usize>, String> = DHashMap::new();
+    /// let mut map: DoubleMap<String, Wrapper<usize>, String> = DoubleMap::new();
     ///
     /// let entry = map
     ///     .entry_ref("poneyland", &Wrapper(1))
@@ -916,7 +916,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
     /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
     /// struct Wrapper<T>(T);
@@ -927,7 +927,7 @@ where
     ///     }
     /// }
     ///
-    /// let mut map: DHashMap<String, Wrapper<usize>, Option<u32>> = DHashMap::new();
+    /// let mut map: DoubleMap<String, Wrapper<usize>, Option<u32>> = DoubleMap::new();
     ///
     /// // nonexistent key
     /// map.entry_ref("poneyland", &Wrapper(1))
@@ -986,7 +986,7 @@ impl<'a, K: Borrow<Q>, Q: ?Sized> AsRef<Q> for KeyOrRef<'a, K, Q> {
     }
 }
 
-/// A view into an occupied entry in a `DHashMap`.
+/// A view into an occupied entry in a `DoubleMap`.
 /// It is part of the [`EntryRef`] enum.
 ///
 /// [`EntryRef`]: enum.EntryRef.html
@@ -994,7 +994,7 @@ impl<'a, K: Borrow<Q>, Q: ?Sized> AsRef<Q> for KeyOrRef<'a, K, Q> {
 /// # Examples
 ///
 /// ```
-/// use double_map::dhash_map::{DHashMap, EntryRef, OccupiedEntryRef};
+/// use double_map::shash_map::{DoubleMap, EntryRef, OccupiedEntryRef};
 ///
 /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 /// struct Wrapper<T>(T);
@@ -1005,7 +1005,7 @@ impl<'a, K: Borrow<Q>, Q: ?Sized> AsRef<Q> for KeyOrRef<'a, K, Q> {
 ///     }
 /// }
 ///
-/// let mut map: DHashMap<Wrapper<usize>, String, i32> = DHashMap::new();
+/// let mut map: DoubleMap<Wrapper<usize>, String, i32> = DoubleMap::new();
 ///
 /// map.extend([
 ///     (Wrapper(1), "a".to_owned(), 10),
@@ -1051,7 +1051,7 @@ where
     pub(super) key2: Option<KeyOrRef<'b, K2, Q2>>,
     pub(super) data_bucket: DataBucket<(K1, K2, V)>,
     pub(super) pointer_bucket: PointerBucket<DataBucket<(K1, K2, V)>>,
-    pub(super) table: &'a mut DHashMap<K1, K2, V, S, A>,
+    pub(super) table: &'a mut DoubleMap<K1, K2, V, S, A>,
 }
 
 unsafe impl<'a, 'b, K1, Q1, K2, Q2, V, S, A> Send
@@ -1108,7 +1108,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, EntryRef};
+    /// use double_map::shash_map::{DoubleMap, EntryRef};
     ///
     /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
     /// struct Wrapper<T>(T);
@@ -1119,7 +1119,7 @@ where
     ///     }
     /// }
     ///
-    /// let mut map: DHashMap<String, Wrapper<usize>, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<String, Wrapper<usize>, i32> = DoubleMap::new();
     ///
     /// map.insert("poneyland".to_owned(), Wrapper(0), 12);
     ///
@@ -1143,7 +1143,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, EntryRef};
+    /// use double_map::shash_map::{DoubleMap, EntryRef};
     ///
     /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
     /// struct Wrapper<T>(T);
@@ -1154,7 +1154,7 @@ where
     ///     }
     /// }
     ///
-    /// let mut map: DHashMap<String, Wrapper<usize>, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<String, Wrapper<usize>, i32> = DoubleMap::new();
     ///
     /// map.insert("poneyland".to_owned(), Wrapper(0), 12);
     ///
@@ -1179,7 +1179,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, EntryRef};
+    /// use double_map::shash_map::{DoubleMap, EntryRef};
     ///
     /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
     /// struct Wrapper<T>(T);
@@ -1190,7 +1190,7 @@ where
     ///     }
     /// }
     ///
-    /// let mut map: DHashMap<String, Wrapper<usize>, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<String, Wrapper<usize>, i32> = DoubleMap::new();
     ///
     /// map.insert("poneyland".to_owned(), Wrapper(0), 12);
     ///
@@ -1217,7 +1217,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, EntryRef};
+    /// use double_map::shash_map::{DoubleMap, EntryRef};
     ///
     /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
     /// struct Wrapper<T>(T);
@@ -1228,7 +1228,7 @@ where
     ///     }
     /// }
     ///
-    /// let mut map: DHashMap<String, Wrapper<usize>, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<String, Wrapper<usize>, i32> = DoubleMap::new();
     ///
     /// map.insert("poneyland".to_owned(), Wrapper(0), 10);
     /// map.insert("bearland".to_owned(), Wrapper(1), 11);
@@ -1266,7 +1266,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, EntryRef};
+    /// use double_map::shash_map::{DoubleMap, EntryRef};
     ///
     /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
     /// struct Wrapper<T>(T);
@@ -1277,7 +1277,7 @@ where
     ///     }
     /// }
     ///
-    /// let mut map: DHashMap<String, Wrapper<usize>, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<String, Wrapper<usize>, i32> = DoubleMap::new();
     /// map.insert("poneyland".to_owned(), Wrapper(0), 12);
     ///
     /// match map.entry_ref("poneyland", &Wrapper(0)) {
@@ -1301,7 +1301,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, EntryRef};
+    /// use double_map::shash_map::{DoubleMap, EntryRef};
     ///
     /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
     /// struct Wrapper<T>(T);
@@ -1312,7 +1312,7 @@ where
     ///     }
     /// }
     ///
-    /// let mut map: DHashMap<String, Wrapper<usize>, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<String, Wrapper<usize>, i32> = DoubleMap::new();
     /// map.insert("poneyland".to_owned(), Wrapper(0), 12);
     /// assert_eq!(map.get_key1("poneyland"), Some(&12));
     /// assert_eq!(map.get_key2(&Wrapper(0)), Some(&12));
@@ -1345,7 +1345,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, EntryRef};
+    /// use double_map::shash_map::{DoubleMap, EntryRef};
     ///
     /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
     /// struct Wrapper<T>(T);
@@ -1356,7 +1356,7 @@ where
     ///     }
     /// }
     ///
-    /// let mut map: DHashMap<String, Wrapper<usize>, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<String, Wrapper<usize>, i32> = DoubleMap::new();
     /// map.insert("poneyland".to_owned(), Wrapper(0), 12);
     /// assert_eq!(map.get_key1("poneyland"), Some(&12));
     /// assert_eq!(map.get_key2(&Wrapper(0)), Some(&12));
@@ -1390,7 +1390,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, EntryRef};
+    /// use double_map::shash_map::{DoubleMap, EntryRef};
     ///
     /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
     /// struct Wrapper<T>(T);
@@ -1401,7 +1401,7 @@ where
     ///     }
     /// }
     ///
-    /// let mut map: DHashMap<String, Wrapper<usize>, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<String, Wrapper<usize>, i32> = DoubleMap::new();
     /// map.insert("poneyland".to_owned(), Wrapper(0), 12);
     /// assert_eq!(map.get_key1("poneyland"), Some(&12));
     /// assert_eq!(map.get_key2(&Wrapper(0)), Some(&12));
@@ -1432,7 +1432,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, EntryRef};
+    /// use double_map::shash_map::{DoubleMap, EntryRef};
     ///
     /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
     /// struct Wrapper<T>(T);
@@ -1443,7 +1443,7 @@ where
     ///     }
     /// }
     ///
-    /// let mut map: DHashMap<String, Wrapper<usize>, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<String, Wrapper<usize>, i32> = DoubleMap::new();
     /// map.insert("poneyland".to_owned(), Wrapper(0), 10);
     /// map.insert("bearland".to_owned(), Wrapper(1), 11);
     ///
@@ -1487,10 +1487,10 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, EntryRef};
+    /// use double_map::shash_map::{DoubleMap, EntryRef};
     /// use std::rc::Rc;
     ///
-    /// let mut map: DHashMap<Rc<str>, Rc<str>, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<Rc<str>, Rc<str>, i32> = DoubleMap::new();
     /// let key1: Rc<str> = Rc::from("First key");
     /// let key2: Rc<str> = Rc::from("Second key");
     ///
@@ -1538,10 +1538,10 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, EntryRef};
+    /// use double_map::shash_map::{DoubleMap, EntryRef};
     /// use std::rc::Rc;
     ///
-    /// let mut map: DHashMap<Rc<str>, usize, usize> = DHashMap::with_capacity(6);
+    /// let mut map: DoubleMap<Rc<str>, usize, usize> = DoubleMap::with_capacity(6);
     /// let mut keys: Vec<Rc<str>> = Vec::with_capacity(6);
     ///
     /// for (index, key1) in ["a", "b", "c", "d", "e", "f"].into_iter().enumerate() {
@@ -1558,7 +1558,7 @@ where
     ///
     /// assert!(keys.iter().all(|key| Rc::strong_count(key) == 1));
     ///
-    /// fn reclaim_memory(map: &mut DHashMap<Rc<str>, usize, usize>, keys: &[Rc<str>]) {
+    /// fn reclaim_memory(map: &mut DoubleMap<Rc<str>, usize, usize>, keys: &[Rc<str>]) {
     ///     for (index, key) in keys.iter().enumerate() {
     ///         if let Ok(EntryRef::Occupied(entry)) = map.entry_ref(key.as_ref(), &index) {
     ///             // Replaces the entry's key with newly created one
@@ -1587,10 +1587,10 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, EntryRef};
+    /// use double_map::shash_map::{DoubleMap, EntryRef};
     /// use std::rc::Rc;
     ///
-    /// let mut map: DHashMap<usize, Rc<str>, usize> = DHashMap::with_capacity(6);
+    /// let mut map: DoubleMap<usize, Rc<str>, usize> = DoubleMap::with_capacity(6);
     /// let mut keys: Vec<Rc<str>> = Vec::with_capacity(6);
     ///
     /// for (index, key1) in ["a", "b", "c", "d", "e", "f"].into_iter().enumerate() {
@@ -1607,7 +1607,7 @@ where
     ///
     /// assert!(keys.iter().all(|key| Rc::strong_count(key) == 1));
     ///
-    /// fn reclaim_memory(map: &mut DHashMap<usize, Rc<str>, usize>, keys: &[Rc<str>]) {
+    /// fn reclaim_memory(map: &mut DoubleMap<usize, Rc<str>, usize>, keys: &[Rc<str>]) {
     ///     for (index, key) in keys.iter().enumerate() {
     ///         if let Ok(EntryRef::Occupied(entry)) = map.entry_ref(&index, key.as_ref()) {
     ///             // Replaces the entry's key with newly created one
@@ -1636,10 +1636,10 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, EntryRef};
+    /// use double_map::shash_map::{DoubleMap, EntryRef};
     /// use std::rc::Rc;
     ///
-    /// let mut map: DHashMap<Rc<str>, Rc<str>, usize> = DHashMap::with_capacity(6);
+    /// let mut map: DoubleMap<Rc<str>, Rc<str>, usize> = DoubleMap::with_capacity(6);
     /// let mut keys: Vec<Rc<str>> = Vec::with_capacity(6);
     ///
     /// for (index, key1) in ["a", "b", "c", "d", "e", "f"].into_iter().enumerate() {
@@ -1656,7 +1656,7 @@ where
     ///
     /// assert!(keys.iter().all(|key| Rc::strong_count(key) == 1));
     ///
-    /// fn reclaim_memory(map: &mut DHashMap<Rc<str>, Rc<str>, usize>, keys: &[Rc<str>]) {
+    /// fn reclaim_memory(map: &mut DoubleMap<Rc<str>, Rc<str>, usize>, keys: &[Rc<str>]) {
     ///     for key in keys {
     ///         if let Ok(EntryRef::Occupied(entry)) = map.entry_ref(key.as_ref(), key.as_ref()) {
     ///             // Replaces the entry's keys with newly created
@@ -1685,7 +1685,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, EntryRef};
+    /// use double_map::shash_map::{DoubleMap, EntryRef};
     ///
     /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
     /// struct Wrapper<T>(T);
@@ -1696,7 +1696,7 @@ where
     ///     }
     /// }
     ///
-    /// let mut map: DHashMap<Wrapper<usize>, String, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<Wrapper<usize>, String, i32> = DoubleMap::new();
     ///
     /// map.insert(Wrapper(1), "poneyland".to_owned(), 42);
     ///
@@ -1777,7 +1777,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, EntryRef};
+    /// use double_map::shash_map::{DoubleMap, EntryRef};
     ///
     /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
     /// struct Wrapper<T>(T);
@@ -1788,7 +1788,7 @@ where
     ///     }
     /// }
     ///
-    /// let mut map: DHashMap<Wrapper<usize>, String, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<Wrapper<usize>, String, i32> = DoubleMap::new();
     ///
     /// map.insert(Wrapper(1), "poneyland".to_owned(), 42);
     ///
@@ -1869,7 +1869,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, EntryRef};
+    /// use double_map::shash_map::{DoubleMap, EntryRef};
     ///
     /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
     /// struct Wrapper<T>(T);
@@ -1880,7 +1880,7 @@ where
     ///     }
     /// }
     ///
-    /// let mut map: DHashMap<Wrapper<usize>, String, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<Wrapper<usize>, String, i32> = DoubleMap::new();
     ///
     /// map.insert(Wrapper(1), "poneyland".to_owned(), 42);
     ///
@@ -1957,7 +1957,7 @@ where
     }
 }
 
-/// A view into a vacant entry in a `DHashMap`.
+/// A view into a vacant entry in a `DoubleMap`.
 /// It is part of the [`EntryRef`] enum.
 ///
 /// [`EntryRef`]: enum.EntryRef.html
@@ -1965,7 +1965,7 @@ where
 /// # Examples
 ///
 /// ```
-/// use double_map::dhash_map::{DHashMap, EntryRef, VacantEntryRef};
+/// use double_map::shash_map::{DoubleMap, EntryRef, VacantEntryRef};
 ///
 /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 /// struct Wrapper<T>(T);
@@ -1976,7 +1976,7 @@ where
 ///     }
 /// }
 ///
-/// let mut map: DHashMap<Wrapper<usize>, String, i32> = DHashMap::new();
+/// let mut map: DoubleMap<Wrapper<usize>, String, i32> = DoubleMap::new();
 ///
 /// let entry_v: VacantEntryRef<_, _, _, _, _, _> = match map.entry_ref(&Wrapper(1), "a").unwrap() {
 ///     EntryRef::Vacant(view) => view,
@@ -2004,7 +2004,7 @@ where
     pub(super) key1: KeyOrRef<'b, K1, Q1>,
     pub(super) hash2: u64,
     pub(super) key2: KeyOrRef<'b, K2, Q2>,
-    pub(super) table: &'a mut DHashMap<K1, K2, V, S, A>,
+    pub(super) table: &'a mut DoubleMap<K1, K2, V, S, A>,
 }
 
 impl<K1, Q1, K2, Q2, V, S, A> Debug for VacantEntryRef<'_, '_, K1, Q1, K2, Q2, V, S, A>
@@ -2034,7 +2034,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, EntryRef};
+    /// use double_map::shash_map::{DoubleMap, EntryRef};
     ///
     /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
     /// struct Wrapper<T>(T);
@@ -2045,7 +2045,7 @@ where
     ///     }
     /// }
     ///
-    /// let mut map: DHashMap<String, Wrapper<usize>, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<String, Wrapper<usize>, i32> = DoubleMap::new();
     ///
     /// match map.entry_ref("poneyland", &Wrapper(0)) {
     ///     Ok(EntryRef::Vacant(vac_entry)) => assert_eq!(vac_entry.key1(), "poneyland"),
@@ -2066,7 +2066,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, EntryRef};
+    /// use double_map::shash_map::{DoubleMap, EntryRef};
     ///
     /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
     /// struct Wrapper<T>(T);
@@ -2077,7 +2077,7 @@ where
     ///     }
     /// }
     ///
-    /// let mut map: DHashMap<String, Wrapper<usize>, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<String, Wrapper<usize>, i32> = DoubleMap::new();
     ///
     /// match map.entry_ref("poneyland", &Wrapper(0)) {
     ///     Ok(EntryRef::Vacant(vac_entry)) => assert_eq!(vac_entry.key2(), &Wrapper(0)),
@@ -2098,7 +2098,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, EntryRef};
+    /// use double_map::shash_map::{DoubleMap, EntryRef};
     ///
     /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
     /// struct Wrapper<T>(T);
@@ -2109,7 +2109,7 @@ where
     ///     }
     /// }
     ///
-    /// let mut map: DHashMap<String, Wrapper<usize>, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<String, Wrapper<usize>, i32> = DoubleMap::new();
     ///
     /// match map.entry_ref("poneyland", &Wrapper(0)) {
     ///     Ok(EntryRef::Vacant(vac_entry)) => assert_eq!(vac_entry.keys(), ("poneyland", &Wrapper(0))),
@@ -2130,7 +2130,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, EntryRef};
+    /// use double_map::shash_map::{DoubleMap, EntryRef};
     ///
     /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
     /// struct Wrapper<T>(T);
@@ -2141,7 +2141,7 @@ where
     ///     }
     /// }
     ///
-    /// let mut map: DHashMap<String, Wrapper<usize>, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<String, Wrapper<usize>, i32> = DoubleMap::new();
     ///
     /// match map.entry_ref("poneyland", &Wrapper(0)) {
     ///     Ok(EntryRef::Vacant(v)) => assert_eq!(v.into_key1(), "poneyland".to_owned()),
@@ -2161,7 +2161,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, EntryRef};
+    /// use double_map::shash_map::{DoubleMap, EntryRef};
     ///
     /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
     /// struct Wrapper<T>(T);
@@ -2172,7 +2172,7 @@ where
     ///     }
     /// }
     ///
-    /// let mut map: DHashMap<String, Wrapper<usize>, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<String, Wrapper<usize>, i32> = DoubleMap::new();
     ///
     /// match map.entry_ref("poneyland", &Wrapper(0)) {
     ///     Ok(EntryRef::Vacant(v)) => assert_eq!(v.into_key2(), Wrapper(0)),
@@ -2192,7 +2192,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, EntryRef};
+    /// use double_map::shash_map::{DoubleMap, EntryRef};
     ///
     /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
     /// struct Wrapper<T>(T);
@@ -2203,7 +2203,7 @@ where
     ///     }
     /// }
     ///
-    /// let mut map: DHashMap<String, Wrapper<usize>, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<String, Wrapper<usize>, i32> = DoubleMap::new();
     ///
     /// match map.entry_ref("poneyland", &Wrapper(0)) {
     ///     Ok(EntryRef::Vacant(v)) => assert_eq!(v.into_keys(), ("poneyland".to_owned(), Wrapper(0))),
@@ -2225,7 +2225,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, EntryRef};
+    /// use double_map::shash_map::{DoubleMap, EntryRef};
     ///
     /// #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
     /// struct Wrapper<T>(T);
@@ -2236,7 +2236,7 @@ where
     ///     }
     /// }
     ///
-    /// let mut map: DHashMap<String, Wrapper<usize>, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<String, Wrapper<usize>, i32> = DoubleMap::new();
     ///
     /// match map.entry_ref("poneyland", &Wrapper(0)) {
     ///     Ok(EntryRef::Vacant(vac_entry)) => {

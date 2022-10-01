@@ -1,17 +1,17 @@
 use super::*;
 
-/// A draining iterator over the entries of a `DHashMap` in arbitrary order.
+/// A draining iterator over the entries of a `DoubleMap` in arbitrary order.
 /// The iterator element type is `(K1, K2, V)`.
 ///
-/// This `struct` is created by the [`drain`](DHashMap::drain) method
-/// on [`DHashMap`]. See its documentation for more.
+/// This `struct` is created by the [`drain`](DoubleMap::drain) method
+/// on [`DoubleMap`]. See its documentation for more.
 ///
 /// # Example
 ///
 /// ```
-/// use double_map::{dhashmap, DHashMap};
+/// use double_map::{doublemap, DoubleMap};
 ///
-/// let mut map = dhashmap! {
+/// let mut map = doublemap! {
 ///     1, "a" => "One",
 ///     2, "b" => "Two",
 ///     3, "c" => "Three",

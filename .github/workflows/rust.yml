@@ -1,0 +1,74 @@
+name: Rust
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  miri:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - env:
+        TARGET: x86_64-unknown-linux-gnu
+      run: sh ci/miri.sh
+
+  rustfmt_clippy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - env:
+        TARGET: i586-unknown-linux-gnu
+      run: sh ci/tools.sh
+
+  test:
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: ${{ matrix.channel }}
+        override: true
+    - env:
+        TARGET: ${{ matrix.target }}
+        CHANNEL: ${{ matrix.channel }}
+        CROSS: ${{ matrix.target != 'x86_64-unknown-linux-gnu' && '1' || '0' }}
+        NO_STD: ${{ matrix.target == 'thumbv6m-none-eabi' && '1' || '0' }}
+      run: sh ci/run.sh
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        target: [
+          x86_64-unknown-linux-gnu,
+          i686-unknown-linux-gnu,
+          i586-unknown-linux-gnu,
+          armv7-unknown-linux-gnueabihf,
+          aarch64-unknown-linux-gnu,
+          thumbv6m-none-eabi,
+          x86_64-pc-windows-gnu,
+        ]
+        channel: [1.58.1, nightly]
+        include:
+        - os: macos-latest
+          target: x86_64-apple-darwin
+          channel: nightly
+        - os: windows-latest
+          target: x86_64-pc-windows-msvc
+          channel: nightly
+        - os: macos-latest
+          target: x86_64-apple-darwin
+          channel: 1.58.1
+        - os: windows-latest
+          target: x86_64-pc-windows-msvc
+          channel: 1.58.1
+        - os: ubuntu-latest
+          target: x86_64-unknown-linux-gnu
+          channel: 1.56.1
+        - os: ubuntu-latest
+          target: x86_64-unknown-linux-gnu
+          channel: beta
+        - os: ubuntu-latest
+          target: x86_64-unknown-linux-gnu
+          channel: stable

@@ -76,12 +76,10 @@ mod raw;
 
 mod scopeguard;
 
-#[allow(missing_docs)]
 mod map;
 
 pub mod dhash_map {
     //! A hash map implemented with quadratic probing and SIMD lookup.
-    #![allow(missing_docs)]
     pub use crate::map::*;
 }
 

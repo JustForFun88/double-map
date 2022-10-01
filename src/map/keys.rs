@@ -1,5 +1,34 @@
 use super::*;
 
+/// An iterator over the keys of a `DHashMap` in arbitrary order.
+/// The iterator element type is `(&'a K1, &'a K2)`.
+///
+/// This `struct` is created by the [`keys`](DHashMap::keys) method
+/// on [`DHashMap`]. See its documentation for more.
+///
+/// # Example
+///
+/// ```
+/// use double_map::{DHashMap, dhashmap};
+///
+/// let map = dhashmap!{
+///     1, "a" => "One",
+///     2, "b" => "Two",
+///     3, "c" => "Three",
+/// };
+///
+/// let mut keys = map.keys();
+/// let mut vec = vec![keys.next(), keys.next(), keys.next()];
+///
+/// // The `Keys` iterator produces tuples in arbitrary order, so the
+/// // tuples must be sorted to test them against a sorted array.
+/// vec.sort_unstable();
+/// assert_eq!(vec, [Some((&1, &"a")), Some((&2, &"b")), Some((&3, &"c"))]);
+///
+/// // It is fused iterator
+/// assert_eq!(keys.next(), None);
+/// assert_eq!(keys.next(), None);
+/// ```
 pub struct Keys<'a, K1, K2, V> {
     pub(super) inner: Iter<'a, K1, K2, V>,
 }

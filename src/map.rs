@@ -90,11 +90,11 @@ pub enum DefaultHashBuilder {}
 /// panic does occur then the contents of the `HashMap` become corrupted and
 /// all items are dropped from the table.
 ///
-/// [`Eq`]: https://doc.rust-lang.org/std/cmp/trait.Eq.html
-/// [`Hash`]: https://doc.rust-lang.org/std/hash/trait.Hash.html
-/// [`PartialEq`]: https://doc.rust-lang.org/std/cmp/trait.PartialEq.html
-/// [`RefCell`]: https://doc.rust-lang.org/std/cell/struct.RefCell.html
-/// [`Cell`]: https://doc.rust-lang.org/std/cell/struct.Cell.html
+/// [`Eq`]: https://doc.rust-lang.org/core/cmp/trait.Eq.html
+/// [`Hash`]: https://doc.rust-lang.org/core/hash/trait.Hash.html
+/// [`PartialEq`]: https://doc.rust-lang.org/core/cmp/trait.PartialEq.html
+/// [`RefCell`]: https://doc.rust-lang.org/core/cell/struct.RefCell.html
+/// [`Cell`]: https://doc.rust-lang.org/core/cell/struct.Cell.html
 /// [`default`]: #method.default
 /// [`with_hasher`]: #method.with_hasher
 /// [`with_capacity_and_hasher`]: #method.with_capacity_and_hasher
@@ -123,11 +123,6 @@ impl<K1: Clone, K2: Clone, V: Clone, S: Clone, A: Allocator + Clone> Clone
         self.hash_builder.clone_from(&source.hash_builder);
     }
 }
-
-type EntryRefResult<'a, 'b, K1, Q1, K2, Q2, V, S, A> =
-    Result<EntryRef<'a, 'b, K1, Q1, K2, Q2, V, S, A>, ErrorKind>;
-
-type EntryResult<'a, K1, K2, V, S, A> = Result<Entry<'a, K1, K2, V, S, A>, EntryError<K1, K2>>;
 
 /// Ensures that a single closure type across uses of this which, in turn prevents multiple
 /// instances of any functions like RawTable::reserve from being generated
@@ -226,6 +221,310 @@ where
 {
     move |x| k.equivalent(x)
 }
+
+/// A specialized [`Result`] that returned by [`entry`](DHashMap::entry)
+/// method of [`DHashMap`].
+///
+/// The method returns [`Ok(Entry)`] variant of the enum if `all`
+/// of the following is `true`:
+/// - Both `K1` and `K2` keys are vacant.
+/// - If both `K1` and `K2` keys exist, they refer to the same value.
+///
+/// When the above statements are `false`, [`entry`](DHashMap::entry) method
+/// returns [`Err(EntryError)`] variant of the enum. [`EntryError`] structure
+/// contains the [`ErrorKind`] enum, and the values of provided keys
+/// that were not used for creation entry (but can be used for another
+/// purpose).
+///
+/// Depending on the points below, different [`ErrorKind`] variants may be returned:
+/// - When `K1` key is vacant, but `K2` key already exists with some value, the
+/// returned [`ErrorKind`] variant is [`ErrorKind::VacantK1AndOccupiedK2`].
+/// - When `K1` key already exists with some value, but `K2` key is vacant, the
+/// returned [`ErrorKind`] variant is [`ErrorKind::OccupiedK1AndVacantK2`].
+/// - When both `K1` key and `K2` key already exist with some values, but point
+/// to different entries (values) the returned [`ErrorKind`] variant is
+/// [`ErrorKind::KeysPointsToDiffEntries`].
+///
+/// [`Result`]: https://doc.rust-lang.org/core/result/enum.Result.html
+/// [`Ok(Entry)`]: https://doc.rust-lang.org/core/result/enum.Result.html#variant.Ok
+/// [`Err(EntryError)`]: https://doc.rust-lang.org/core/result/enum.Result.html#variant.Err
+///
+/// # Examples
+///
+/// ```
+/// use double_map::DHashMap;
+/// use double_map::dhash_map::ErrorKind;
+///
+/// let mut letters = DHashMap::new();
+///
+/// for ch in "a short treatise on fungi".chars() {
+///     if let Ok(entry) = letters.entry(ch.clone(), ch) {
+///         let counter = entry.or_insert(0);
+///         *counter += 1;
+///     }
+/// }
+///
+/// assert_eq!(letters.get_key1(&'s'), Some(&2));
+/// assert_eq!(letters.get_key1(&'t'), Some(&3));
+/// assert_eq!(letters.get_key1(&'u'), Some(&1));
+/// assert_eq!(letters.get_key1(&'y'), None);
+///
+/// // Return `ErrorKind::OccupiedK1AndVacantK2` if `K1` key already
+/// // exists with some value, but `K2` key is vacant.
+/// let error_kind = letters.entry('s', 'y').unwrap_err().error;
+/// assert_eq!(error_kind, ErrorKind::OccupiedK1AndVacantK2);
+///
+/// // Return `ErrorKind::VacantK1AndOccupiedK2` if `K1` key is vacant,
+/// // but `K2` key already exists with some value.
+/// let error_kind = letters.entry('y', 's').unwrap_err().error;
+/// assert_eq!(error_kind, ErrorKind::VacantK1AndOccupiedK2);
+///
+/// // Return `ErrorKind::KeysPointsToDiffEntries` if both
+/// // `K1` key and `K2` key already exist with some values,
+/// // but point to different entries (values).
+/// let error_kind = letters.entry('s', 't').unwrap_err().error;
+/// assert_eq!(error_kind, ErrorKind::KeysPointsToDiffEntries);
+/// ```
+pub type EntryResult<'a, K1, K2, V, S, A> = Result<Entry<'a, K1, K2, V, S, A>, EntryError<K1, K2>>;
+
+/// A specialized [`Result`] that returned by [`entry_ref`](DHashMap::entry_ref)
+/// method of [`DHashMap`].
+///
+/// The method returns [`Ok(EntryRef)`] variant of the enum if `all`
+/// of the following is `true`:
+/// - Both `K1` and `K2` keys are vacant.
+/// - If both `K1` and `K2` keys exist, they refer to the same value.
+///
+/// When the above statements are `false`, [`entry_ref`](DHashMap::entry_ref)
+/// method returns [`Err(ErrorKind)`] variant of the enum.
+///
+/// Depending on the points below, different [`ErrorKind`] variants may be returned:
+/// - When `K1` key is vacant, but `K2` key already exists with some value, the
+/// returned [`ErrorKind`] variant is [`ErrorKind::VacantK1AndOccupiedK2`].
+/// - When `K1` key already exists with some value, but `K2` key is vacant, the
+/// returned [`ErrorKind`] variant is [`ErrorKind::OccupiedK1AndVacantK2`].
+/// - When both `K1` key and `K2` key already exist with some values, but point
+/// to different entries (values) the returned [`ErrorKind`] variant is
+/// [`ErrorKind::KeysPointsToDiffEntries`].
+///
+/// [`Result`]: https://doc.rust-lang.org/core/result/enum.Result.html
+/// [`Ok(EntryRef)`]: https://doc.rust-lang.org/core/result/enum.Result.html#variant.Ok
+/// [`Err(ErrorKind)`]: https://doc.rust-lang.org/core/result/enum.Result.html#variant.Err
+///
+///
+/// # Examples
+///
+/// ```
+/// use double_map::DHashMap;
+/// use double_map::dhash_map::ErrorKind;
+///
+/// let mut words: DHashMap<String, String, usize>  = DHashMap::new();
+///
+/// let source = ["zebra", "horse", "zebra", "zebra"];
+///
+/// for &s in source.iter() {
+///     if let Ok(entry) = words.entry_ref(s, s) {
+///         let counter = entry.or_insert(0);
+///         *counter += 1;
+///     }
+/// }
+///
+/// assert_eq!(words.get_key1("zebra"), Some(&3));
+/// assert_eq!(words.get_key1("horse"), Some(&1));
+/// assert_eq!(words.get_key2("zebra"), Some(&3));
+/// assert_eq!(words.get_key2("horse"), Some(&1));
+///
+/// // Return `ErrorKind::OccupiedK1AndVacantK2` if `K1` key already
+/// // exists with some value, but `K2` key is vacant.
+/// let error_kind = words.entry_ref("zebra", "pony").unwrap_err();
+/// assert_eq!(error_kind, ErrorKind::OccupiedK1AndVacantK2);
+///
+/// // Return `ErrorKind::VacantK1AndOccupiedK2` if `K1` key is vacant,
+/// // but `K2` key already exists with some value.
+/// let error_kind = words.entry_ref("pony", "horse").unwrap_err();
+/// assert_eq!(error_kind, ErrorKind::VacantK1AndOccupiedK2);
+///
+/// // Return `ErrorKind::KeysPointsToDiffEntries` if both
+/// // `K1` key and `K2` key already exist with some values,
+/// // but point to different entries (values).
+/// let error_kind = words.entry_ref("zebra", "horse").unwrap_err();
+/// assert_eq!(error_kind, ErrorKind::KeysPointsToDiffEntries);
+/// ```
+pub type EntryRefResult<'a, 'b, K1, Q1, K2, Q2, V, S, A> =
+    Result<EntryRef<'a, 'b, K1, Q1, K2, Q2, V, S, A>, ErrorKind>;
+
+/// A specialized [`Result`] that optionally returned by [`insert`](DHashMap::insert)
+/// method of [`DHashMap`].
+///
+/// The [`insert`](DHashMap::insert) method returns [`Ok(V)`] variant of this
+/// enum with an old value, that had been contained in the map, inside a [`Some(Ok(V))`]
+/// variant, if `insert` method was called with keys that had been **presented**
+/// in the map, and **both keys refered to the same value**.
+///
+/// The [`insert`](DHashMap::insert) method returns [`Err(InsertError)`] variant
+/// of this enum (inside of [`Some(Err(InsertError))`] variant):
+/// - when `K1` key is vacant, but `K2` key already exists with some value;
+/// - when `K1` key already exists with some value, but `K2` key is vacant;
+/// - when both `K1` and `K2` keys already exist with some values, but
+/// point to different entries (values).
+///
+/// The above mentioned error kinds can be matched through the [`ErrorKind`] enum.
+/// Returned [`InsertError`] structure also contains provided keys and value
+/// that were not inserted and can be used for another purpose.
+///
+/// [`Result`]: https://doc.rust-lang.org/core/result/enum.Result.html
+/// [`Ok(V)`]: https://doc.rust-lang.org/core/result/enum.Result.html#variant.Ok
+/// [`Err(InsertError)`]: https://doc.rust-lang.org/core/result/enum.Result.html#variant.Err
+/// [`Some(Ok(V))`]: https://doc.rust-lang.org/core/option/enum.Option.html#variant.Some
+/// [`Some(Err(InsertError))`]: https://doc.rust-lang.org/core/option/enum.Option.html#variant.Some
+///
+/// # Examples
+///
+/// ```
+/// use double_map::DHashMap;
+/// use double_map::dhash_map::{InsertError, ErrorKind};
+/// let mut map = DHashMap::new();
+///
+/// // Returns None if keys are vacant
+/// assert_eq!(map.insert(1, "a", "One"), None);
+/// assert_eq!(map.is_empty(), false);
+///
+/// // If the map did have these keys present, and both keys refer to
+/// // the same value, the value is updated, and the old value is returned
+/// // inside `Some(Ok(V))` variants
+/// map.insert(2, "b", "Two");
+/// assert_eq!(map.insert(2, "b", "Second"), Some(Ok("Two")));
+/// assert_eq!(map.get_key1(&2), Some(&"Second"));
+///
+/// // Returns `ErrorKind::OccupiedK1AndVacantK2` if key #1 already
+/// // exists with some value, but key #2 is vacant. Error structure
+/// // also contains provided keys and value
+/// match map.insert(1, "c", "value") {
+///     Some(Err(InsertError{ error, keys, value })) => {
+///         assert_eq!(error, ErrorKind::OccupiedK1AndVacantK2);
+///         assert_eq!(keys, (1, "c"));
+///         assert_eq!(value, "value");
+///     }
+///     _ => unreachable!(),
+/// }
+///
+/// // Returns `ErrorKind::VacantK1AndOccupiedK2` if key #1 is vacant,
+/// // but key #2 already exists with some value.
+/// let error_kind = map.insert(3, "a", "value").unwrap().unwrap_err().error;
+/// assert_eq!(error_kind, ErrorKind::VacantK1AndOccupiedK2);
+///
+/// // Returns `ErrorKind::KeysPointsToDiffEntries` if both
+/// // key #1 and key #2 already exist with some values,
+/// // but point to different entries (values).
+/// let error_kind = map.insert(1, "b", "value").unwrap().unwrap_err().error;
+/// assert_eq!(error_kind, ErrorKind::KeysPointsToDiffEntries);
+/// ```
+pub type InsertResult<K1, K2, V> = Result<V, InsertError<K1, K2, V>>;
+
+/// A specialized [`Result`] that returned by [`try_insert`](DHashMap::try_insert)
+/// method of [`DHashMap`].
+///
+/// The method returns a mutable reference to the value inside
+/// [`Ok(&'a mut V)`] variant of the enum if the map did not
+/// have inserted keys present.
+///
+/// If the map did have these keys **present**, and **both keys refer to
+/// the same value**, ***nothing*** is updated, and the method returns
+/// [`Err(TryInsertError::Occupied)`] variant of the enum that containing
+/// [`OccupiedError`] structure. The [`OccupiedError`] contains the occupied
+/// entry [`OccupiedEntry`], and the value that was not inserted.
+///
+/// The [`try_insert`](DHashMap::try_insert) method returns
+/// [`Err(TryInsertError::Insert)`] variant of the enum that containing
+/// [`InsertError`] structure:
+/// - when `K1` key is vacant, but `K2` key already exists with some value;
+/// - when `K1` key already exists with some value, but `K2` key is vacant;
+/// - when both `K1` and `K2` keys already exist with some values, but
+/// point to different entries (values).
+///
+/// The above mentioned error kinds can be matched through the [`ErrorKind`] enum.
+/// Returned [`InsertError`] structure also contains provided keys and value
+/// that were not inserted and can be used for another purpose.
+///
+/// [`Result`]: https://doc.rust-lang.org/core/result/enum.Result.html
+/// [`Ok(&'a mut V)`]: https://doc.rust-lang.org/core/result/enum.Result.html#variant.Ok
+/// [`Err(TryInsertError::Occupied)`]: https://doc.rust-lang.org/core/result/enum.Result.html#variant.Err
+/// [`Err(TryInsertError::Insert)`]: https://doc.rust-lang.org/core/result/enum.Result.html#variant.Err
+///
+/// # Examples
+///
+/// ```
+/// use double_map::DHashMap;
+/// use double_map::dhash_map::{TryInsertError, OccupiedError, InsertError, ErrorKind};
+///
+///
+/// let mut map = DHashMap::new();
+///
+/// // Returns mutable reference to the value if keys are vacant
+/// let value = map.try_insert(1, "a", "One").unwrap();
+/// assert_eq!(value, &"One");
+/// *value = "First";
+/// assert_eq!(map.get_key1(&1), Some(&"First"));
+///
+/// // If the map did have these keys present, and both keys refer to
+/// // the same value, nothing is updated, and the provided value
+/// // is returned inside `Err(TryInsertError::Occupied(_))` variants
+/// map.try_insert(2, "b", "Two");
+/// match map.try_insert(2, "b", "Second") {
+///     Err(error) => match error {
+///         TryInsertError::Occupied(OccupiedError{ entry, value }) => {
+///             assert_eq!(entry.keys(), (&2, &"b"));
+///             assert_eq!(entry.get(), &"Two");
+///             assert_eq!(value, "Second");
+///         }
+///         _ => unreachable!(),
+///     }
+///     _ => unreachable!(),
+/// }
+/// assert_eq!(map.get_key1(&2), Some(&"Two"));
+///
+/// // Returns `ErrorKind::OccupiedK1AndVacantK2` if `K1` key already
+/// // exists with some value, but `K2` key is vacant. Error structure
+/// // also contains provided keys and value
+/// match map.try_insert(1, "c", "value") {
+///     Err(error) => match error {
+///         TryInsertError::Insert(InsertError{ error, keys, value }) => {
+///             assert_eq!(error, ErrorKind::OccupiedK1AndVacantK2);
+///             assert_eq!(keys, (1, "c"));
+///             assert_eq!(value, "value");
+///         }
+///         _ => unreachable!()
+///     }
+///     _ => unreachable!(),
+/// }
+///
+/// // Returns `ErrorKind::VacantK1AndOccupiedK2` if `K1` key is vacant,
+/// // but `K2` key already exists with some value.
+/// match map.try_insert(3, "a", "value") {
+///     Err(error) => match error {
+///         TryInsertError::Insert(InsertError{ error, .. }) => {
+///             assert_eq!(error, ErrorKind::VacantK1AndOccupiedK2);
+///         }
+///         _ => unreachable!()
+///     }
+///     _ => unreachable!(),
+/// }
+///
+/// // Returns `ErrorKind::KeysPointsToDiffEntries` if both
+/// // `K1` and `K2` keys already exist with some values,
+/// // but point to different entries (values).
+/// match map.try_insert(1, "b", "value") {
+///     Err(error) => match error {
+///         TryInsertError::Insert(InsertError{ error, .. }) => {
+///             assert_eq!(error, ErrorKind::KeysPointsToDiffEntries);
+///         }
+///         _ => unreachable!()
+///     }
+///     _ => unreachable!(),
+/// }
+/// ```
+pub type TryInsertResult<'a, K1, K2, V, S, A> =
+    Result<&'a mut V, TryInsertError<'a, K1, K2, V, S, A>>;
 
 #[cfg(feature = "ahash")]
 impl<K1, K2, V> DHashMap<K1, K2, V, DefaultHashBuilder> {
@@ -668,7 +967,7 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
 
     /// Returns a reference to the map's [`BuildHasher`].
     ///
-    /// [`BuildHasher`]: https://doc.rust-lang.org/std/hash/trait.BuildHasher.html
+    /// [`BuildHasher`]: https://doc.rust-lang.org/core/hash/trait.BuildHasher.html
     ///
     /// # Examples
     ///
@@ -687,9 +986,8 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
 
     /// Returns the number of elements the map can hold without reallocating.
     ///
-    /// This number is a lower bound; the [`DHashMap<K1, K2, V>`] might
-    /// be able to hold more, but is guaranteed to be able to hold at least
-    /// this many.
+    /// This number is a lower bound; the [`DHashMap`] might be able to hold
+    /// more, but is guaranteed to be able to hold at least this many.
     ///
     /// # Examples
     ///
@@ -1294,7 +1592,9 @@ where
     ///
     /// # Panics
     ///
-    /// Panics if the new allocation size overflows `isize::Max`.
+    /// Panics if the new allocation size overflows [`isize::MAX`] bytes.
+    ///
+    /// [`isize::MAX`]: https://doc.rust-lang.org/std/primitive.isize.html#associatedconstant.MAX
     ///
     /// # Examples
     ///
@@ -1458,7 +1758,7 @@ where
     /// - Both `K1` and `K2` keys are vacant.
     /// - If both `K1` and `K2` keys exist, they refer to the same value.
     ///
-    /// When the above statements are `false`, [`entry`](DHashMap::entry) method returns
+    /// When the above statements are `false`, `entry` method returns
     /// [`EntryError`] structure which contains the [`ErrorKind`] enum, and the values
     /// of provided keys that were not used for creation entry (but can be used for
     /// another purpose).
@@ -1568,8 +1868,8 @@ where
     /// - Both `K1` and `K2` keys are vacant.
     /// - If both `K1` and `K2` keys exist, they refer to the same value.
     ///
-    /// When the above statements are `false`, [`entry_ref`](DHashMap::entry_ref) method
-    /// returns [`ErrorKind`] enum.
+    /// When the above statements are `false`, `entry_ref` method returns [`ErrorKind`]
+    /// enum.
     ///
     /// Depending on the points below, different [`ErrorKind`] variants may be returned:
     /// - When `K1` key is vacant, but `K2` key already exists with some value, the
@@ -1586,36 +1886,36 @@ where
     /// use double_map::DHashMap;
     /// use double_map::dhash_map::ErrorKind;
     ///
-    /// let mut letters: DHashMap<String, String, usize>  = DHashMap::new();
+    /// let mut words: DHashMap<String, String, usize>  = DHashMap::new();
     ///
     /// let source = ["zebra", "horse", "zebra", "zebra"];
     ///
-    /// for (i, &s) in source.iter().enumerate() {
-    ///     if let Ok(entry) = letters.entry_ref(s, s) {
+    /// for &s in source.iter() {
+    ///     if let Ok(entry) = words.entry_ref(s, s) {
     ///         let counter = entry.or_insert(0);
     ///         *counter += 1;
     ///     }
     /// }
     ///
-    /// assert_eq!(letters.get_key1("zebra"), Some(&3));
-    /// assert_eq!(letters.get_key1("horse"), Some(&1));
-    /// assert_eq!(letters.get_key2("zebra"), Some(&3));
-    /// assert_eq!(letters.get_key2("horse"), Some(&1));
+    /// assert_eq!(words.get_key1("zebra"), Some(&3));
+    /// assert_eq!(words.get_key1("horse"), Some(&1));
+    /// assert_eq!(words.get_key2("zebra"), Some(&3));
+    /// assert_eq!(words.get_key2("horse"), Some(&1));
     ///
     /// // Return `ErrorKind::OccupiedK1AndVacantK2` if `K1` key already
     /// // exists with some value, but `K2` key is vacant.
-    /// let error_kind = letters.entry_ref("zebra", "pony").unwrap_err();
+    /// let error_kind = words.entry_ref("zebra", "pony").unwrap_err();
     /// assert_eq!(error_kind, ErrorKind::OccupiedK1AndVacantK2);
     ///
     /// // Return `ErrorKind::VacantK1AndOccupiedK2` if `K1` key is vacant,
     /// // but `K2` key already exists with some value.
-    /// let error_kind = letters.entry_ref("pony", "horse").unwrap_err();
+    /// let error_kind = words.entry_ref("pony", "horse").unwrap_err();
     /// assert_eq!(error_kind, ErrorKind::VacantK1AndOccupiedK2);
     ///
     /// // Return `ErrorKind::KeysPointsToDiffEntries` if both
     /// // `K1` key and `K2` key already exist with some values,
     /// // but point to different entries (values).
-    /// let error_kind = letters.entry_ref("zebra", "horse").unwrap_err();
+    /// let error_kind = words.entry_ref("zebra", "horse").unwrap_err();
     /// assert_eq!(error_kind, ErrorKind::KeysPointsToDiffEntries);
     /// ```
     #[cfg_attr(feature = "inline-more", inline)]
@@ -1738,9 +2038,8 @@ where
     ///
     /// # Note
     ///
-    /// Note that this [`get_keys`](DHashMap::get_keys) method return
-    /// a reference to the value only if two keys exist and refer to
-    /// the same `value`.
+    /// Note that this `get_keys` method return a reference to the value
+    /// only if two keys exist and refer to the same `value`.
     ///
     /// # Examples
     ///
@@ -1846,8 +2145,8 @@ where
     ///
     /// # Note
     ///
-    /// Note that this [`get_keys_value`](DHashMap::get_keys_value) method return
-    /// the tuple of type`(&'a K1, &'a K2, &'a V)` only if two keys exist and refer
+    /// Note that this `get_keys_value` method return the tuple of type
+    /// `(&'a K1, &'a K2, &'a V)` only if two keys exist and refer
     /// to the same `value`.
     ///
     /// # Example
@@ -2011,8 +2310,8 @@ where
     ///
     /// # Note
     ///
-    /// Note that this [`get_keys_value_mut`](DHashMap::get_keys_value_mut) method
-    /// return the tuple of type`(&'a K1, &'a K2, &'a mut V)` only if two keys exist
+    /// Note that this `get_keys_value_mut` method return the tuple
+    /// of type `(&'a K1, &'a K2, &'a mut V)` only if two keys exist
     /// and refer to the same `value`.
     ///
     /// # Example
@@ -2123,8 +2422,8 @@ where
     /// the keys type.
     ///
     /// # Note
-    /// Note that this [`contains_keys`](DHashMap::contains_keys) method
-    /// return `true` only if two keys exist and refer to the same `value`.
+    /// Note that this `contains_keys` method return `true` only if two
+    /// keys exist and refer to the same `value`.
     ///
     /// # Example
     ///
@@ -2229,9 +2528,8 @@ where
     /// the keys type.
     ///
     /// # Note
-    /// Note that this [`get_mut_keys`](DHashMap::get_mut_keys) method return
-    /// a reference to the value only if two keys exist and refer to the same
-    /// `value`.
+    /// Note that this `get_mut_keys` method return a reference to the
+    /// value only if two keys exist and refer to the same `value`.
     ///
     /// # Examples
     ///
@@ -2328,6 +2626,10 @@ where
     /// Attempts to get mutable references to `N` values in the map
     /// at once corresponding to the given `N` fist `K1` keys.
     ///
+    /// The keys may be any borrowed form of the map's keys type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the keys type.
+    ///
     /// Returns an array of length `N` with the results of each query.
     /// For soundness, at most one mutable reference will be returned
     /// to any value. `None` will be returned if any of the keys are
@@ -2366,6 +2668,10 @@ where
 
     /// Attempts to get mutable references to `N` values in the map
     /// at once corresponding to the given `N` second `K2` keys.
+    ///
+    /// The keys may be any borrowed form of the map's keys type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the keys type.
     ///
     /// Returns an array of length `N` with the results of each query.
     /// For soundness, at most one mutable reference will be returned
@@ -2407,6 +2713,10 @@ where
     /// at once corresponding to the given `N` first `K1` and second
     /// `K2` keys.
     ///
+    /// The keys may be any borrowed form of the map's keys type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the keys type.
+    ///
     /// Returns an array of length `N` with the results of each query.
     /// For soundness, at most one mutable reference will be returned
     /// to any value. `None` will be returned if any of the keys are
@@ -2414,9 +2724,9 @@ where
     ///
     /// # Note
     ///
-    /// Note that this [`get_many_mut_keys`](DHashMap::get_many_mut_keys) method
-    /// return array of values `[&'_ mut V; N]` only if each of given two keys'
-    /// `(&Q1, &Q2)` tuples exist and refer to the same `value`.
+    /// Note that this `get_many_mut_keys` method return array of values
+    /// `[&'_ mut V; N]` only if each of given two keys' `(&Q1, &Q2)`
+    /// tuples exist and refer to the same `value`.
     ///
     /// # Examples
     ///
@@ -2473,6 +2783,10 @@ where
     /// corresponding to the given `N` first `K1` keys, without validating
     /// that the values are unique.
     ///
+    /// The keys may be any borrowed form of the map's keys type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the keys type.
+    ///
     /// Returns an array of length `N` with the results of each query. `None`
     /// will be returned if any of the keys are missing.
     ///
@@ -2480,7 +2794,7 @@ where
     ///
     /// # Safety
     ///
-    /// Calling this method with overlapping keys if they exist in map is
+    /// Calling this method with overlapping keys that exist in map is
     /// *[undefined behavior]* even if the resulting references are not used.
     ///
     /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
@@ -2523,6 +2837,10 @@ where
     /// corresponding to the given `N` second `K2` keys, without validating
     /// that the values are unique.
     ///
+    /// The keys may be any borrowed form of the map's keys type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the keys type.
+    ///
     /// Returns an array of length `N` with the results of each query. `None`
     /// will be returned if any of the keys are missing.
     ///
@@ -2530,7 +2848,7 @@ where
     ///
     /// # Safety
     ///
-    /// Calling this method with overlapping keys if they exist in map is
+    /// Calling this method with overlapping keys that exist in map is
     /// *[undefined behavior]* even if the resulting references are not used.
     ///
     /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
@@ -2569,6 +2887,10 @@ where
     /// corresponding to the given `N` first `K1` and second `K2` keys, without
     /// validating that the values are unique.
     ///
+    /// The keys may be any borrowed form of the map's keys type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the keys type.
+    ///
     /// Returns an array of length `N` with the results of each query. `None`
     /// will be returned if any of the keys are missing.
     ///
@@ -2580,9 +2902,9 @@ where
     /// to the same value, is *[undefined behavior]* even if the resulting references
     /// are not used.
     ///
-    /// In other words this [`get_many_unchecked_mut_keys`](DHashMap::get_many_unchecked_mut_keys)
-    /// method return array of values `[&'_ mut V; N]` only if each of given two keys'
-    /// `(&Q1, &Q2)` tuples exist and refer to the same `value`. For more information see
+    /// In other words this `get_many_unchecked_mut_keys` method return array of values
+    /// `[&'_ mut V; N]` only if each of given two keys' `(&Q1, &Q2)` tuples exist and
+    /// refer to the same `value`. For more information see
     /// [`get_keys_value_mut`](DHashMap::get_keys_value_mut) method.
     ///
     /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
@@ -2632,6 +2954,10 @@ where
     /// using the given `N` fist `K1` keys, with immutable references to the
     /// corresponding `K1` and `K2` keys.
     ///
+    /// The keys may be any borrowed form of the map's keys type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the keys type.
+    ///
     /// Returns an array of length `N` with the results of each query. For
     /// soundness, at most one mutable reference will be returned to any value.
     /// `None` will be returned if any of the keys are duplicates or missing.
@@ -2679,6 +3005,10 @@ where
     /// Attempts to get mutable references to `N` values in the map at once
     /// using the given `N` second `K2` keys, with immutable references to the
     /// corresponding `K1` and `K2` keys.
+    ///
+    /// The keys may be any borrowed form of the map's keys type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the keys type.
     ///
     /// Returns an array of length `N` with the results of each query. For
     /// soundness, at most one mutable reference will be returned to any value.
@@ -2728,15 +3058,19 @@ where
     /// using the given `N` first `K1` and second `K2` keys, with immutable
     /// references to the corresponding keys.
     ///
+    /// The keys may be any borrowed form of the map's keys type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the keys type.
+    ///
     /// Returns an array of length `N` with the results of each query. For
     /// soundness, at most one mutable reference will be returned to any value.
     /// `None` will be returned if any of the keys are duplicates or missing.
     ///
     /// # Note
     ///
-    /// Note that this [`get_many_keys_value_mut`](DHashMap::get_many_keys_value_mut)
-    /// method return array of values `[(&'_ K1, &'_ K2, &'_ mut V); N]` only if each
-    /// of given two keys' `(&Q1, &Q2)` tuples exist and refer to the same `value`.
+    /// Note that this `get_many_keys_value_mut` method return array of values
+    /// `[(&'_ K1, &'_ K2, &'_ mut V); N]` only if each of given two keys'
+    /// `(&Q1, &Q2)` tuples exist and refer to the same `value`.
     ///
     /// # Examples
     ///
@@ -2800,6 +3134,10 @@ where
     /// corresponding `K1` and `K2` keys. This method does not validate that
     /// the values are unique.
     ///
+    /// The keys may be any borrowed form of the map's keys type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the keys type.
+    ///
     /// Returns an array of length `N` with the results of each query.
     /// `None` will be returned if any of the keys are missing.
     ///
@@ -2807,7 +3145,7 @@ where
     ///
     /// # Safety
     ///
-    /// Calling this method with overlapping keys if they exist in map is
+    /// Calling this method with overlapping keys that exist in map is
     /// *[undefined behavior]* even if the resulting references are not used.
     ///
     /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
@@ -2857,6 +3195,10 @@ where
     /// corresponding `K1` and `K2` keys. This method does not validate that
     /// the values are unique.
     ///
+    /// The keys may be any borrowed form of the map's keys type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the keys type.
+    ///
     /// Returns an array of length `N` with the results of each query.
     /// `None` will be returned if any of the keys are missing.
     ///
@@ -2864,7 +3206,7 @@ where
     ///
     /// # Safety
     ///
-    /// Calling this method with overlapping keys if they exist in map is
+    /// Calling this method with overlapping keys that exist in map is
     /// *[undefined behavior]* even if the resulting references are not used.
     ///
     /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
@@ -2910,6 +3252,10 @@ where
     /// references to the corresponding keys. This method does not validate that
     /// the values are unique.
     ///
+    /// The keys may be any borrowed form of the map's keys type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the keys type.
+    ///
     /// Returns an array of length `N` with the results of each query.
     /// `None` will be returned if any of the keys are missing.
     ///
@@ -2921,8 +3267,8 @@ where
     /// to the same value, is *[undefined behavior]* even if the resulting references
     /// are not used.
     ///
-    /// In other words this [`get_many_keys_value_unchecked_mut`](DHashMap::get_many_keys_value_unchecked_mut)
-    /// method return array of values `[(&'_ K1, &'_ K2, &'_ mut V); N]` only if each of given two keys'
+    /// In other words this `get_many_keys_value_unchecked_mut` method return array of
+    /// values `[(&'_ K1, &'_ K2, &'_ mut V); N]` only if each of given two keys'
     /// `(&Q1, &Q2)` tuples exist and refer to the same `value`. For more information see
     /// [`get_keys_value_mut`](DHashMap::get_keys_value_mut) method.
     ///
@@ -3108,14 +3454,14 @@ where
     ///
     /// If the map did not have these keys present, [`None`] is returned.
     ///
-    /// If the map did have these key **present**, and **both keys refer to
+    /// If the map did have these key **present**, and **both keys refered to
     /// the same value**, the value is updated, and the old value is returned
     /// inside `Some(Ok(V))` variants. The key is not updated, though; this
     /// matters for types that can be `==` without being identical.
     /// See the [std module-level documentation] for more.
     ///
-    /// The [`insert`](DHashMap::insert) method returns [`InsertError`] structure
-    /// (inside of `Some(Err(_))` variants):
+    /// The `insert` method returns [`InsertError`] structure (inside of
+    /// `Some(Err(_))` variants):
     /// - when `K1` key is vacant, but `K2` key already exists with some value;
     /// - when `K1` key already exists with some value, but `K2` key is vacant;
     /// - when both `K1` and `K2` keys already exist with some values, but
@@ -3169,7 +3515,7 @@ where
     /// assert_eq!(error_kind, ErrorKind::KeysPointsToDiffEntries);
     /// ```
     #[cfg_attr(feature = "inline-more", inline)]
-    pub fn insert(&mut self, k1: K1, k2: K2, v: V) -> Option<Result<V, InsertError<K1, K2, V>>> {
+    pub fn insert(&mut self, k1: K1, k2: K2, v: V) -> Option<InsertResult<K1, K2, V>> {
         let hash_builder = &self.hash_builder;
         let hash1 = make_insert_hash::<K1, S>(hash_builder, &k1);
         let hash2 = make_insert_hash::<K2, S>(hash_builder, &k2);
@@ -3298,8 +3644,8 @@ where
     /// The [`OccupiedError`] contains the occupied entry [`OccupiedEntry`],
     /// and the value that was not inserted.
     ///
-    /// The [`try_insert`](DHashMap::try_insert) method return [`InsertError`] structure
-    /// (inside of [`TryInsertError::Insert`] variant):
+    /// The `try_insert` method returns [`InsertError`] structure (inside of
+    /// [`TryInsertError::Insert`] variant):
     /// - when `K1` key is vacant, but `K2` key already exists with some value;
     /// - when `K1` key already exists with some value, but `K2` key is vacant;
     /// - when both `K1` and `K2` keys already exist with some values, but
@@ -3382,12 +3728,7 @@ where
     /// }
     /// ```
     #[cfg_attr(feature = "inline-more", inline)]
-    pub fn try_insert(
-        &mut self,
-        k1: K1,
-        k2: K2,
-        v: V,
-    ) -> Result<&mut V, TryInsertError<'_, K1, K2, V, S, A>> {
+    pub fn try_insert(&mut self, k1: K1, k2: K2, v: V) -> TryInsertResult<'_, K1, K2, V, S, A> {
         match self.entry(k1, k2) {
             Ok(entry) => match entry {
                 Entry::Occupied(entry) => {
@@ -3706,6 +4047,25 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// acting erratically, with two keys randomly masking each other. Implementations
     /// are free to assume this doesn't happen (within the limits of memory-safety).
     ///
+    /// # Note
+    ///
+    /// Returned [`RawEntryBuilderMut`]'s methods return [`RawEntryMut`]
+    /// if `all` of the following is `true`:
+    /// - Both `K1` and `K2` keys are vacant.
+    /// - If both `K1` and `K2` keys exist, they refer to the same value.
+    ///
+    /// When the above statements are `false`, [`RawEntryBuilderMut`]'s
+    /// methods return [`ErrorKind`] enum.
+    ///
+    /// Depending on the points below, different [`ErrorKind`] variants may be returned:
+    /// - When `K1` key is vacant, but `K2` key already exists with some value, the
+    /// returned [`ErrorKind`] variant is [`ErrorKind::VacantK1AndOccupiedK2`].
+    /// - When `K1` key already exists with some value, but `K2` key is vacant, the
+    /// returned [`ErrorKind`] variant is [`ErrorKind::OccupiedK1AndVacantK2`].
+    /// - When both `K1` key and `K2` key already exist with some values, but point
+    /// to different entries (values) the returned [`ErrorKind`] variant is
+    /// [`ErrorKind::KeysPointsToDiffEntries`].
+    ///
     /// # Examples
     ///
     /// ```
@@ -3765,7 +4125,7 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// let hash2 = compute_hash(map.hasher(), &key2);
     /// match map
     ///     .raw_entry_mut()
-    ///     .from_hash(hash1, |q| *q == key1, hash2, |q| *q == key2)
+    ///     .from_hashes(hash1, |q| *q == key1, hash2, |q| *q == key2)
     /// {
     ///     Ok(raw_entry) => match raw_entry {
     ///         RawEntryMut::Occupied(_) => panic!(),
@@ -3782,7 +4142,7 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     ///
     /// match map
     ///     .raw_entry_mut()
-    ///     .from_hash(hash1, |q| *q == key1, hash2, |q| *q == key2)
+    ///     .from_hashes(hash1, |q| *q == key1, hash2, |q| *q == key2)
     /// {
     ///     Ok(raw_entry) => match raw_entry {
     ///         RawEntryMut::Vacant(_) => unreachable!(),
@@ -3817,7 +4177,7 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// let hash2 = compute_hash(map.hasher(), &"two");
     /// let error_kind = map
     ///     .raw_entry_mut()
-    ///     .from_hash(hash1, |q| *q == "a", hash2, |q| *q == "two")
+    ///     .from_hashes(hash1, |q| *q == "a", hash2, |q| *q == "two")
     ///     .unwrap_err();
     /// assert_eq!(error_kind, ErrorKind::KeysPointsToDiffEntries);
     /// ```
@@ -3872,7 +4232,7 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     ///     assert_eq!(map.raw_entry().from_keys(&k1, k2), tuple);
     ///     assert_eq!(
     ///         map.raw_entry()
-    ///             .from_hash(hash1, |q| *q == k1, hash2, |q| *q == k2),
+    ///             .from_hashes(hash1, |q| *q == k1, hash2, |q| *q == k2),
     ///         tuple
     ///     );
     ///     assert_eq!(
@@ -4433,6 +4793,8 @@ impl<K1, K2, V, S, A: Allocator + Clone> IntoIterator for DHashMap<K1, K2, V, S,
     /// Creates a consuming iterator, that is, one that moves each keys-value
     /// tuple out of the map in arbitrary order. The map cannot be used after
     /// calling this.
+    ///
+    /// The iterator element is tuple of type `(K1, K2, V)`.
     ///
     /// # Examples
     ///

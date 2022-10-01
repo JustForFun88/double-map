@@ -1,5 +1,50 @@
 use super::*;
 
+/// A draining iterator over entries of a `DHashMap` which don't satisfy the predicate
+/// `f(&K1, &K2, &mut V)` in arbitrary order. The iterator element type is `(K1, K2, V)`.
+///
+/// This `struct` is created by the [`drain_filter`] method on [`DHashMap`]. See its
+/// documentation for more.
+///
+/// [`drain_filter`]: struct.DHashMap.html#method.drain_filter
+/// [`DHashMap`]: struct.DHashMap.html
+///
+/// # Examples
+///
+/// ```
+/// use double_map::DHashMap;
+///
+/// let mut map = DHashMap::<i32, i32, &str>::from([
+///     (1, 2, "a"),
+///     (2, 5, "b"),
+///     (3, 8, "c"),
+///     (4, 11, "d"),
+///     (5, 14, "e"),
+///     (6, 17, "e"),
+/// ]);
+///
+/// let mut drain_filter = map.drain_filter(|k1, k2, _v| k1 % 2 != 0 && k2 % 2 == 0);
+/// let mut vec = vec![
+///     drain_filter.next(),
+///     drain_filter.next(),
+///     drain_filter.next(),
+/// ];
+///
+/// // The `DrainFilter` iterator produces items in arbitrary order, so the
+/// // items must be sorted to test them against a sorted array.
+/// vec.sort_unstable();
+/// assert_eq!(
+///     vec,
+///     [Some((1, 2, "a")), Some((3, 8, "c")), Some((5, 14, "e"))]
+/// );
+///
+/// // It is fused iterator
+/// assert_eq!(drain_filter.next(), None);
+/// assert_eq!(drain_filter.next(), None);
+/// drop(drain_filter);
+///
+/// assert_eq!(map.len(), 3);
+/// ```
 pub struct DrainFilter<'a, K1, K2, V, F, A: Allocator + Clone = Global>
 where
     F: FnMut(&K1, &K2, &mut V) -> bool,

@@ -1,5 +1,35 @@
 use super::*;
 
+/// A mutable iterator over the entries of a `DHashMap` in arbitrary order.
+/// The iterator element type is `(&'a K1, &'a K2, &'a mut V)`.
+///
+/// This `struct` is created by the [`iter_mut`](DHashMap::iter_mut) method
+/// on [`DHashMap`]. See its documentation for more.
+///
+/// # Example
+///
+/// ```
+/// use double_map::{DHashMap, dhashmap};
+///
+/// let mut map = dhashmap!{
+///     1, "a" => "One".to_owned(),
+///     2, "b" => "Two".to_owned(),
+///     3, "c" => "Three".to_owned(),
+/// };
+///
+/// let mut iter = map.iter_mut();
+/// iter.next().map(|(_, _, v)| v.push_str(" coin"));
+/// iter.next().map(|(_, _, v)| v.push_str(" coin"));
+/// iter.next().map(|(_, _, v)| v.push_str(" coin"));
+///
+/// // It is fused iterator
+/// assert_eq!(iter.next(), None);
+/// assert_eq!(iter.next(), None);
+///
+/// assert_eq!(map.get_key1(&1).unwrap(), &"One coin".to_owned()  );
+/// assert_eq!(map.get_key1(&2).unwrap(), &"Two coin".to_owned()  );
+/// assert_eq!(map.get_key1(&3).unwrap(), &"Three coin".to_owned());
+/// ```
 pub struct IterMut<'a, K1, K2, V> {
     pub(super) inner: RawDataIter<(K1, K2, V)>,
     // To ensure invariance with respect to V

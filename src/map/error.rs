@@ -10,11 +10,11 @@ use core::fmt::{self, Debug};
 /// [`try_insert`](DHashMap::try_insert) methods fail.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ErrorKind {
-    /// Returns when key #1 is vacant, but key #2 already exists with some value.
+    /// Returns when `K1` key is vacant, but `K2` key already exists with some value.
     VacantK1AndOccupiedK2,
-    /// Returns when key #1 already exists with some value, but key #2 is vacant.
+    /// Returns when `K1` key already exists with some value, but `K2` key is vacant.
     OccupiedK1AndVacantK2,
-    /// Returns when both key #1 and key #2 already exist with some values, but point
+    /// Returns when both `K1` and `K2` keys already exist with some values, but point
     /// to different entries (values).
     KeysPointsToDiffEntries,
 }
@@ -22,10 +22,10 @@ pub enum ErrorKind {
 impl fmt::Display for ErrorKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let error_txt = match *self {
-            ErrorKind::OccupiedK1AndVacantK2 => "occupied key #1 but vacant key #2",
-            ErrorKind::VacantK1AndOccupiedK2 => "vacant key #1 but occupied key #2",
+            ErrorKind::OccupiedK1AndVacantK2 => "occupied key1 but vacant key2",
+            ErrorKind::VacantK1AndOccupiedK2 => "vacant key1 but occupied key2",
             ErrorKind::KeysPointsToDiffEntries => {
-                "key #1 and key #2 exist, but point to different entries"
+                "key1 and key2 exist, but point to different entries"
             }
         };
         write!(f, "{}", error_txt)
@@ -77,7 +77,7 @@ impl<K1: Debug, K2: Debug> fmt::Display for EntryError<K1, K2> {
 
 /// The error returned by [`insert`](DHashMap::insert) method (and also
 /// [`try_insert`](DHashMap::try_insert) method) when there is no way to distinguish
-/// how given value with key #1 and key #2 should be inserted. It is also part of the
+/// how given value with `K1` and `K2` keys should be inserted. It is also part of the
 /// [`TryInsertError`] enum which is returned by [`try_insert`](DHashMap::try_insert) method
 /// of [`DHashMap`]. For more information about error kinds look at [`ErrorKind`] enum.
 ///
@@ -166,7 +166,7 @@ impl<'a, K1: Debug, K2: Debug, V: Debug, S, A: Allocator + Clone> fmt::Display
 
 /// The error returned by [`try_insert`](DHashMap::try_insert) method when the keys already exist
 /// and point to the same value (look at [`OccupiedError`]) or there is no way to distinguish how
-/// given value with key #1 and key #2 should be inserted. For more information about error kinds
+/// given value with `K1` and `K2` keys should be inserted. For more information about error kinds
 /// look at [`OccupiedError`], [`InsertError`] structures and [`ErrorKind`] enum.
 ///
 /// Depending of error kind, this enum can contain:
@@ -179,7 +179,7 @@ pub enum TryInsertError<'a, K1, K2, V, S, A: Allocator + Clone = Global> {
     /// exist and point to the same value. Contains the [`OccupiedError`] structure.
     Occupied(OccupiedError<'a, K1, K2, V, S, A>),
     /// The error kind returned by [`try_insert`](DHashMap::try_insert) method when there is no
-    /// way to distinguish how given value with key #1 and key #2 should be inserted. For more
+    /// way to distinguish how given value with `K1` and `K2` keys should be inserted. For more
     /// information about error kinds look at [`InsertError`] structure and [`ErrorKind`] enum.
     ///
     /// Contains the [`InsertError`] structure.

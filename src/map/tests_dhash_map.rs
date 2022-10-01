@@ -69,7 +69,7 @@ where
         let hash1 = make_hash::<Q1, S>(map.hasher(), k1);
         let hash2 = make_hash::<Q2, S>(map.hasher(), k2);
         map.raw_entry_mut()
-            .from_hash(
+            .from_hashes(
                 hash1,
                 |key| k1.equivalent(key),
                 hash2,
@@ -7354,7 +7354,7 @@ fn test_raw_entry() {
     );
     assert_eq!(
         map.raw_entry()
-            .from_hash(hash1, |k| *k == 1, hash2, |k| *k == 10)
+            .from_hashes(hash1, |k| *k == 1, hash2, |k| *k == 10)
             .unwrap(),
         (&1, &10, &1000)
     );
@@ -7386,7 +7386,7 @@ fn test_raw_entry() {
     );
     assert_eq!(
         map.raw_entry()
-            .from_hash(hash1, |k| *k == 2, hash2, |k| *k == 20)
+            .from_hashes(hash1, |k| *k == 2, hash2, |k| *k == 20)
             .unwrap(),
         (&2, &20, &2000)
     );
@@ -7416,7 +7416,7 @@ fn test_raw_entry() {
     assert_eq!(map.raw_entry().from_keys(&3, &30), None);
     assert_eq!(
         map.raw_entry()
-            .from_hash(hash1, |k| *k == 3, hash2, |k| *k == 30),
+            .from_hashes(hash1, |k| *k == 3, hash2, |k| *k == 30),
         None
     );
     assert_eq!(
@@ -7444,7 +7444,7 @@ fn test_raw_entry() {
     );
     assert_eq!(
         map.raw_entry()
-            .from_hash(hash1, |k| *k == 10, hash2, |k| *k == 100)
+            .from_hashes(hash1, |k| *k == 10, hash2, |k| *k == 100)
             .unwrap(),
         (&10, &100, &10000)
     );
@@ -7466,7 +7466,7 @@ fn test_raw_entry() {
         assert_eq!(map.raw_entry().from_keys(&k1, &k2), kv);
         assert_eq!(
             map.raw_entry()
-                .from_hash(hash1, |k| *k == k1, hash2, |k| *k == k2),
+                .from_hashes(hash1, |k| *k == k1, hash2, |k| *k == k2),
             kv
         );
         assert_eq!(
@@ -7477,7 +7477,7 @@ fn test_raw_entry() {
 
         match map.raw_entry_mut().from_keys(&k1, &k2) {
             Ok(raw_entry) => match raw_entry {
-                Occupied(mut o) => assert_eq!(o.get_keys_value(), kv.unwrap()),
+                Occupied(o) => assert_eq!(o.get_keys_value(), kv.unwrap()),
                 Vacant(_) => assert_eq!(v, None),
             },
             Err(_) => panic!(),
@@ -7487,17 +7487,17 @@ fn test_raw_entry() {
             .from_keys_hashed_nocheck(hash1, &k1, hash2, &k2)
         {
             Ok(raw_entry) => match raw_entry {
-                Occupied(mut o) => assert_eq!(o.get_keys_value(), kv.unwrap()),
+                Occupied(o) => assert_eq!(o.get_keys_value(), kv.unwrap()),
                 Vacant(_) => assert_eq!(v, None),
             },
             Err(_) => panic!(),
         }
         match map
             .raw_entry_mut()
-            .from_hash(hash1, |k| *k == k1, hash2, |k| *k == k2)
+            .from_hashes(hash1, |k| *k == k1, hash2, |k| *k == k2)
         {
             Ok(raw_entry) => match raw_entry {
-                Occupied(mut o) => assert_eq!(o.get_keys_value(), kv.unwrap()),
+                Occupied(o) => assert_eq!(o.get_keys_value(), kv.unwrap()),
                 Vacant(_) => assert_eq!(v, None),
             },
             Err(_) => panic!(),
@@ -7531,7 +7531,7 @@ fn test_raw_entry() {
         }
         match map
             .raw_entry_mut()
-            .from_hash(hash1, |k| *k == k1, hash2, |k| *k == k2)
+            .from_hashes(hash1, |k| *k == k1, hash2, |k| *k == k2)
         {
             Ok(_) => panic!(),
             Err(error) => assert_eq!(error, ErrorKind::OccupiedK1AndVacantK2),
@@ -7556,7 +7556,7 @@ fn test_raw_entry() {
         }
         match map
             .raw_entry_mut()
-            .from_hash(hash1, |k| *k == k1, hash2, |k| *k == k2)
+            .from_hashes(hash1, |k| *k == k1, hash2, |k| *k == k2)
         {
             Ok(_) => panic!(),
             Err(error) => assert_eq!(error, ErrorKind::VacantK1AndOccupiedK2),
@@ -7583,7 +7583,7 @@ fn test_raw_entry() {
         }
         match map
             .raw_entry_mut()
-            .from_hash(hash1, |k| *k == k1, hash2, |k| *k == k2)
+            .from_hashes(hash1, |k| *k == k1, hash2, |k| *k == k2)
         {
             Ok(_) => panic!(),
             Err(error) => assert_eq!(error, ErrorKind::KeysPointsToDiffEntries),
@@ -7600,13 +7600,13 @@ fn test_key_without_hash_impl() {
     {
         assert!(m
             .raw_entry()
-            .from_hash(0, |k| k.0 == 0, 0, |k| k.0 == 0)
+            .from_hashes(0, |k| k.0 == 0, 0, |k| k.0 == 0)
             .is_none());
     }
     {
         let vacant_entry = match m
             .raw_entry_mut()
-            .from_hash(0, |k| k.0 == 0, 0, |k| k.0 == 0)
+            .from_hashes(0, |k| k.0 == 0, 0, |k| k.0 == 0)
         {
             Ok(entry) => match entry {
                 RawEntryMut::Occupied(..) => panic!("Found entry for key 0"),
@@ -7614,26 +7614,26 @@ fn test_key_without_hash_impl() {
             },
             Err(_) => panic!(),
         };
-        vacant_entry.insert_with_hasher(0, IntWrapper(0), 0, IntWrapper(0), (), |k| k.0, |k| k.0);
+        vacant_entry.insert_with_hashers(0, IntWrapper(0), 0, IntWrapper(0), (), |k| k.0, |k| k.0);
     }
     {
         assert!(m
             .raw_entry()
-            .from_hash(0, |k| k.0 == 0, 0, |k| k.0 == 0)
+            .from_hashes(0, |k| k.0 == 0, 0, |k| k.0 == 0)
             .is_some());
         assert!(m
             .raw_entry()
-            .from_hash(1, |k| k.0 == 1, 1, |k| k.0 == 1)
+            .from_hashes(1, |k| k.0 == 1, 1, |k| k.0 == 1)
             .is_none());
         assert!(m
             .raw_entry()
-            .from_hash(2, |k| k.0 == 2, 2, |k| k.0 == 2)
+            .from_hashes(2, |k| k.0 == 2, 2, |k| k.0 == 2)
             .is_none());
     }
     {
         let vacant_entry = match m
             .raw_entry_mut()
-            .from_hash(1, |k| k.0 == 1, 1, |k| k.0 == 1)
+            .from_hashes(1, |k| k.0 == 1, 1, |k| k.0 == 1)
         {
             Ok(entry) => match entry {
                 RawEntryMut::Occupied(..) => panic!("Found entry for key 0"),
@@ -7641,26 +7641,26 @@ fn test_key_without_hash_impl() {
             },
             Err(_) => panic!(),
         };
-        vacant_entry.insert_with_hasher(1, IntWrapper(1), 1, IntWrapper(1), (), |k| k.0, |k| k.0);
+        vacant_entry.insert_with_hashers(1, IntWrapper(1), 1, IntWrapper(1), (), |k| k.0, |k| k.0);
     }
     {
         assert!(m
             .raw_entry()
-            .from_hash(0, |k| k.0 == 0, 0, |k| k.0 == 0)
+            .from_hashes(0, |k| k.0 == 0, 0, |k| k.0 == 0)
             .is_some());
         assert!(m
             .raw_entry()
-            .from_hash(1, |k| k.0 == 1, 1, |k| k.0 == 1)
+            .from_hashes(1, |k| k.0 == 1, 1, |k| k.0 == 1)
             .is_some());
         assert!(m
             .raw_entry()
-            .from_hash(2, |k| k.0 == 2, 2, |k| k.0 == 2)
+            .from_hashes(2, |k| k.0 == 2, 2, |k| k.0 == 2)
             .is_none());
     }
     {
         let occupied_entry = match m
             .raw_entry_mut()
-            .from_hash(0, |k| k.0 == 0, 0, |k| k.0 == 0)
+            .from_hashes(0, |k| k.0 == 0, 0, |k| k.0 == 0)
         {
             Ok(entry) => match entry {
                 RawEntryMut::Occupied(e) => e,
@@ -7676,21 +7676,21 @@ fn test_key_without_hash_impl() {
     {
         assert!(m
             .raw_entry()
-            .from_hash(0, |k| k.0 == 0, 0, |k| k.0 == 0)
+            .from_hashes(0, |k| k.0 == 0, 0, |k| k.0 == 0)
             .is_none());
         assert!(m
             .raw_entry()
-            .from_hash(1, |k| k.0 == 1, 1, |k| k.0 == 1)
+            .from_hashes(1, |k| k.0 == 1, 1, |k| k.0 == 1)
             .is_some());
         assert!(m
             .raw_entry()
-            .from_hash(2, |k| k.0 == 2, 2, |k| k.0 == 2)
+            .from_hashes(2, |k| k.0 == 2, 2, |k| k.0 == 2)
             .is_none());
     }
     {
         let vacant_entry = match m
             .raw_entry_mut()
-            .from_hash(0, |k| k.0 == 0, 0, |k| k.0 == 0)
+            .from_hashes(0, |k| k.0 == 0, 0, |k| k.0 == 0)
         {
             Ok(entry) => match entry {
                 RawEntryMut::Occupied(..) => panic!("Found entry for key 0"),
@@ -7698,26 +7698,26 @@ fn test_key_without_hash_impl() {
             },
             Err(_) => panic!(),
         };
-        vacant_entry.insert_with_hasher(0, IntWrapper(0), 0, IntWrapper(0), (), |k| k.0, |k| k.0);
+        vacant_entry.insert_with_hashers(0, IntWrapper(0), 0, IntWrapper(0), (), |k| k.0, |k| k.0);
     }
     {
         assert!(m
             .raw_entry()
-            .from_hash(0, |k| k.0 == 0, 0, |k| k.0 == 0)
+            .from_hashes(0, |k| k.0 == 0, 0, |k| k.0 == 0)
             .is_some());
         assert!(m
             .raw_entry()
-            .from_hash(1, |k| k.0 == 1, 1, |k| k.0 == 1)
+            .from_hashes(1, |k| k.0 == 1, 1, |k| k.0 == 1)
             .is_some());
         assert!(m
             .raw_entry()
-            .from_hash(2, |k| k.0 == 2, 2, |k| k.0 == 2)
+            .from_hashes(2, |k| k.0 == 2, 2, |k| k.0 == 2)
             .is_none());
     }
     {
         let occupied_entry = match m
             .raw_entry_mut()
-            .from_hash(0, |k| k.0 == 0, 0, |k| k.0 == 0)
+            .from_hashes(0, |k| k.0 == 0, 0, |k| k.0 == 0)
         {
             Ok(entry) => match entry {
                 RawEntryMut::Occupied(e) => e,
@@ -7733,15 +7733,15 @@ fn test_key_without_hash_impl() {
     {
         assert!(m
             .raw_entry()
-            .from_hash(0, |k| k.0 == 0, 0, |k| k.0 == 0)
+            .from_hashes(0, |k| k.0 == 0, 0, |k| k.0 == 0)
             .is_none());
         assert!(m
             .raw_entry()
-            .from_hash(1, |k| k.0 == 1, 1, |k| k.0 == 1)
+            .from_hashes(1, |k| k.0 == 1, 1, |k| k.0 == 1)
             .is_some());
         assert!(m
             .raw_entry()
-            .from_hash(2, |k| k.0 == 2, 2, |k| k.0 == 2)
+            .from_hashes(2, |k| k.0 == 2, 2, |k| k.0 == 2)
             .is_none());
     }
 }

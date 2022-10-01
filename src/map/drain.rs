@@ -1,5 +1,41 @@
 use super::*;
 
+/// A draining iterator over the entries of a `DHashMap` in arbitrary order.
+/// The iterator element type is `(K1, K2, V)`.
+///
+/// This `struct` is created by the [`drain`](DHashMap::drain) method
+/// on [`DHashMap`]. See its documentation for more.
+///
+/// # Example
+///
+/// ```
+/// use double_map::{dhashmap, DHashMap};
+///
+/// let mut map = dhashmap! {
+///     1, "a" => "One",
+///     2, "b" => "Two",
+///     3, "c" => "Three",
+/// };
+///
+/// let mut drain_iter = map.drain();
+/// let mut vec = vec![drain_iter.next(), drain_iter.next(), drain_iter.next()];
+///
+/// // The `Drain` iterator produces tuples in arbitrary order, so the
+/// // tuples must be sorted to test them against a sorted array.
+/// vec.sort_unstable();
+/// assert_eq!(
+///     vec,
+///     [
+///         Some((1, "a", "One")),
+///         Some((2, "b", "Two")),
+///         Some((3, "c", "Three"))
+///     ]
+/// );
+///
+/// // It is fused iterator
+/// assert_eq!(drain_iter.next(), None);
+/// assert_eq!(drain_iter.next(), None);
+/// ```
 pub struct Drain<'a, K1, K2, V, A: Allocator + Clone = Global> {
     pub(super) inner: RawDrain<'a, (K1, K2, V), A>,
 }

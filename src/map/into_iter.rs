@@ -1,5 +1,46 @@
 use super::*;
 
+/// An owning iterator over the entries of a `DHashMap` in arbitrary order.
+/// The iterator element type is `(K1, K2, V)`.
+///
+/// This `struct` is created by the [`into_iter`] method on [`DHashMap`]
+/// (provided by the [`IntoIterator`] trait). See its documentation for more.
+/// The map cannot be used after calling that method.
+///
+/// [`into_iter`]: struct.DHashMap.html#method.into_iter
+/// [`DHashMap`]: struct.DHashMap.html
+/// [`IntoIterator`]: https://doc.rust-lang.org/core/iter/trait.IntoIterator.html
+///
+/// # Example
+///
+/// ```
+/// use double_map::{dhashmap, DHashMap};
+///
+/// let map = dhashmap! {
+///     1, "a" => "One",
+///     2, "b" => "Two",
+///     3, "c" => "Three",
+/// };
+///
+/// let mut iter = map.into_iter();
+/// let mut vec = vec![iter.next(), iter.next(), iter.next()];
+///
+/// // The `IntoIter` iterator produces tuples in arbitrary order, so the
+/// // tuples must be sorted to test them against a sorted array.
+/// vec.sort_unstable();
+/// assert_eq!(
+///     vec,
+///     [
+///         Some((1, "a", "One")),
+///         Some((2, "b", "Two")),
+///         Some((3, "c", "Three"))
+///     ]
+/// );
+///
+/// // It is fused iterator
+/// assert_eq!(iter.next(), None);
+/// assert_eq!(iter.next(), None);
+/// ```
 pub struct IntoIter<K1, K2, V, A: Allocator + Clone = Global> {
     pub(super) inner: RawIntoDataIter<(K1, K2, V), A>,
 }

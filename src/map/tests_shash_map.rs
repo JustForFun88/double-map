@@ -7,7 +7,7 @@ use std::borrow::ToOwned;
 
 #[inline(always)]
 fn insert_raw_entry_from_key<'a, 'b, Q1, Q2, K1, K2, V, S, A, I>(
-    map: &mut DHashMap<K1, K2, V, S, A>,
+    map: &mut DoubleMap<K1, K2, V, S, A>,
     iter: I,
 ) -> bool
 where
@@ -29,7 +29,7 @@ where
 
 #[inline(always)]
 fn insert_raw_entry_from_key_hashed_nocheck<'a, 'b, Q1, Q2, K1, K2, V, S, A, I>(
-    map: &mut DHashMap<K1, K2, V, S, A>,
+    map: &mut DoubleMap<K1, K2, V, S, A>,
     iter: I,
 ) -> bool
 where
@@ -53,7 +53,7 @@ where
 
 #[inline(always)]
 fn insert_raw_entry_from_hash<'a, 'b, Q1, Q2, K1, K2, V, S, A, I>(
-    map: &mut DHashMap<K1, K2, V, S, A>,
+    map: &mut DoubleMap<K1, K2, V, S, A>,
     iter: I,
 ) -> bool
 where
@@ -82,7 +82,7 @@ where
 
 #[inline(always)]
 fn match_entry_error<K1, K2, V, S, A>(
-    map: &mut DHashMap<K1, K2, V, S, A>,
+    map: &mut DoubleMap<K1, K2, V, S, A>,
     (k1, k2): (&K1, &K2),
     err: ErrorKind,
 ) -> bool
@@ -104,7 +104,7 @@ where
 
 #[inline(always)]
 fn match_entry_ref_error<'a, 'b, Q1, Q2, K1, K2, V, S, A>(
-    map: &mut DHashMap<K1, K2, V, S, A>,
+    map: &mut DoubleMap<K1, K2, V, S, A>,
     (k1, k2): (&Q1, &Q2),
     err: ErrorKind,
 ) -> bool
@@ -124,7 +124,7 @@ where
 
 #[inline(always)]
 fn match_insert_error<K1, K2, V, S, A>(
-    map: &mut DHashMap<K1, K2, V, S, A>,
+    map: &mut DoubleMap<K1, K2, V, S, A>,
     (k1, k2): (&K1, &K2),
     val: &V,
     err: ErrorKind,
@@ -156,7 +156,7 @@ where
 
 #[inline(always)]
 fn match_try_insert_error<K1, K2, V, S, A>(
-    map: &mut DHashMap<K1, K2, V, S, A>,
+    map: &mut DoubleMap<K1, K2, V, S, A>,
     (k1, k2): (&K1, &K2),
     val: &V,
     err: Option<ErrorKind>,
@@ -200,7 +200,7 @@ where
 
 #[inline(always)]
 fn entry_keys_points_to_diff_entries<K1, K2, V, S, A>(
-    map: &mut DHashMap<K1, K2, V, S, A>,
+    map: &mut DoubleMap<K1, K2, V, S, A>,
     keys: &[(K1, K2)],
 ) -> bool
 where
@@ -228,7 +228,7 @@ where
 
 #[inline(always)]
 fn entry_ref_keys_points_to_diff_entries<'a, 'b, Q1, Q2, K1, K2, V, S, A>(
-    map: &mut DHashMap<K1, K2, V, S, A>,
+    map: &mut DoubleMap<K1, K2, V, S, A>,
     keys: &[(&Q1, &Q2)],
 ) -> bool
 where
@@ -257,7 +257,7 @@ where
 
 #[inline(always)]
 fn insert_keys_points_to_diff_entries<K1, K2, V, S, A>(
-    map: &mut DHashMap<K1, K2, V, S, A>,
+    map: &mut DoubleMap<K1, K2, V, S, A>,
     keys: &[(K1, K2)],
     val: &V,
 ) -> bool
@@ -286,7 +286,7 @@ where
 
 #[inline(always)]
 fn try_insert_keys_points_to_diff_entries<K1, K2, V, S, A>(
-    map: &mut DHashMap<K1, K2, V, S, A>,
+    map: &mut DoubleMap<K1, K2, V, S, A>,
     keys: &[(K1, K2)],
     val: &V,
 ) -> bool
@@ -317,7 +317,7 @@ where
 
 #[test]
 fn test_zero_capacities() {
-    type HM = DHashMap<i32, i32, i32>;
+    type HM = DoubleMap<i32, i32, i32>;
 
     let m = HM::new();
     assert_eq!(m.capacity(), 0);
@@ -335,7 +335,7 @@ fn test_zero_capacities() {
     assert_eq!(m.capacity(), 0);
 
     // --------------------------------------------------------------------------------
-    // test with `DHashMap::insert`
+    // test with `DoubleMap::insert`
     // --------------------------------------------------------------------------------
     let mut m = HM::new();
     assert!((1..8).all(|i| m.insert(i, i * 10, i * 100).is_none()));
@@ -359,7 +359,7 @@ fn test_zero_capacities() {
     assert_eq!(m.capacity(), 0);
 
     // --------------------------------------------------------------------------------
-    // test with `DHashMap::try_insert`
+    // test with `DoubleMap::try_insert`
     // --------------------------------------------------------------------------------
     let mut m = HM::new();
     assert!((1..8).all(|i| m.try_insert(i, i * 10, i * 100).is_ok()));
@@ -383,7 +383,7 @@ fn test_zero_capacities() {
     assert_eq!(m.capacity(), 0);
 
     // --------------------------------------------------------------------------------
-    // test with `DHashMap::insert_unique_unchecked`
+    // test with `DoubleMap::insert_unique_unchecked`
     // --------------------------------------------------------------------------------
     let mut m = HM::new();
     assert!((1..8)
@@ -410,7 +410,7 @@ fn test_zero_capacities() {
     assert_eq!(m.capacity(), 0);
 
     // --------------------------------------------------------------------------------
-    // test with `DHashMap::entry`
+    // test with `DoubleMap::entry`
     // --------------------------------------------------------------------------------
     let mut m = HM::new();
     assert!((1..8).all(|i| m.entry(i, i * 10).map(|e| e.or_insert(i * 100)).is_ok()));
@@ -438,9 +438,9 @@ fn test_zero_capacities() {
         .collect();
 
     // --------------------------------------------------------------------------------
-    // test with `DHashMap::entry_ref`
+    // test with `DoubleMap::entry_ref`
     // --------------------------------------------------------------------------------
-    let mut m: DHashMap<String, String, i32> = DHashMap::new();
+    let mut m: DoubleMap<String, String, i32> = DoubleMap::new();
     assert!(vec
         .iter()
         .all(|(k1, k2, v)| m.entry_ref(k1, k2).map(|e| e.or_insert(*v)).is_ok()));
@@ -451,7 +451,7 @@ fn test_zero_capacities() {
     m.shrink_to_fit();
     assert_eq!(m.capacity(), 0);
 
-    let mut m: DHashMap<String, String, i32> = DHashMap::new();
+    let mut m: DoubleMap<String, String, i32> = DoubleMap::new();
     assert!(vec
         .iter()
         .all(|(k1, k2, v)| m.entry_ref(k1, k2).map(|e| e.or_insert(*v)).is_ok()));
@@ -462,7 +462,7 @@ fn test_zero_capacities() {
     m.shrink_to_fit();
     assert_eq!(m.capacity(), 0);
 
-    let mut m: DHashMap<String, String, i32> = DHashMap::new();
+    let mut m: DoubleMap<String, String, i32> = DoubleMap::new();
     assert!(vec
         .iter()
         .all(|(k1, k2, v)| m.entry_ref(k1, k2).map(|e| e.or_insert(*v)).is_ok()));
@@ -478,7 +478,7 @@ fn test_zero_capacities() {
     // --------------------------------------------------------------------------------
     // test with `RawEntryBuilderMut::from_keys`
     // --------------------------------------------------------------------------------
-    let mut m: DHashMap<String, String, i32> = DHashMap::new();
+    let mut m: DoubleMap<String, String, i32> = DoubleMap::new();
     assert!(insert_raw_entry_from_key(
         &mut m,
         vec.iter().map(|(k1, k2, v)| (k1, k2, *v))
@@ -490,7 +490,7 @@ fn test_zero_capacities() {
     m.shrink_to_fit();
     assert_eq!(m.capacity(), 0);
 
-    let mut m: DHashMap<String, String, i32> = DHashMap::new();
+    let mut m: DoubleMap<String, String, i32> = DoubleMap::new();
     assert!(insert_raw_entry_from_key(
         &mut m,
         vec.iter().map(|(k1, k2, v)| (k1, k2, *v))
@@ -502,7 +502,7 @@ fn test_zero_capacities() {
     m.shrink_to_fit();
     assert_eq!(m.capacity(), 0);
 
-    let mut m: DHashMap<String, String, i32> = DHashMap::new();
+    let mut m: DoubleMap<String, String, i32> = DoubleMap::new();
     assert!(insert_raw_entry_from_key(
         &mut m,
         vec.iter().map(|(k1, k2, v)| (k1, k2, *v))
@@ -519,7 +519,7 @@ fn test_zero_capacities() {
     // --------------------------------------------------------------------------------
     // test with `RawEntryBuilderMut::from_keys_hashed_nocheck`
     // --------------------------------------------------------------------------------
-    let mut m: DHashMap<String, String, i32> = DHashMap::new();
+    let mut m: DoubleMap<String, String, i32> = DoubleMap::new();
     assert!(insert_raw_entry_from_key_hashed_nocheck(
         &mut m,
         vec.iter().map(|(k1, k2, v)| (k1, k2, *v))
@@ -531,7 +531,7 @@ fn test_zero_capacities() {
     m.shrink_to_fit();
     assert_eq!(m.capacity(), 0);
 
-    let mut m: DHashMap<String, String, i32> = DHashMap::new();
+    let mut m: DoubleMap<String, String, i32> = DoubleMap::new();
     assert!(insert_raw_entry_from_key_hashed_nocheck(
         &mut m,
         vec.iter().map(|(k1, k2, v)| (k1, k2, *v))
@@ -543,7 +543,7 @@ fn test_zero_capacities() {
     m.shrink_to_fit();
     assert_eq!(m.capacity(), 0);
 
-    let mut m: DHashMap<String, String, i32> = DHashMap::new();
+    let mut m: DoubleMap<String, String, i32> = DoubleMap::new();
     assert!(insert_raw_entry_from_key_hashed_nocheck(
         &mut m,
         vec.iter().map(|(k1, k2, v)| (k1, k2, *v))
@@ -560,7 +560,7 @@ fn test_zero_capacities() {
     // --------------------------------------------------------------------------------
     // test with `RawEntryBuilderMut::from_hash`
     // --------------------------------------------------------------------------------
-    let mut m: DHashMap<String, String, i32> = DHashMap::new();
+    let mut m: DoubleMap<String, String, i32> = DoubleMap::new();
     assert!(insert_raw_entry_from_hash(
         &mut m,
         vec.iter().map(|(k1, k2, v)| (k1, k2, *v))
@@ -572,7 +572,7 @@ fn test_zero_capacities() {
     m.shrink_to_fit();
     assert_eq!(m.capacity(), 0);
 
-    let mut m: DHashMap<String, String, i32> = DHashMap::new();
+    let mut m: DoubleMap<String, String, i32> = DoubleMap::new();
     assert!(insert_raw_entry_from_hash(
         &mut m,
         vec.iter().map(|(k1, k2, v)| (k1, k2, *v))
@@ -584,7 +584,7 @@ fn test_zero_capacities() {
     m.shrink_to_fit();
     assert_eq!(m.capacity(), 0);
 
-    let mut m: DHashMap<String, String, i32> = DHashMap::new();
+    let mut m: DoubleMap<String, String, i32> = DoubleMap::new();
     assert!(insert_raw_entry_from_hash(
         &mut m,
         vec.iter().map(|(k1, k2, v)| (k1, k2, *v))
@@ -605,7 +605,7 @@ fn test_zero_capacities() {
 
 #[test]
 fn test_create_capacity_zero() {
-    let mut m = DHashMap::with_capacity(0);
+    let mut m = DoubleMap::with_capacity(0);
 
     assert_eq!(m.capacity(), 0);
 
@@ -678,7 +678,7 @@ fn test_insert() {
     // --------------------------------------------------------------------------------
     // test with first allocation
     // --------------------------------------------------------------------------------
-    let mut m = DHashMap::new();
+    let mut m = DoubleMap::new();
     assert_eq!(m.len(), 0);
     assert_eq!(m.capacity(), 0);
 
@@ -913,7 +913,7 @@ fn test_insert_unique_unchecked() {
     // --------------------------------------------------------------------------------
     // test with first allocation
     // --------------------------------------------------------------------------------
-    let mut m = DHashMap::new();
+    let mut m = DoubleMap::new();
     assert_eq!(m.len(), 0);
     assert_eq!(m.capacity(), 0);
 
@@ -1050,7 +1050,7 @@ fn test_try_insert() {
     // --------------------------------------------------------------------------------
     // test with first allocation
     // --------------------------------------------------------------------------------
-    let mut m = DHashMap::new();
+    let mut m = DoubleMap::new();
     assert_eq!(m.len(), 0);
     assert_eq!(m.capacity(), 0);
 
@@ -1241,7 +1241,7 @@ fn test_clone_with_copy_type_simple() {
     // --------------------------------------------------------------------------------
     // test with one allocation
     // --------------------------------------------------------------------------------
-    let mut map = DHashMap::new();
+    let mut map = DoubleMap::new();
     assert_eq!(map.len(), 0);
     assert!((1..=3).all(|i| map.insert(i, i * 10, i * 100).is_none()));
     assert_eq!(map.len(), 3);
@@ -1270,7 +1270,7 @@ fn test_clone_with_copy_type_simple() {
     // --------------------------------------------------------------------------------
     // test with two allocation
     // --------------------------------------------------------------------------------
-    let mut map = DHashMap::new();
+    let mut map = DoubleMap::new();
     assert_eq!(map.len(), 0);
     assert!((1..=6).all(|i| map.insert(i, i * 10, i * 100).is_none()));
     assert_eq!(map.len(), 6);
@@ -1299,7 +1299,7 @@ fn test_clone_with_copy_type_simple() {
     // --------------------------------------------------------------------------------
     // test with three allocation
     // --------------------------------------------------------------------------------
-    let mut map = DHashMap::new();
+    let mut map = DoubleMap::new();
     assert_eq!(map.len(), 0);
     assert!((1..=9).all(|i| map.insert(i, i * 10, i * 100).is_none()));
     assert_eq!(map.len(), 9);
@@ -1332,7 +1332,7 @@ fn test_clone_with_copy_type_complex() {
     // --------------------------------------------------------------------------------
     // test with more allocation
     // --------------------------------------------------------------------------------
-    let mut map = DHashMap::new();
+    let mut map = DoubleMap::new();
     assert_eq!(map.len(), 0);
     assert!((1..=50).all(|i| map.insert(i, i * 10, i * 100).is_none()));
     assert_eq!(map.len(), 50);
@@ -1421,7 +1421,7 @@ fn test_clone_with_non_copy_type_simple() {
         .map(|i| (i.to_string(), (i * 10).to_string(), (i * 100).to_string()))
         .collect();
 
-    let mut map = DHashMap::new();
+    let mut map = DoubleMap::new();
     assert_eq!(map.len(), 0);
 
     assert!(vec
@@ -1467,7 +1467,7 @@ fn test_clone_with_non_copy_type_simple() {
     // --------------------------------------------------------------------------------
     vec.extend((4..=6).map(|i| (i.to_string(), (i * 10).to_string(), (i * 100).to_string())));
 
-    let mut map = DHashMap::new();
+    let mut map = DoubleMap::new();
     assert_eq!(map.len(), 0);
 
     assert!(vec
@@ -1513,7 +1513,7 @@ fn test_clone_with_non_copy_type_simple() {
     // --------------------------------------------------------------------------------
     vec.extend((7..=9).map(|i| (i.to_string(), (i * 10).to_string(), (i * 100).to_string())));
 
-    let mut map = DHashMap::new();
+    let mut map = DoubleMap::new();
     assert_eq!(map.len(), 0);
 
     assert!(vec
@@ -1564,7 +1564,7 @@ fn test_clone_with_non_copy_type_complex() {
     let mut vec: Vec<(String, String, String)> = Vec::with_capacity(300);
     vec.extend((1..=300).map(|i| (i.to_string(), (i * 10).to_string(), (i * 100).to_string())));
 
-    let mut map = DHashMap::new();
+    let mut map = DoubleMap::new();
     assert_eq!(map.len(), 0);
     assert!(vec
         .iter()
@@ -1677,8 +1677,8 @@ fn test_clone_from_with_copy_type_simple() {
     // --------------------------------------------------------------------------------
     // test with one allocation
     // --------------------------------------------------------------------------------
-    let mut map = DHashMap::new();
-    let mut m2 = DHashMap::new();
+    let mut map = DoubleMap::new();
+    let mut m2 = DoubleMap::new();
 
     assert_eq!(map.len(), 0);
     assert!((1..=3).all(|i| map.insert(i, i * 10, i * 100).is_none()));
@@ -1708,8 +1708,8 @@ fn test_clone_from_with_copy_type_simple() {
     // --------------------------------------------------------------------------------
     // test with two allocation
     // --------------------------------------------------------------------------------
-    let mut map = DHashMap::new();
-    let mut m2 = DHashMap::new();
+    let mut map = DoubleMap::new();
+    let mut m2 = DoubleMap::new();
 
     assert_eq!(map.len(), 0);
     assert!((1..=6).all(|i| map.insert(i, i * 10, i * 100).is_none()));
@@ -1739,8 +1739,8 @@ fn test_clone_from_with_copy_type_simple() {
     // --------------------------------------------------------------------------------
     // test with three allocation
     // --------------------------------------------------------------------------------
-    let mut map = DHashMap::new();
-    let mut m2 = DHashMap::new();
+    let mut map = DoubleMap::new();
+    let mut m2 = DoubleMap::new();
 
     assert_eq!(map.len(), 0);
     assert!((1..=9).all(|i| map.insert(i, i * 10, i * 100).is_none()));
@@ -1774,8 +1774,8 @@ fn test_clone_from_with_copy_type_complex() {
     // --------------------------------------------------------------------------------
     // test with more allocation
     // --------------------------------------------------------------------------------
-    let mut map = DHashMap::new();
-    let mut m2 = DHashMap::new();
+    let mut map = DoubleMap::new();
+    let mut m2 = DoubleMap::new();
 
     assert_eq!(map.len(), 0);
     assert!((1..=50).all(|i| map.insert(i, i * 10, i * 100).is_none()));
@@ -1865,8 +1865,8 @@ fn test_clone_from_with_non_copy_type_simple() {
         .map(|i| (i.to_string(), (i * 10).to_string(), (i * 100).to_string()))
         .collect();
 
-    let mut map = DHashMap::new();
-    let mut m2 = DHashMap::new();
+    let mut map = DoubleMap::new();
+    let mut m2 = DoubleMap::new();
 
     assert_eq!(map.len(), 0);
 
@@ -1913,8 +1913,8 @@ fn test_clone_from_with_non_copy_type_simple() {
     // --------------------------------------------------------------------------------
     vec.extend((4..=6).map(|i| (i.to_string(), (i * 10).to_string(), (i * 100).to_string())));
 
-    let mut map = DHashMap::new();
-    let mut m2 = DHashMap::new();
+    let mut map = DoubleMap::new();
+    let mut m2 = DoubleMap::new();
 
     assert_eq!(map.len(), 0);
 
@@ -1961,8 +1961,8 @@ fn test_clone_from_with_non_copy_type_simple() {
     // --------------------------------------------------------------------------------
     vec.extend((7..=9).map(|i| (i.to_string(), (i * 10).to_string(), (i * 100).to_string())));
 
-    let mut map = DHashMap::new();
-    let mut m2 = DHashMap::new();
+    let mut map = DoubleMap::new();
+    let mut m2 = DoubleMap::new();
 
     assert_eq!(map.len(), 0);
 
@@ -2014,8 +2014,8 @@ fn test_clone_from_with_non_copy_type_complex() {
     let mut vec: Vec<(String, String, String)> = Vec::with_capacity(300);
     vec.extend((1..=300).map(|i| (i.to_string(), (i * 10).to_string(), (i * 100).to_string())));
 
-    let mut map = DHashMap::new();
-    let mut m2 = DHashMap::new();
+    let mut map = DoubleMap::new();
+    let mut m2 = DoubleMap::new();
 
     assert_eq!(map.len(), 0);
     assert!(vec
@@ -2162,7 +2162,7 @@ fn test_drops() {
     });
 
     {
-        let mut m = DHashMap::new();
+        let mut m = DoubleMap::new();
 
         DROP_VECTOR.with(|v| {
             for i in 0..200 {
@@ -2305,7 +2305,7 @@ fn test_into_iter_drops() {
     });
 
     let hm = {
-        let mut hm = DHashMap::new();
+        let mut hm = DoubleMap::new();
 
         DROP_VECTOR.with(|v| {
             for i in 0..200 {
@@ -2372,7 +2372,7 @@ fn test_into_pointer_iter_drops() {
     });
 
     let hm = {
-        let mut hm = DHashMap::new();
+        let mut hm = DoubleMap::new();
 
         DROP_VECTOR.with(|v| {
             for i in 0..200 {
@@ -2402,9 +2402,9 @@ fn test_into_pointer_iter_drops() {
 
     {
         fn into_pointer_iter<K1, K2, V, S, A: Allocator + Clone>(
-            map: DHashMap<K1, K2, V, S, A>,
+            map: DoubleMap<K1, K2, V, S, A>,
         ) -> RawIntoPointerIter<(K1, K2, V), A> {
-            let DHashMap { table, .. } = map;
+            let DoubleMap { table, .. } = map;
             table.into_pointer_iter()
         }
 
@@ -2438,7 +2438,7 @@ fn test_into_pointer_iter_drops() {
 
 #[test]
 fn test_empty_remove() {
-    let mut m: DHashMap<i32, i32, bool> = DHashMap::new();
+    let mut m: DoubleMap<i32, i32, bool> = DoubleMap::new();
 
     assert_eq!(m.remove_key1(&0), None);
     assert_eq!(m.remove_key2(&0), None);
@@ -2463,7 +2463,7 @@ fn test_empty_entry() {
     // --------------------------------------------------------------------------------
     // test with first allocation
     // --------------------------------------------------------------------------------
-    let mut m = DHashMap::new();
+    let mut m = DoubleMap::new();
     assert_eq!(m.len(), 0);
     assert_eq!(m.capacity(), 0);
     let all_vacant = (1..=3).all(|i| match m.entry(i, i * 10) {
@@ -2714,7 +2714,7 @@ fn test_empty_entry_ref() {
         .map(|i| (i.to_string(), (i * 10).to_string(), (i * 100)))
         .collect();
 
-    let mut m: DHashMap<String, String, i32> = DHashMap::new();
+    let mut m: DoubleMap<String, String, i32> = DoubleMap::new();
     assert_eq!(m.len(), 0);
     assert_eq!(m.capacity(), 0);
     let all_vacant = vec
@@ -2995,7 +2995,7 @@ fn test_empty_entry_ref() {
 
 #[test]
 fn test_empty_iter() {
-    let mut m: DHashMap<i32, i32, bool> = DHashMap::new();
+    let mut m: DoubleMap<i32, i32, bool> = DoubleMap::new();
     assert_eq!(m.drain().next(), None);
     assert_eq!(m.drain_filter(|_k1, _k2, _v| true).next(), None);
     assert_eq!(m.keys().next(), None);
@@ -3010,7 +3010,7 @@ fn test_empty_iter() {
     assert!(m.is_empty());
     assert_eq!(m.into_iter().next(), None);
 
-    let mut m: DHashMap<i32, i32, bool> = DHashMap::with_capacity(100);
+    let mut m: DoubleMap<i32, i32, bool> = DoubleMap::with_capacity(100);
     assert_eq!(m.drain().next(), None);
     assert_eq!(m.drain_filter(|_k1, _k2, _v| true).next(), None);
     assert_eq!(m.keys().next(), None);
@@ -3032,15 +3032,15 @@ fn test_empty_into_pointer_iter() {
     use crate::raw::RawIntoPointerIter;
 
     fn into_pointer_iter<K1, K2, V, S, A: Allocator + Clone>(
-        map: DHashMap<K1, K2, V, S, A>,
+        map: DoubleMap<K1, K2, V, S, A>,
     ) -> RawIntoPointerIter<(K1, K2, V), A> {
-        let DHashMap { table, .. } = map;
+        let DoubleMap { table, .. } = map;
         table.into_pointer_iter()
     }
-    let m: DHashMap<i32, i32, bool> = DHashMap::new();
+    let m: DoubleMap<i32, i32, bool> = DoubleMap::new();
     assert_eq!(into_pointer_iter(m).next(), None);
 
-    let m: DHashMap<i32, i32, bool> = DHashMap::with_capacity(100);
+    let m: DoubleMap<i32, i32, bool> = DoubleMap::with_capacity(100);
     assert_eq!(m.len(), 0);
     assert!(m.capacity() >= 100);
     assert_eq!(into_pointer_iter(m).next(), None);
@@ -3049,7 +3049,7 @@ fn test_empty_into_pointer_iter() {
 #[test]
 #[cfg_attr(miri, ignore)]
 fn test_lots_of_insertions() {
-    let mut m = DHashMap::new();
+    let mut m = DoubleMap::new();
 
     // Try this a few times to make sure we never screw up the hashmap's
     // internal state.
@@ -3209,7 +3209,7 @@ fn test_lots_of_insertions() {
 
 #[test]
 fn test_find_mut() {
-    let mut m = DHashMap::new();
+    let mut m = DoubleMap::new();
     assert!(m.insert(1, 10, 100).is_none());
     assert!(m.insert(2, 20, 200).is_none());
     assert!(m.insert(5, 50, 500).is_none());
@@ -3271,7 +3271,7 @@ fn test_find_mut() {
 
 #[test]
 fn test_insert_overwrite() {
-    let mut m = DHashMap::new();
+    let mut m = DoubleMap::new();
     assert!(m.insert(1, 10, 100).is_none());
     assert_eq!(*m.get_key1(&1).unwrap(), 100);
     assert_eq!(*m.get_key2(&10).unwrap(), 100);
@@ -3287,7 +3287,7 @@ fn test_insert_overwrite() {
 
 #[test]
 fn test_entry_insert_overwrite() {
-    let mut m = DHashMap::new();
+    let mut m = DoubleMap::new();
 
     match m.entry(1, 10).map(|e| e.insert(100)) {
         Ok(_entry) => {}
@@ -3310,7 +3310,7 @@ fn test_entry_insert_overwrite() {
 
 #[test]
 fn test_raw_entry_insert_overwrite() {
-    let mut m = DHashMap::new();
+    let mut m = DoubleMap::new();
 
     match m
         .raw_entry_mut()
@@ -3341,7 +3341,7 @@ fn test_raw_entry_insert_overwrite() {
 
 #[test]
 fn test_insert_conflicts() {
-    let mut m = DHashMap::with_capacity(4);
+    let mut m = DoubleMap::with_capacity(4);
     assert!(m.insert(1, 1, 2).is_none());
     assert!(m.insert(5, 5, 3).is_none());
     assert!(m.insert(9, 9, 4).is_none());
@@ -3403,7 +3403,7 @@ fn test_insert_conflicts() {
 
 #[test]
 fn test_insert_unique_unchecked_conflicts() {
-    let mut m = DHashMap::with_capacity(4);
+    let mut m = DoubleMap::with_capacity(4);
     assert_eq!(m.insert_unique_unchecked(1, 1, 2), (&1, &1, &mut 2));
     assert_eq!(m.insert_unique_unchecked(5, 5, 3), (&5, &5, &mut 3));
     assert_eq!(m.insert_unique_unchecked(9, 9, 4), (&9, &9, &mut 4));
@@ -3465,7 +3465,7 @@ fn test_insert_unique_unchecked_conflicts() {
 
 #[test]
 fn test_entry_insert_conflicts_and_overwrite() {
-    let mut m = DHashMap::with_capacity(4);
+    let mut m = DoubleMap::with_capacity(4);
 
     match m.entry(1, 1).map(|e| e.insert(2)) {
         Ok(_entry) => {}
@@ -3636,7 +3636,7 @@ fn test_entry_insert_conflicts_and_overwrite() {
 
 #[test]
 fn test_raw_entry_insert_conflicts_and_overwrite() {
-    let mut m = DHashMap::with_capacity(4);
+    let mut m = DoubleMap::with_capacity(4);
 
     match m
         .raw_entry_mut()
@@ -3879,7 +3879,7 @@ fn test_raw_entry_insert_conflicts_and_overwrite() {
 
 #[test]
 fn test_conflict_remove() {
-    let mut m = DHashMap::with_capacity(4);
+    let mut m = DoubleMap::with_capacity(4);
     assert!(m.insert(1, 1, 2).is_none());
 
     assert_eq!(*m.get_key1(&1).unwrap(), 2);
@@ -3957,7 +3957,7 @@ fn test_conflict_remove() {
 
 #[test]
 fn test_occupied_entry_conflict_remove() {
-    let mut m = DHashMap::with_capacity(4);
+    let mut m = DoubleMap::with_capacity(4);
 
     match m.entry(1, 1) {
         Ok(entry) => match entry {
@@ -4052,7 +4052,7 @@ fn test_occupied_entry_conflict_remove() {
 
 #[test]
 fn test_raw_occupied_entry_conflict_remove() {
-    let mut m = DHashMap::with_capacity(4);
+    let mut m = DoubleMap::with_capacity(4);
 
     match m.raw_entry_mut().from_keys(&1, &1) {
         Ok(entry) => match entry {
@@ -4147,7 +4147,7 @@ fn test_raw_occupied_entry_conflict_remove() {
 
 #[test]
 fn test_is_empty() {
-    let mut m = DHashMap::with_capacity(4);
+    let mut m = DoubleMap::with_capacity(4);
     assert!(m.insert(1, 2, 3).is_none());
     assert!(!m.is_empty());
     assert!(m.remove_key1(&1).is_some());
@@ -4192,7 +4192,7 @@ fn test_is_empty() {
 
 #[test]
 fn test_remove() {
-    let mut m = DHashMap::new();
+    let mut m = DoubleMap::new();
     m.insert(1, 2, 3);
     assert_eq!(m.remove_key1(&1), Some(3));
     assert_eq!(m.remove_key1(&1), None);
@@ -4247,7 +4247,7 @@ fn test_remove() {
 
 #[test]
 fn test_remove_entry() {
-    let mut m = DHashMap::new();
+    let mut m = DoubleMap::new();
     m.insert(1, 2, 3);
     assert_eq!(m.remove_entry_key1(&1), Some((1, 2, 3)));
     assert_eq!(m.remove_entry_key1(&1), None);
@@ -4280,7 +4280,7 @@ fn test_remove_entry() {
 
 #[test]
 fn test_iterate() {
-    let mut m = DHashMap::with_capacity(4);
+    let mut m = DoubleMap::with_capacity(4);
     for i in 0..32 {
         assert!(m.insert(i, i, i * 2).is_none());
     }
@@ -4299,7 +4299,7 @@ fn test_iterate() {
 #[test]
 fn test_iter() {
     let vec = vec![(1, 'a', "One"), (2, 'b', "Two"), (3, 'c', "Three")];
-    let map: DHashMap<_, _, _> = vec.into_iter().collect();
+    let map: DoubleMap<_, _, _> = vec.into_iter().collect();
 
     let mut data: Vec<(i32, char, &str)> = map.iter().map(|(k1, k2, v)| (*k1, *k2, *v)).collect();
     data.sort_unstable();
@@ -4309,7 +4309,7 @@ fn test_iter() {
 #[test]
 fn test_keys() {
     let vec = vec![(1, 'a', "One"), (2, 'b', "Two"), (3, 'c', "Three")];
-    let map: DHashMap<_, _, _> = vec.into_iter().collect();
+    let map: DoubleMap<_, _, _> = vec.into_iter().collect();
 
     let mut keys: Vec<_> = map.keys().map(|(&k1, &k2)| (k1, k2)).collect();
     keys.sort_unstable();
@@ -4319,7 +4319,7 @@ fn test_keys() {
 #[test]
 fn test_values() {
     let vec = vec![(1, 'a', "One"), (2, 'b', "Two"), (3, 'c', "Three")];
-    let map: DHashMap<_, _, _> = vec.into_iter().collect();
+    let map: DoubleMap<_, _, _> = vec.into_iter().collect();
 
     let values: Vec<_> = map.values().cloned().collect();
     assert_eq!(values.len(), 3);
@@ -4331,7 +4331,7 @@ fn test_values() {
 #[test]
 fn test_values_mut() {
     let vec = vec![(1, 1, 1), (2, 2, 2), (3, 3, 3)];
-    let mut map: DHashMap<_, _, _> = vec.into_iter().collect();
+    let mut map: DoubleMap<_, _, _> = vec.into_iter().collect();
     for value in map.values_mut() {
         *value *= 2
     }
@@ -4345,7 +4345,7 @@ fn test_values_mut() {
 #[test]
 fn test_into_iter() {
     let vec = vec![(1, 'a', "One"), (2, 'b', "Two"), (3, 'c', "Three")];
-    let map: DHashMap<_, _, _> = vec.into_iter().collect();
+    let map: DoubleMap<_, _, _> = vec.into_iter().collect();
     let mut data: Vec<_> = map.into_iter().collect();
 
     data.sort_unstable();
@@ -4355,7 +4355,7 @@ fn test_into_iter() {
 #[test]
 fn test_into_keys() {
     let vec = vec![(1, 'a', "One"), (2, 'b', "Two"), (3, 'c', "Three")];
-    let map: DHashMap<_, _, _> = vec.into_iter().collect();
+    let map: DoubleMap<_, _, _> = vec.into_iter().collect();
     let mut keys: Vec<_> = map.into_keys().collect();
 
     keys.sort_unstable();
@@ -4365,7 +4365,7 @@ fn test_into_keys() {
 #[test]
 fn test_into_values() {
     let vec = vec![(1, 'a', "One"), (2, 'b', "Two"), (3, 'c', "Three")];
-    let map: DHashMap<_, _, _> = vec.into_iter().collect();
+    let map: DoubleMap<_, _, _> = vec.into_iter().collect();
     let values: Vec<_> = map.into_values().collect();
 
     assert_eq!(values.len(), 3);
@@ -4380,14 +4380,14 @@ fn test_into_pointer_iter() {
     use crate::raw::RawIntoPointerIter;
 
     fn into_pointer_iter<K1, K2, V, S, A: Allocator + Clone>(
-        map: DHashMap<K1, K2, V, S, A>,
+        map: DoubleMap<K1, K2, V, S, A>,
     ) -> RawIntoPointerIter<(K1, K2, V), A> {
-        let DHashMap { table, .. } = map;
+        let DoubleMap { table, .. } = map;
         table.into_pointer_iter()
     }
 
     let vec = vec![(1, 'a', "One"), (2, 'b', "Two"), (3, 'c', "Three")];
-    let map: DHashMap<_, _, _> = vec.into_iter().collect();
+    let map: DoubleMap<_, _, _> = vec.into_iter().collect();
     let mut data: Vec<_> = into_pointer_iter(map).collect();
 
     data.sort_unstable();
@@ -4396,7 +4396,7 @@ fn test_into_pointer_iter() {
 
 #[test]
 fn test_find() {
-    let mut m = DHashMap::new();
+    let mut m = DoubleMap::new();
     assert!(m.get_key1(&1).is_none());
     assert!(m.get_key2(&2).is_none());
     assert!(m.get_keys(&1, &2).is_none());
@@ -4473,12 +4473,12 @@ fn test_find() {
 
 #[test]
 fn test_eq() {
-    let mut m1 = DHashMap::new();
+    let mut m1 = DoubleMap::new();
     m1.insert(1, 2, 3);
     m1.insert(2, 3, 4);
     m1.insert(3, 4, 5);
 
-    let mut m2 = DHashMap::new();
+    let mut m2 = DoubleMap::new();
     m2.insert(1, 2, 3);
     m2.insert(2, 3, 4);
 
@@ -4501,8 +4501,8 @@ fn test_eq() {
 
 #[test]
 fn test_show() {
-    let mut map = DHashMap::new();
-    let empty: DHashMap<i32, i32, i32> = DHashMap::new();
+    let mut map = DoubleMap::new();
+    let empty: DoubleMap<i32, i32, i32> = DoubleMap::new();
 
     map.insert(1, 2, 3);
     map.insert(3, 4, 5);
@@ -4515,7 +4515,7 @@ fn test_show() {
 
 #[test]
 fn test_expand() {
-    let mut m = DHashMap::new();
+    let mut m = DoubleMap::new();
 
     assert_eq!(m.len(), 0);
     assert!(m.is_empty());
@@ -4534,7 +4534,7 @@ fn test_expand() {
 
 #[test]
 fn test_behavior_resize_policy() {
-    let mut m = DHashMap::new();
+    let mut m = DoubleMap::new();
 
     assert_eq!(m.len(), 0);
     assert_eq!(m.raw_capacity(), 1);
@@ -4616,7 +4616,7 @@ fn test_behavior_resize_policy() {
 
 #[test]
 fn test_reserve_shrink_to_fit() {
-    let mut m = DHashMap::new();
+    let mut m = DoubleMap::new();
     m.insert(0, 0, 0);
     m.remove_key1(&0);
 
@@ -4738,7 +4738,7 @@ fn test_from_iter() {
         (6, 6, 6),
     ];
 
-    let map: DHashMap<_, _, _> = xs.iter().cloned().collect();
+    let map: DoubleMap<_, _, _> = xs.iter().cloned().collect();
 
     for &(k1, k2, v) in &xs {
         assert_eq!(map.get_key1(&k1), Some(&v));
@@ -4760,7 +4760,7 @@ fn test_size_hint() {
         (6, 6, 6),
     ];
 
-    let map: DHashMap<_, _, _> = xs.iter().cloned().collect();
+    let map: DoubleMap<_, _, _> = xs.iter().cloned().collect();
 
     let mut iter = map.iter();
 
@@ -4780,7 +4780,7 @@ fn test_iter_len() {
         (6, 6, 6),
     ];
 
-    let map: DHashMap<_, _, _> = xs.iter().cloned().collect();
+    let map: DoubleMap<_, _, _> = xs.iter().cloned().collect();
 
     let mut iter = map.iter();
 
@@ -4800,7 +4800,7 @@ fn test_mut_size_hint() {
         (6, 6, 6),
     ];
 
-    let mut map: DHashMap<_, _, _> = xs.iter().cloned().collect();
+    let mut map: DoubleMap<_, _, _> = xs.iter().cloned().collect();
 
     let mut iter = map.iter_mut();
 
@@ -4820,7 +4820,7 @@ fn test_iter_mut_len() {
         (6, 6, 6),
     ];
 
-    let mut map: DHashMap<_, _, _> = xs.iter().cloned().collect();
+    let mut map: DoubleMap<_, _, _> = xs.iter().cloned().collect();
 
     let mut iter = map.iter_mut();
 
@@ -4831,7 +4831,7 @@ fn test_iter_mut_len() {
 
 #[test]
 fn test_index() {
-    let mut map = DHashMap::new();
+    let mut map = DoubleMap::new();
 
     map.insert(1, 2, 3);
     map.insert(2, 1, 4);
@@ -4845,7 +4845,7 @@ fn test_index() {
 #[test]
 #[should_panic]
 fn test_index_nonexistent() {
-    let mut map = DHashMap::new();
+    let mut map = DoubleMap::new();
 
     map.insert(1, 2, 3);
     map.insert(2, 1, 4);
@@ -4860,7 +4860,7 @@ fn test_index_nonexistent() {
 fn test_entry() {
     // Test with two entries
 
-    let mut m: DHashMap<i32, i32, i32> = DHashMap::new();
+    let mut m: DoubleMap<i32, i32, i32> = DoubleMap::new();
     assert_eq!(m.len(), 0);
     assert_eq!(m.capacity(), 0);
 
@@ -4996,7 +4996,7 @@ fn test_entry() {
         (6, 60, 600),
     ];
 
-    let mut map: DHashMap<_, _, _> = xs.iter().cloned().collect();
+    let mut map: DoubleMap<_, _, _> = xs.iter().cloned().collect();
 
     // Existing key (insert)
     match map.entry(1, 10) {
@@ -5069,7 +5069,7 @@ fn test_entry() {
         _ => panic!(),
     }
 
-    let mut map = DHashMap::new();
+    let mut map = DoubleMap::new();
     map.entry(1, 10).map(|e| e.insert(100));
     map.entry(2, 20).map(|e| e.insert(200));
     map.entry(3, 30).map(|e| e.insert(300));
@@ -5148,7 +5148,7 @@ fn test_entry() {
 fn test_entry_ref() {
     // Test with two entries
 
-    let mut m: DHashMap<String, String, i32> = DHashMap::new();
+    let mut m: DoubleMap<String, String, i32> = DoubleMap::new();
     assert_eq!(m.len(), 0);
     assert_eq!(m.capacity(), 0);
 
@@ -5278,7 +5278,7 @@ fn test_entry_ref() {
         ("Six".to_owned(), "60".to_owned(), 600),
     ];
 
-    let mut map: DHashMap<_, _, _> = xs.iter().cloned().collect();
+    let mut map: DoubleMap<_, _, _> = xs.iter().cloned().collect();
 
     // Existing key (insert)
     match map.entry_ref("One", "10") {
@@ -5348,7 +5348,7 @@ fn test_entry_ref() {
         _ => panic!(),
     }
 
-    let mut map: DHashMap<String, String, i32> = DHashMap::new();
+    let mut map: DoubleMap<String, String, i32> = DoubleMap::new();
     map.entry_ref("1", "10").map(|e| e.insert(100));
     map.entry_ref("2", "20").map(|e| e.insert(200));
     map.entry_ref("3", "30").map(|e| e.insert(300));
@@ -5423,7 +5423,7 @@ fn test_entry_ref() {
 fn test_entry_take_doesnt_corrupt() {
     #![allow(deprecated)] //rand
                           // Test for #19292
-    fn check<T>(m: &DHashMap<T, T, ()>)
+    fn check<T>(m: &DoubleMap<T, T, ()>)
     where
         T: std::cmp::Eq + std::hash::Hash,
     {
@@ -5434,7 +5434,7 @@ fn test_entry_take_doesnt_corrupt() {
         }
     }
 
-    let mut m = DHashMap::new();
+    let mut m = DoubleMap::new();
     let mut rng = thread_rng();
 
     // Populate the map with some items.
@@ -5461,7 +5461,7 @@ fn test_entry_take_doesnt_corrupt() {
 fn test_entry_ref_take_doesnt_corrupt() {
     #![allow(deprecated)] //rand
                           // Test for #19292
-    fn check<T>(m: &DHashMap<T, T, ()>)
+    fn check<T>(m: &DoubleMap<T, T, ()>)
     where
         T: std::cmp::Eq + std::hash::Hash,
     {
@@ -5472,7 +5472,7 @@ fn test_entry_ref_take_doesnt_corrupt() {
         }
     }
 
-    let mut m = DHashMap::new();
+    let mut m = DoubleMap::new();
     let mut rng = thread_rng();
 
     // Populate the map with some items.
@@ -5500,9 +5500,9 @@ fn test_entry_ref_take_doesnt_corrupt() {
 #[test]
 fn test_extend_ref_keys_ref_value() {
     use std::ops::AddAssign;
-    let mut a = DHashMap::new();
+    let mut a = DoubleMap::new();
     a.insert(1, "one", "one");
-    let mut b = DHashMap::new();
+    let mut b = DoubleMap::new();
     b.insert(2, "two", "two");
     b.insert(3, "three", "three");
 
@@ -5515,7 +5515,7 @@ fn test_extend_ref_keys_ref_value() {
     assert_eq!(a[&2], "two");
     assert_eq!(a[&3], "three");
 
-    let mut a = DHashMap::new();
+    let mut a = DoubleMap::new();
     a.insert(0, 0, 0);
 
     fn create_arr<T: AddAssign<T> + Copy, const N: usize>(start: T, step: T) -> [(T, T, T); N] {
@@ -5551,7 +5551,7 @@ fn test_extend_ref_keys_ref_value() {
 #[test]
 fn test_extend_ref_kv_tuple() {
     use std::ops::AddAssign;
-    let mut a = DHashMap::new();
+    let mut a = DoubleMap::new();
     a.insert(0, 0, 0);
 
     fn create_arr<T: AddAssign<T> + Copy, const N: usize>(start: T, step: T) -> [(T, T, T); N] {
@@ -5587,7 +5587,7 @@ fn test_extend_ref_kv_tuple() {
 
 #[test]
 fn test_capacity_not_less_than_len() {
-    let mut a = DHashMap::new();
+    let mut a = DoubleMap::new();
     let mut item = 0;
 
     for _ in 0..116 {
@@ -5612,7 +5612,7 @@ fn test_capacity_not_less_than_len() {
 
 #[test]
 fn test_occupied_entry_key() {
-    let mut a = DHashMap::new();
+    let mut a = DoubleMap::new();
     let key1 = "Key 1";
     let key2 = "Key 2";
     let value = "Value";
@@ -5658,7 +5658,7 @@ fn test_occupied_entry_key() {
 
 #[test]
 fn test_occupied_entry_ref_key() {
-    let mut a = DHashMap::new();
+    let mut a = DoubleMap::new();
     let key1 = "Key 1";
     let key2 = "Key 2";
     let value = "Value";
@@ -5704,7 +5704,7 @@ fn test_occupied_entry_ref_key() {
 
 #[test]
 fn test_vacant_entry_key() {
-    let mut a = DHashMap::new();
+    let mut a = DoubleMap::new();
     let key1 = "Key 1";
     let key2 = "Key 2";
     let value = "Value";
@@ -5737,7 +5737,7 @@ fn test_vacant_entry_key() {
 
 #[test]
 fn test_vacant_entry_ref_key() {
-    let mut a: DHashMap<String, String, &str> = DHashMap::new();
+    let mut a: DoubleMap<String, String, &str> = DoubleMap::new();
     let key1 = "Key 1";
     let key2 = "Key 2";
     let value = "Value";
@@ -5770,7 +5770,7 @@ fn test_vacant_entry_ref_key() {
 
 #[test]
 fn test_occupied_entry_replace_entry_with() {
-    let mut a: DHashMap<&str, &str, &str> = DHashMap::new();
+    let mut a: DoubleMap<&str, &str, &str> = DoubleMap::new();
 
     let key1 = "a key 1";
     let key2 = "a key 2";
@@ -5962,7 +5962,7 @@ fn test_occupied_entry_replace_entry_with() {
 
 #[test]
 fn test_occupied_entry_ref_replace_entry_with() {
-    let mut a: DHashMap<String, String, &str> = DHashMap::new();
+    let mut a: DoubleMap<String, String, &str> = DoubleMap::new();
 
     let key1 = "a key 1";
     let key2 = "a key 2";
@@ -6154,7 +6154,7 @@ fn test_occupied_entry_ref_replace_entry_with() {
 
 #[test]
 fn test_entry_and_replace_entry_with() {
-    let mut a: DHashMap<&str, &str, &str> = DHashMap::new();
+    let mut a: DoubleMap<&str, &str, &str> = DoubleMap::new();
 
     let key1 = "a key 1";
     let key2 = "a key 2";
@@ -6376,7 +6376,7 @@ fn test_entry_and_replace_entry_with() {
 
 #[test]
 fn test_entry_ref_and_replace_entry_with() {
-    let mut a: DHashMap<String, String, &str> = DHashMap::new();
+    let mut a: DoubleMap<String, String, &str> = DoubleMap::new();
 
     let key1 = "a key 1";
     let key2 = "a key 2";
@@ -6598,7 +6598,7 @@ fn test_entry_ref_and_replace_entry_with() {
 
 #[test]
 fn test_raw_occupied_entry_replace_entry_with() {
-    let mut a = DHashMap::new();
+    let mut a = DoubleMap::new();
 
     let key1 = "a key 1";
     let key2 = "a key 2";
@@ -6787,7 +6787,7 @@ fn test_raw_occupied_entry_replace_entry_with() {
 
 #[test]
 fn test_raw_entry_and_replace_entry_with() {
-    let mut a: DHashMap<&str, &str, &str> = DHashMap::new();
+    let mut a: DoubleMap<&str, &str, &str> = DoubleMap::new();
 
     let key1 = "a key 1";
     let key2 = "a key 2";
@@ -7002,7 +7002,7 @@ fn test_raw_entry_and_replace_entry_with() {
 fn test_replace_entry_with_doesnt_corrupt() {
     #![allow(deprecated)] //rand
                           // Test for #19292
-    fn check<T>(m: &DHashMap<T, T, ()>)
+    fn check<T>(m: &DoubleMap<T, T, ()>)
     where
         T: std::cmp::Eq + std::hash::Hash,
     {
@@ -7013,7 +7013,7 @@ fn test_replace_entry_with_doesnt_corrupt() {
         }
     }
 
-    let mut m = DHashMap::new();
+    let mut m = DoubleMap::new();
     let mut rng = thread_rng();
 
     // Populate the map with some items.
@@ -7085,7 +7085,7 @@ fn test_replace_entry_with_doesnt_corrupt() {
 fn test_replace_entry_ref_with_doesnt_corrupt() {
     #![allow(deprecated)] //rand
                           // Test for #19292
-    fn check<T>(m: &DHashMap<T, T, ()>)
+    fn check<T>(m: &DoubleMap<T, T, ()>)
     where
         T: std::cmp::Eq + std::hash::Hash,
     {
@@ -7096,7 +7096,7 @@ fn test_replace_entry_ref_with_doesnt_corrupt() {
         }
     }
 
-    let mut m = DHashMap::new();
+    let mut m = DoubleMap::new();
     let mut rng = thread_rng();
 
     // Populate the map with some items.
@@ -7171,7 +7171,7 @@ fn test_replace_entry_ref_with_doesnt_corrupt() {
 fn test_replace_raw_entry_with_doesnt_corrupt() {
     #![allow(deprecated)] //rand
                           // Test for #19292
-    fn check<T>(m: &DHashMap<T, T, ()>)
+    fn check<T>(m: &DoubleMap<T, T, ()>)
     where
         T: std::cmp::Eq + std::hash::Hash,
     {
@@ -7182,7 +7182,7 @@ fn test_replace_raw_entry_with_doesnt_corrupt() {
         }
     }
 
-    let mut m = DHashMap::new();
+    let mut m = DoubleMap::new();
     let mut rng = thread_rng();
 
     // Populate the map with some items.
@@ -7249,7 +7249,7 @@ fn test_replace_raw_entry_with_doesnt_corrupt() {
 
 #[test]
 fn test_retain() {
-    let mut map: DHashMap<i32, i32, i32> = (0..100).map(|x| (x, x, x * 100)).collect();
+    let mut map: DoubleMap<i32, i32, i32> = (0..100).map(|x| (x, x, x * 100)).collect();
 
     map.retain_key1(|&k, _| k % 2 == 0);
 
@@ -7258,7 +7258,7 @@ fn test_retain() {
         assert_eq!(map[&(key * 2)], key * 2 * 100);
     }
 
-    let mut map: DHashMap<i32, i32, i32> = (0..100).map(|x| (x, x, x * 100)).collect();
+    let mut map: DoubleMap<i32, i32, i32> = (0..100).map(|x| (x, x, x * 100)).collect();
 
     map.retain_key2(|&k, _| k % 2 == 0);
 
@@ -7267,7 +7267,7 @@ fn test_retain() {
         assert_eq!(map[&(key * 2)], key * 2 * 100);
     }
 
-    let mut map: DHashMap<i32, i32, i32> = (0..100).map(|x| (x, x * 10, x * 100)).collect();
+    let mut map: DoubleMap<i32, i32, i32> = (0..100).map(|x| (x, x * 10, x * 100)).collect();
 
     map.retain_keys(|&k1, &k2, _| k1 % 2 == 0 && k2 % 2 == 0);
 
@@ -7284,7 +7284,7 @@ fn test_try_reserve() {
 
     const MAX_ISIZE: usize = isize::MAX as usize;
 
-    let mut empty_bytes: DHashMap<u8, u8, u8> = DHashMap::new();
+    let mut empty_bytes: DoubleMap<u8, u8, u8> = DoubleMap::new();
 
     if let Err(CapacityOverflow) = empty_bytes.try_reserve(usize::MAX) {
     } else {
@@ -7300,11 +7300,11 @@ fn test_try_reserve() {
     } else {
         // This may succeed if there is enough free memory. Attempt to
         // allocate a few more hashmaps to ensure the allocation will fail.
-        let mut empty_bytes2: DHashMap<u8, u8, u8> = DHashMap::new();
+        let mut empty_bytes2: DoubleMap<u8, u8, u8> = DoubleMap::new();
         let _ = empty_bytes2.try_reserve(MAX_ISIZE / 19);
-        let mut empty_bytes3: DHashMap<u8, u8, u8> = DHashMap::new();
+        let mut empty_bytes3: DoubleMap<u8, u8, u8> = DoubleMap::new();
         let _ = empty_bytes3.try_reserve(MAX_ISIZE / 19);
-        let mut empty_bytes4: DHashMap<u8, u8, u8> = DHashMap::new();
+        let mut empty_bytes4: DoubleMap<u8, u8, u8> = DoubleMap::new();
         if let Err(AllocError { .. }) = empty_bytes4.try_reserve(MAX_ISIZE / 19) {
         } else {
             panic!("isize::MAX / 19 should trigger an OOM!");
@@ -7325,9 +7325,9 @@ fn test_raw_entry() {
         (6, 60, 600),
     ];
 
-    let mut map: DHashMap<_, _, _> = xs.iter().cloned().collect();
+    let mut map: DoubleMap<_, _, _> = xs.iter().cloned().collect();
 
-    let compute_hash = |map: &DHashMap<i32, i32, i32>, k: i32| -> u64 {
+    let compute_hash = |map: &DoubleMap<i32, i32, i32>, k: i32| -> u64 {
         use core::hash::{BuildHasher, Hash, Hasher};
 
         let mut hasher = map.hasher().build_hasher();
@@ -7504,7 +7504,7 @@ fn test_raw_entry() {
         }
     }
 
-    let mut map = DHashMap::from([
+    let mut map = DoubleMap::from([
         (1, 10, 100),
         (2, 20, 200),
         (3, 30, 300),
@@ -7596,7 +7596,7 @@ fn test_key_without_hash_impl() {
     #[derive(Debug, PartialEq, Eq, Clone)]
     struct IntWrapper(u64);
 
-    let mut m: DHashMap<IntWrapper, IntWrapper, (), ()> = DHashMap::default();
+    let mut m: DoubleMap<IntWrapper, IntWrapper, (), ()> = DoubleMap::default();
     {
         assert!(m
             .raw_entry()
@@ -7756,7 +7756,7 @@ fn test_into_iter_refresh() {
 
     let mut rng = rand::thread_rng();
     for n in 0..N {
-        let mut map = DHashMap::new();
+        let mut map = DoubleMap::new();
         for i in 0..n {
             assert!(map.insert(i, i, 2 * i).is_none());
         }
@@ -7848,7 +7848,7 @@ fn test_into_iter_reflect_remove() {
 
     let mut rng = rand::thread_rng();
     for n in 0..N {
-        let mut map = DHashMap::new();
+        let mut map = DoubleMap::new();
         for i in 0..n {
             assert!(map.insert(i, 2 * i as u32, 4 * i).is_none());
         }
@@ -7936,7 +7936,7 @@ fn test_into_iter_reflect_insert() {
     const N: usize = 128;
 
     for n in 10..N {
-        let mut map = DHashMap::with_capacity(n);
+        let mut map = DoubleMap::with_capacity(n);
 
         let mut left = 0_usize;
 
@@ -8036,7 +8036,7 @@ fn test_into_pointer_iter_reflect_remove() {
 
     let mut rng = rand::thread_rng();
     for n in 0..N {
-        let mut map = DHashMap::new();
+        let mut map = DoubleMap::new();
         for i in 0..n {
             assert!(map.insert(i, 2 * i as u32, 4 * i).is_none());
         }
@@ -8124,7 +8124,7 @@ fn test_into_pointer_iter_reflect_insert() {
     const N: usize = 128;
 
     for n in 10..N {
-        let mut map = DHashMap::with_capacity(n);
+        let mut map = DoubleMap::with_capacity(n);
 
         let mut left = 0_usize;
 
@@ -8229,8 +8229,8 @@ fn test_const_with_hasher() {
         }
     }
 
-    const EMPTY_MAP: DHashMap<u32, u32, std::string::String, MyHasher> =
-        DHashMap::with_hasher(MyHasher);
+    const EMPTY_MAP: DoubleMap<u32, u32, std::string::String, MyHasher> =
+        DoubleMap::with_hasher(MyHasher);
 
     let mut map = EMPTY_MAP;
     map.insert(1, 17, "seventeen".to_owned());
@@ -8325,7 +8325,7 @@ fn test_const_with_hasher() {
 
 #[test]
 fn test_get_each_mut() {
-    let mut map = DHashMap::new();
+    let mut map = DoubleMap::new();
     map.insert("one".to_owned(), "one".to_owned(), 1);
     map.insert("two".to_owned(), "two".to_owned(), 2);
     map.insert("three".to_owned(), "three".to_owned(), 3);
@@ -8591,13 +8591,13 @@ fn test_clone_from_double_drop() {
         dropped: false,
     };
 
-    let mut map1 = DHashMap::new();
+    let mut map1 = DoubleMap::new();
     map1.insert(1, 1, DISARMED);
     map1.insert(2, 2, DISARMED);
     map1.insert(3, 3, DISARMED);
     map1.insert(4, 4, DISARMED);
 
-    let mut map2 = DHashMap::new();
+    let mut map2 = DoubleMap::new();
     map2.insert(1, 1, DISARMED);
     map2.insert(2, 2, ARMED);
     map2.insert(3, 3, DISARMED);
@@ -8629,7 +8629,7 @@ mod test_drain_filter {
 
     #[test]
     fn empty() {
-        let mut map: DHashMap<i32, i32, i32> = DHashMap::new();
+        let mut map: DoubleMap<i32, i32, i32> = DoubleMap::new();
         map.drain_filter(|_, _, _| panic!("there's nothing to decide on"));
         assert!(map.is_empty());
     }
@@ -8637,13 +8637,13 @@ mod test_drain_filter {
     #[test]
     fn consuming_nothing() {
         let tuples = (0..3).map(|i| (i, i * 2, i * 3));
-        let mut map: DHashMap<_, _, _> = tuples.collect();
+        let mut map: DoubleMap<_, _, _> = tuples.collect();
         assert!(map
             .drain_filter(|_, _, _| false)
             .eq_sorted(core::iter::empty()));
         assert_eq!(map.len(), 3);
 
-        let DHashMap { table, .. } = map;
+        let DoubleMap { table, .. } = map;
 
         let mut table = table.into_iter().collect::<Vec<_>>();
 
@@ -8659,7 +8659,7 @@ mod test_drain_filter {
     #[test]
     fn consuming_all() {
         let tuples = (0..3).map(|i| (i, i * 2, i * 3));
-        let mut map: DHashMap<_, _, _> = tuples.clone().collect();
+        let mut map: DoubleMap<_, _, _> = tuples.clone().collect();
         assert!(map.drain_filter(|_, _, _| true).eq_sorted(tuples));
         assert!(map.is_empty());
     }
@@ -8667,7 +8667,7 @@ mod test_drain_filter {
     #[test]
     fn mutating_and_keeping() {
         let tuples = (0..3).map(|i| (i, i * 2, i * 3));
-        let mut map: DHashMap<_, _, _> = tuples.collect();
+        let mut map: DoubleMap<_, _, _> = tuples.collect();
         assert!(map
             .drain_filter(|_, _, v| {
                 *v += 6;
@@ -8684,7 +8684,7 @@ mod test_drain_filter {
     #[test]
     fn mutating_and_removing() {
         let tuples = (0..3).map(|i| (i, i * 2, i * 3));
-        let mut map: DHashMap<_, _, _> = tuples.collect();
+        let mut map: DoubleMap<_, _, _> = tuples.collect();
         assert!(map
             .drain_filter(|_, _, v| {
                 *v += 6;
@@ -8708,7 +8708,7 @@ mod test_drain_filter {
             }
         }
 
-        let mut map = (0..3).map(|i| (i, i, D)).collect::<DHashMap<_, _, _>>();
+        let mut map = (0..3).map(|i| (i, i, D)).collect::<DoubleMap<_, _, _>>();
 
         catch_unwind(move || {
             drop(map.drain_filter(|_, _, _| {
@@ -8734,7 +8734,7 @@ mod test_drain_filter {
             }
         }
 
-        let mut map = (0..3).map(|i| (i, i, D)).collect::<DHashMap<_, _, _>>();
+        let mut map = (0..3).map(|i| (i, i, D)).collect::<DoubleMap<_, _, _>>();
 
         catch_unwind(AssertUnwindSafe(|| {
             drop(
@@ -8764,7 +8764,7 @@ mod test_drain_filter {
             }
         }
 
-        let mut map = (0..3).map(|i| (i, i, D)).collect::<DHashMap<_, _, _>>();
+        let mut map = (0..3).map(|i| (i, i, D)).collect::<DoubleMap<_, _, _>>();
 
         {
             let mut it = map.drain_filter(|_, _, _| match PREDS.fetch_add(1, Ordering::SeqCst) {
@@ -8786,8 +8786,9 @@ mod test_drain_filter {
 
 #[test]
 fn from_array() {
-    let map: DHashMap<i32, i32, i32, _, Global> = DHashMap::from([(1, 2, 3), (4, 5, 6), (7, 8, 9)]);
-    let unordered_duplicates = DHashMap::from([
+    let map: DoubleMap<i32, i32, i32, _, Global> =
+        DoubleMap::from([(1, 2, 3), (4, 5, 6), (7, 8, 9)]);
+    let unordered_duplicates = DoubleMap::from([
         (1, 2, 3),
         (4, 5, 6),
         (7, 8, 9),
@@ -8800,6 +8801,6 @@ fn from_array() {
     // This next line must infer the hasher type parameter.
     // If you make a change that causes this line to no longer infer,
     // that's a problem!
-    let _must_not_require_type_annotation: DHashMap<_, _, _, _, Global> =
-        DHashMap::from([(1, 2, 3)]);
+    let _must_not_require_type_annotation: DoubleMap<_, _, _, _, Global> =
+        DoubleMap::from([(1, 2, 3)]);
 }

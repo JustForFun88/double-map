@@ -1,21 +1,21 @@
 use super::*;
 
-/// An owning iterator over the keys of a `DHashMap` in arbitrary order.
+/// An owning iterator over the keys of a `DoubleMap` in arbitrary order.
 /// The iterator element type is `(K1, K2)`.
 ///
-/// This `struct` is created by the [`into_keys`] method on [`DHashMap`].
+/// This `struct` is created by the [`into_keys`] method on [`DoubleMap`].
 /// See its documentation for more.
 /// The map cannot be used after calling that method.
 ///
-/// [`into_keys`]: struct.DHashMap.html#method.into_keys
-/// [`DHashMap`]: struct.DHashMap.html
+/// [`into_keys`]: struct.DoubleMap.html#method.into_keys
+/// [`DoubleMap`]: struct.DoubleMap.html
 ///
 /// # Examples
 ///
 /// ```
-/// use double_map::{dhashmap, DHashMap};
+/// use double_map::{doublemap, DoubleMap};
 ///
-/// let map = dhashmap! {
+/// let map = doublemap! {
 ///     1, "a" => "One",
 ///     2, "b" => "Two",
 ///     3, "c" => "Three",

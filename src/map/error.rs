@@ -1,13 +1,13 @@
 use super::*;
 use core::fmt::{self, Debug};
 
-/// A view into an error kind returned by [`entry`](DHashMap::entry), [`insert`](DHashMap::insert),
-/// [`try_insert`](DHashMap::try_insert) methods of the [`DHashMap`].
+/// A view into an error kind returned by [`entry`](DoubleMap::entry), [`insert`](DoubleMap::insert),
+/// [`try_insert`](DoubleMap::try_insert) methods of the [`DoubleMap`].
 /// It is part of the [`EntryError`] structure, [`InsertError`] structure and [`TryInsertError`]
 /// enum.
 ///
-/// Explains why [`entry`](DHashMap::entry), [`insert`](DHashMap::insert),
-/// [`try_insert`](DHashMap::try_insert) methods fail.
+/// Explains why [`entry`](DoubleMap::entry), [`insert`](DoubleMap::insert),
+/// [`try_insert`](DoubleMap::try_insert) methods fail.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ErrorKind {
     /// Returns when `K1` key is vacant, but `K2` key already exists with some value.
@@ -32,7 +32,7 @@ impl fmt::Display for ErrorKind {
     }
 }
 
-/// The error returned by [`entry`](DHashMap::entry) method when there is no way to distinguish
+/// The error returned by [`entry`](DoubleMap::entry) method when there is no way to distinguish
 /// which entry should be returned. For more information about error kinds look at [`ErrorKind`]
 /// enum.
 ///
@@ -40,11 +40,11 @@ impl fmt::Display for ErrorKind {
 /// purpose).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EntryError<K1, K2> {
-    /// A view into an error kind returned by [`entry`](DHashMap::entry),
-    /// [`insert`](DHashMap::insert), [`try_insert`](DHashMap::try_insert) methods of the [`DHashMap`].
+    /// A view into an error kind returned by [`entry`](DoubleMap::entry),
+    /// [`insert`](DoubleMap::insert), [`try_insert`](DoubleMap::try_insert) methods of the [`DoubleMap`].
     /// It is part of the [`EntryError`] structure, [`InsertError`] structure and [`TryInsertError`]
-    /// enum. Explains [`entry`](DHashMap::entry), [`insert`](DHashMap::insert),
-    /// [`try_insert`](DHashMap::try_insert) methods fail. For more information about error
+    /// enum. Explains [`entry`](DoubleMap::entry), [`insert`](DoubleMap::insert),
+    /// [`try_insert`](DoubleMap::try_insert) methods fail. For more information about error
     /// kind look at [`ErrorKind`] enum.
     pub error: ErrorKind,
     /// The provided values of keys that were returned because of error. For more information about
@@ -75,21 +75,21 @@ impl<K1: Debug, K2: Debug> fmt::Display for EntryError<K1, K2> {
     }
 }
 
-/// The error returned by [`insert`](DHashMap::insert) method (and also
-/// [`try_insert`](DHashMap::try_insert) method) when there is no way to distinguish
+/// The error returned by [`insert`](DoubleMap::insert) method (and also
+/// [`try_insert`](DoubleMap::try_insert) method) when there is no way to distinguish
 /// how given value with `K1` and `K2` keys should be inserted. It is also part of the
-/// [`TryInsertError`] enum which is returned by [`try_insert`](DHashMap::try_insert) method
-/// of [`DHashMap`]. For more information about error kinds look at [`ErrorKind`] enum.
+/// [`TryInsertError`] enum which is returned by [`try_insert`](DoubleMap::try_insert) method
+/// of [`DoubleMap`]. For more information about error kinds look at [`ErrorKind`] enum.
 ///
 /// Contains the [`ErrorKind`] enum, the provided keys and value that were not inserted.
 /// These returned keys and value can be used for another purpose.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct InsertError<K1, K2, V> {
-    /// A view into an error kind returned by [`entry`](DHashMap::entry),
-    /// [`insert`](DHashMap::insert), [`try_insert`](DHashMap::try_insert) methods of the [`DHashMap`].
+    /// A view into an error kind returned by [`entry`](DoubleMap::entry),
+    /// [`insert`](DoubleMap::insert), [`try_insert`](DoubleMap::try_insert) methods of the [`DoubleMap`].
     /// It is part of the [`EntryError`] structure, [`InsertError`] structure and [`TryInsertError`]
-    /// enum. Explains [`entry`](DHashMap::entry), [`insert`](DHashMap::insert),
-    /// [`try_insert`](DHashMap::try_insert) methods fail. For more information about error
+    /// enum. Explains [`entry`](DoubleMap::entry), [`insert`](DoubleMap::insert),
+    /// [`try_insert`](DoubleMap::try_insert) methods fail. For more information about error
     /// kind look at [`ErrorKind`] enum.
     pub error: ErrorKind,
     /// The provided keys that were returned because of error. For more information about
@@ -123,7 +123,7 @@ impl<K1: Debug, K2: Debug, V: Debug> fmt::Display for InsertError<K1, K2, V> {
     }
 }
 
-/// The error returned by [`try_insert`](DHashMap::try_insert) (as a part of the [`TryInsertError`]
+/// The error returned by [`try_insert`](DoubleMap::try_insert) (as a part of the [`TryInsertError`]
 /// enum) when the keys already exist and point to the same value.
 ///
 /// Contains the occupied entry, and the value that was not inserted. It is part of the
@@ -164,7 +164,7 @@ impl<'a, K1: Debug, K2: Debug, V: Debug, S, A: Allocator + Clone> fmt::Display
     }
 }
 
-/// The error returned by [`try_insert`](DHashMap::try_insert) method when the keys already exist
+/// The error returned by [`try_insert`](DoubleMap::try_insert) method when the keys already exist
 /// and point to the same value (look at [`OccupiedError`]) or there is no way to distinguish how
 /// given value with `K1` and `K2` keys should be inserted. For more information about error kinds
 /// look at [`OccupiedError`], [`InsertError`] structures and [`ErrorKind`] enum.
@@ -175,10 +175,10 @@ impl<'a, K1: Debug, K2: Debug, V: Debug, S, A: Allocator + Clone> fmt::Display
 /// - When there is [`TryInsertError::Insert`] variant, it contains the [`ErrorKind`] enum,
 /// the provided keys and value that were not inserted (through [`InsertError`] structure).
 pub enum TryInsertError<'a, K1, K2, V, S, A: Allocator + Clone = Global> {
-    /// The error kind returned by [`try_insert`](DHashMap::try_insert) when the keys already
+    /// The error kind returned by [`try_insert`](DoubleMap::try_insert) when the keys already
     /// exist and point to the same value. Contains the [`OccupiedError`] structure.
     Occupied(OccupiedError<'a, K1, K2, V, S, A>),
-    /// The error kind returned by [`try_insert`](DHashMap::try_insert) method when there is no
+    /// The error kind returned by [`try_insert`](DoubleMap::try_insert) method when there is no
     /// way to distinguish how given value with `K1` and `K2` keys should be inserted. For more
     /// information about error kinds look at [`InsertError`] structure and [`ErrorKind`] enum.
     ///

@@ -1,5 +1,5 @@
 #[cfg(test)]
-mod tests_dhash_map;
+mod tests_shash_map;
 
 use crate::raw::{
     Allocator, DataBucket, Global, PointerBucket, RawDataIter, RawDrain, RawIntoDataIter,
@@ -47,11 +47,11 @@ pub use self::raw_entry_mut::*;
 pub use self::values::*;
 pub use self::values_mut::*;
 
-/// Default hasher for `HashMap`.
+/// Default hasher for `DoubleMap`.
 #[cfg(feature = "ahash")]
 pub type DefaultHashBuilder = core::hash::BuildHasherDefault<ahash::AHasher>;
 
-/// Dummy default hasher for `HashMap`.
+/// Dummy default hasher for `DoubleMap`.
 #[cfg(not(feature = "ahash"))]
 pub enum DefaultHashBuilder {}
 
@@ -62,7 +62,7 @@ pub enum DefaultHashBuilder {}
 /// fast for all types of keys, but this algorithm will typically *not* protect
 /// against attacks such as HashDoS.
 ///
-/// The hashing algorithm can be replaced on a per-[`DHashMap`] basis using the
+/// The hashing algorithm can be replaced on a per-[`DoubleMap`] basis using the
 /// [`default`], [`with_hasher`], and [`with_capacity_and_hasher`] methods.
 /// There are many alternative [hashing algorithms available on crates.io].
 ///
@@ -87,7 +87,7 @@ pub enum DefaultHashBuilder {}
 ///
 /// It is also a logic error for the [`Hash`] implementation of a key to panic.
 /// This is generally only possible if the trait is implemented manually. If a
-/// panic does occur then the contents of the `HashMap` become corrupted and
+/// panic does occur then the contents of the `DoubleMap` become corrupted and
 /// all items are dropped from the table.
 ///
 /// [`Eq`]: https://doc.rust-lang.org/core/cmp/trait.Eq.html
@@ -101,16 +101,16 @@ pub enum DefaultHashBuilder {}
 /// [`fnv`]: https://crates.io/crates/fnv
 /// [`AHash`]: https://crates.io/crates/ahash
 /// [hashing algorithms available on crates.io]: https://crates.io/keywords/hasher
-pub struct DHashMap<K1, K2, V, S = DefaultHashBuilder, A: Allocator + Clone = Global> {
+pub struct DoubleMap<K1, K2, V, S = DefaultHashBuilder, A: Allocator + Clone = Global> {
     hash_builder: S,
     table: RawTable<(K1, K2, V), A>,
 }
 
 impl<K1: Clone, K2: Clone, V: Clone, S: Clone, A: Allocator + Clone> Clone
-    for DHashMap<K1, K2, V, S, A>
+    for DoubleMap<K1, K2, V, S, A>
 {
     fn clone(&self) -> Self {
-        DHashMap {
+        DoubleMap {
             hash_builder: self.hash_builder.clone(),
             table: self.table.clone(),
         }
@@ -222,15 +222,15 @@ where
     move |x| k.equivalent(x)
 }
 
-/// A specialized [`Result`] that returned by [`entry`](DHashMap::entry)
-/// method of [`DHashMap`].
+/// A specialized [`Result`] that returned by [`entry`](DoubleMap::entry)
+/// method of [`DoubleMap`].
 ///
 /// The method returns [`Ok(Entry)`] variant of the enum if `all`
 /// of the following is `true`:
 /// - Both `K1` and `K2` keys are vacant.
 /// - If both `K1` and `K2` keys exist, they refer to the same value.
 ///
-/// When the above statements are `false`, [`entry`](DHashMap::entry) method
+/// When the above statements are `false`, [`entry`](DoubleMap::entry) method
 /// returns [`Err(EntryError)`] variant of the enum. [`EntryError`] structure
 /// contains the [`ErrorKind`] enum, and the values of provided keys
 /// that were not used for creation entry (but can be used for another
@@ -252,10 +252,10 @@ where
 /// # Examples
 ///
 /// ```
-/// use double_map::DHashMap;
-/// use double_map::dhash_map::ErrorKind;
+/// use double_map::DoubleMap;
+/// use double_map::shash_map::ErrorKind;
 ///
-/// let mut letters = DHashMap::new();
+/// let mut letters = DoubleMap::new();
 ///
 /// for ch in "a short treatise on fungi".chars() {
 ///     if let Ok(entry) = letters.entry(ch.clone(), ch) {
@@ -287,15 +287,15 @@ where
 /// ```
 pub type EntryResult<'a, K1, K2, V, S, A> = Result<Entry<'a, K1, K2, V, S, A>, EntryError<K1, K2>>;
 
-/// A specialized [`Result`] that returned by [`entry_ref`](DHashMap::entry_ref)
-/// method of [`DHashMap`].
+/// A specialized [`Result`] that returned by [`entry_ref`](DoubleMap::entry_ref)
+/// method of [`DoubleMap`].
 ///
 /// The method returns [`Ok(EntryRef)`] variant of the enum if `all`
 /// of the following is `true`:
 /// - Both `K1` and `K2` keys are vacant.
 /// - If both `K1` and `K2` keys exist, they refer to the same value.
 ///
-/// When the above statements are `false`, [`entry_ref`](DHashMap::entry_ref)
+/// When the above statements are `false`, [`entry_ref`](DoubleMap::entry_ref)
 /// method returns [`Err(ErrorKind)`] variant of the enum.
 ///
 /// Depending on the points below, different [`ErrorKind`] variants may be returned:
@@ -315,10 +315,10 @@ pub type EntryResult<'a, K1, K2, V, S, A> = Result<Entry<'a, K1, K2, V, S, A>, E
 /// # Examples
 ///
 /// ```
-/// use double_map::DHashMap;
-/// use double_map::dhash_map::ErrorKind;
+/// use double_map::DoubleMap;
+/// use double_map::shash_map::ErrorKind;
 ///
-/// let mut words: DHashMap<String, String, usize>  = DHashMap::new();
+/// let mut words: DoubleMap<String, String, usize>  = DoubleMap::new();
 ///
 /// let source = ["zebra", "horse", "zebra", "zebra"];
 ///
@@ -353,15 +353,15 @@ pub type EntryResult<'a, K1, K2, V, S, A> = Result<Entry<'a, K1, K2, V, S, A>, E
 pub type EntryRefResult<'a, 'b, K1, Q1, K2, Q2, V, S, A> =
     Result<EntryRef<'a, 'b, K1, Q1, K2, Q2, V, S, A>, ErrorKind>;
 
-/// A specialized [`Result`] that optionally returned by [`insert`](DHashMap::insert)
-/// method of [`DHashMap`].
+/// A specialized [`Result`] that optionally returned by [`insert`](DoubleMap::insert)
+/// method of [`DoubleMap`].
 ///
-/// The [`insert`](DHashMap::insert) method returns [`Ok(V)`] variant of this
+/// The [`insert`](DoubleMap::insert) method returns [`Ok(V)`] variant of this
 /// enum with an old value, that had been contained in the map, inside a [`Some(Ok(V))`]
 /// variant, if `insert` method was called with keys that had been **presented**
 /// in the map, and **both keys refered to the same value**.
 ///
-/// The [`insert`](DHashMap::insert) method returns [`Err(InsertError)`] variant
+/// The [`insert`](DoubleMap::insert) method returns [`Err(InsertError)`] variant
 /// of this enum (inside of [`Some(Err(InsertError))`] variant):
 /// - when `K1` key is vacant, but `K2` key already exists with some value;
 /// - when `K1` key already exists with some value, but `K2` key is vacant;
@@ -381,9 +381,9 @@ pub type EntryRefResult<'a, 'b, K1, Q1, K2, Q2, V, S, A> =
 /// # Examples
 ///
 /// ```
-/// use double_map::DHashMap;
-/// use double_map::dhash_map::{InsertError, ErrorKind};
-/// let mut map = DHashMap::new();
+/// use double_map::DoubleMap;
+/// use double_map::shash_map::{InsertError, ErrorKind};
+/// let mut map = DoubleMap::new();
 ///
 /// // Returns None if keys are vacant
 /// assert_eq!(map.insert(1, "a", "One"), None);
@@ -421,8 +421,8 @@ pub type EntryRefResult<'a, 'b, K1, Q1, K2, Q2, V, S, A> =
 /// ```
 pub type InsertResult<K1, K2, V> = Result<V, InsertError<K1, K2, V>>;
 
-/// A specialized [`Result`] that returned by [`try_insert`](DHashMap::try_insert)
-/// method of [`DHashMap`].
+/// A specialized [`Result`] that returned by [`try_insert`](DoubleMap::try_insert)
+/// method of [`DoubleMap`].
 ///
 /// The method returns a mutable reference to the value inside
 /// [`Ok(&'a mut V)`] variant of the enum if the map did not
@@ -434,7 +434,7 @@ pub type InsertResult<K1, K2, V> = Result<V, InsertError<K1, K2, V>>;
 /// [`OccupiedError`] structure. The [`OccupiedError`] contains the occupied
 /// entry [`OccupiedEntry`], and the value that was not inserted.
 ///
-/// The [`try_insert`](DHashMap::try_insert) method returns
+/// The [`try_insert`](DoubleMap::try_insert) method returns
 /// [`Err(TryInsertError::Insert)`] variant of the enum that containing
 /// [`InsertError`] structure:
 /// - when `K1` key is vacant, but `K2` key already exists with some value;
@@ -454,11 +454,11 @@ pub type InsertResult<K1, K2, V> = Result<V, InsertError<K1, K2, V>>;
 /// # Examples
 ///
 /// ```
-/// use double_map::DHashMap;
-/// use double_map::dhash_map::{TryInsertError, OccupiedError, InsertError, ErrorKind};
+/// use double_map::DoubleMap;
+/// use double_map::shash_map::{TryInsertError, OccupiedError, InsertError, ErrorKind};
 ///
 ///
-/// let mut map = DHashMap::new();
+/// let mut map = DoubleMap::new();
 ///
 /// // Returns mutable reference to the value if keys are vacant
 /// let value = map.try_insert(1, "a", "One").unwrap();
@@ -527,19 +527,19 @@ pub type TryInsertResult<'a, K1, K2, V, S, A> =
     Result<&'a mut V, TryInsertError<'a, K1, K2, V, S, A>>;
 
 #[cfg(feature = "ahash")]
-impl<K1, K2, V> DHashMap<K1, K2, V, DefaultHashBuilder> {
-    /// Creates a new empty [`DHashMap`]s with [`DefaultHashBuilder`]
+impl<K1, K2, V> DoubleMap<K1, K2, V, DefaultHashBuilder> {
+    /// Creates a new empty [`DoubleMap`]s with [`DefaultHashBuilder`]
     /// type of hash builder to hash keys.
     ///
     /// The hash map is initially created with a capacity of 0, so it
     /// will not allocate until it is first inserted into.
     ///
     /// Warning: `hash_builder` normally use a fixed key by default and that does
-    /// not allow the `DHashMaps` to be protected against attacks such as [`HashDoS`].
+    /// not allow the `DoubleMaps` to be protected against attacks such as [`HashDoS`].
     /// Users who require HashDoS resistance should explicitly use
     /// [`ahash::RandomState`] or [`std::collections::hash_map::RandomState`]
-    /// as the hasher when creating a [`DHashMap`], for example with
-    /// [`with_hasher`](DHashMap::with_hasher) method.
+    /// as the hasher when creating a [`DoubleMap`], for example with
+    /// [`with_hasher`](DoubleMap::with_hasher) method.
     ///
     /// [`HashDoS`]: https://en.wikipedia.org/wiki/Collision_attack
     /// [`std::collections::hash_map::RandomState`]: https://doc.rust-lang.org/std/collections/hash_map/struct.RandomState.html
@@ -547,18 +547,18 @@ impl<K1, K2, V> DHashMap<K1, K2, V, DefaultHashBuilder> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
-    /// let mut map: DHashMap<u32, &str, i32> = DHashMap::new();
+    /// use double_map::DoubleMap;
+    /// let mut map: DoubleMap<u32, &str, i32> = DoubleMap::new();
     ///
-    /// // The created DHashMap holds none elements
+    /// // The created DoubleMap holds none elements
     /// assert_eq!(map.len(), 0);
     ///
-    /// // The created DHashMap also doesn't allocate memory
+    /// // The created DoubleMap also doesn't allocate memory
     /// assert_eq!(map.capacity(), 0);
     ///
-    /// // Now we insert element inside created DHashMap
+    /// // Now we insert element inside created DoubleMap
     /// map.insert(1, "One", 1);
-    /// // We can see that the DHashMap holds 1 element
+    /// // We can see that the DoubleMap holds 1 element
     /// assert_eq!(map.len(), 1);
     /// // And it also allocates some capacity
     /// assert!(map.capacity() > 1);
@@ -568,18 +568,18 @@ impl<K1, K2, V> DHashMap<K1, K2, V, DefaultHashBuilder> {
         Self::default()
     }
 
-    /// Creates an empty [`DHashMap`] with the specified capacity and
+    /// Creates an empty [`DoubleMap`] with the specified capacity and
     /// [`DefaultHashBuilder`] type of hash builder to hash keys.
     ///
     /// The hash map will be able to hold at least `capacity` elements without
     /// reallocating. If `capacity` is 0, the hash map will not allocate.
     ///
     /// Warning: `hash_builder` normally use a fixed key by default and that does
-    /// not allow the `DHashMaps` to be protected against attacks such as [`HashDoS`].
+    /// not allow the `DoubleMaps` to be protected against attacks such as [`HashDoS`].
     /// Users who require HashDoS resistance should explicitly use
     /// [`ahash::RandomState`] or [`std::collections::hash_map::RandomState`]
-    /// as the hasher when creating a [`DHashMap`], for example with
-    /// [`with_capacity_and_hasher`](DHashMap::with_capacity_and_hasher) method.
+    /// as the hasher when creating a [`DoubleMap`], for example with
+    /// [`with_capacity_and_hasher`](DoubleMap::with_capacity_and_hasher) method.
     ///
     /// [`HashDoS`]: https://en.wikipedia.org/wiki/Collision_attack
     /// [`std::collections::hash_map::RandomState`]: https://doc.rust-lang.org/std/collections/hash_map/struct.RandomState.html
@@ -587,23 +587,23 @@ impl<K1, K2, V> DHashMap<K1, K2, V, DefaultHashBuilder> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
-    /// let mut map: DHashMap<&str, i32, &str> = DHashMap::with_capacity(5);
+    /// use double_map::DoubleMap;
+    /// let mut map: DoubleMap<&str, i32, &str> = DoubleMap::with_capacity(5);
     ///
-    /// // The created DHashMap holds none elements
+    /// // The created DoubleMap holds none elements
     /// assert_eq!(map.len(), 0);
     /// // But it can hold at least 5 elements without reallocating
     /// let empty_map_capacity = map.capacity();
     /// assert!(empty_map_capacity >= 5);
     ///
-    /// // Now we insert some 5 elements inside created DHashMap
+    /// // Now we insert some 5 elements inside created DoubleMap
     /// map.insert("One",   1, "a");
     /// map.insert("Two",   2, "b");
     /// map.insert("Three", 3, "c");
     /// map.insert("Four",  4, "d");
     /// map.insert("Five",  5, "e");
     ///
-    /// // We can see that the DHashMap holds 5 elements
+    /// // We can see that the DoubleMap holds 5 elements
     /// assert_eq!(map.len(), 5);
     /// // But its capacity isn't changed
     /// assert_eq!(map.capacity(), empty_map_capacity)
@@ -615,19 +615,19 @@ impl<K1, K2, V> DHashMap<K1, K2, V, DefaultHashBuilder> {
 }
 
 #[cfg(feature = "ahash")]
-impl<K1, K2, V, A: Allocator + Clone> DHashMap<K1, K2, V, DefaultHashBuilder, A> {
-    /// Creates an empty [`DHashMap`] using the given allocator. Uses
+impl<K1, K2, V, A: Allocator + Clone> DoubleMap<K1, K2, V, DefaultHashBuilder, A> {
+    /// Creates an empty [`DoubleMap`] using the given allocator. Uses
     /// [`DefaultHashBuilder`] type of hash builder to hash keys.
     ///
     /// The hash map is initially created with a capacity of 0, so it
     /// will not allocate until it is first inserted into.
     ///
     /// Warning: `hash_builder` normally use a fixed key by default and that does
-    /// not allow the `DHashMaps` to be protected against attacks such as [`HashDoS`].
+    /// not allow the `DoubleMaps` to be protected against attacks such as [`HashDoS`].
     /// Users who require HashDoS resistance should explicitly use
     /// [`ahash::RandomState`] or [`std::collections::hash_map::RandomState`]
-    /// as the hasher when creating a [`DHashMap`], for example with
-    /// [`with_hasher_in`](DHashMap::with_hasher_in) method.
+    /// as the hasher when creating a [`DoubleMap`], for example with
+    /// [`with_hasher_in`](DoubleMap::with_hasher_in) method.
     ///
     /// [`HashDoS`]: https://en.wikipedia.org/wiki/Collision_attack
     /// [`std::collections::hash_map::RandomState`]: https://doc.rust-lang.org/std/collections/hash_map/struct.RandomState.html
@@ -637,21 +637,21 @@ impl<K1, K2, V, A: Allocator + Clone> DHashMap<K1, K2, V, DefaultHashBuilder, A>
     /// ```
     /// # #[cfg(feature = "bumpalo")]
     /// # fn test() {
-    /// use double_map::{DHashMap, BumpWrapper};
+    /// use double_map::{DoubleMap, BumpWrapper};
     /// use bumpalo::Bump;
     ///
     /// let bump = Bump::new();
-    /// let mut map = DHashMap::new_in(BumpWrapper(&bump));
+    /// let mut map = DoubleMap::new_in(BumpWrapper(&bump));
     ///
-    /// // The created DHashMap holds none elements
+    /// // The created DoubleMap holds none elements
     /// assert_eq!(map.len(), 0);
     ///
-    /// // The created DHashMap also doesn't allocate memory
+    /// // The created DoubleMap also doesn't allocate memory
     /// assert_eq!(map.capacity(), 0);
     ///
-    /// // Now we insert element inside created DHashMap
+    /// // Now we insert element inside created DoubleMap
     /// map.insert("One", 1, "First");
-    /// // We can see that the DHashMap holds 1 element
+    /// // We can see that the DoubleMap holds 1 element
     /// assert_eq!(map.len(), 1);
     /// // And it also allocates some capacity
     /// assert!(map.capacity() > 1);
@@ -666,7 +666,7 @@ impl<K1, K2, V, A: Allocator + Clone> DHashMap<K1, K2, V, DefaultHashBuilder, A>
         Self::with_hasher_in(DefaultHashBuilder::default(), alloc)
     }
 
-    /// Creates an empty [`DHashMap`] with the specified capacity and
+    /// Creates an empty [`DoubleMap`] with the specified capacity and
     /// [`DefaultHashBuilder`] type of hash builder to hash keys.
     /// It will be allocated with the given allocator.
     ///
@@ -674,11 +674,11 @@ impl<K1, K2, V, A: Allocator + Clone> DHashMap<K1, K2, V, DefaultHashBuilder, A>
     /// reallocating. If `capacity` is 0, the hash map will not allocate.
     ///
     /// Warning: `hash_builder` normally use a fixed key by default and that does
-    /// not allow the `DHashMaps` to be protected against attacks such as [`HashDoS`].
+    /// not allow the `DoubleMaps` to be protected against attacks such as [`HashDoS`].
     /// Users who require HashDoS resistance should explicitly use
     /// [`ahash::RandomState`] or [`std::collections::hash_map::RandomState`]
-    /// as the hasher when creating a [`DHashMap`], for example with
-    /// [`with_capacity_and_hasher_in`](DHashMap::with_capacity_and_hasher_in) method.
+    /// as the hasher when creating a [`DoubleMap`], for example with
+    /// [`with_capacity_and_hasher_in`](DoubleMap::with_capacity_and_hasher_in) method.
     ///
     /// [`HashDoS`]: https://en.wikipedia.org/wiki/Collision_attack
     /// [`std::collections::hash_map::RandomState`]: https://doc.rust-lang.org/std/collections/hash_map/struct.RandomState.html
@@ -688,26 +688,26 @@ impl<K1, K2, V, A: Allocator + Clone> DHashMap<K1, K2, V, DefaultHashBuilder, A>
     /// ```
     /// # #[cfg(feature = "bumpalo")]
     /// # fn test() {
-    /// use double_map::{DHashMap, BumpWrapper};
+    /// use double_map::{DoubleMap, BumpWrapper};
     /// use bumpalo::Bump;
     ///
     /// let bump = Bump::new();
-    /// let mut map = DHashMap::with_capacity_in(5, BumpWrapper(&bump));
+    /// let mut map = DoubleMap::with_capacity_in(5, BumpWrapper(&bump));
     ///
-    /// // The created DHashMap holds none elements
+    /// // The created DoubleMap holds none elements
     /// assert_eq!(map.len(), 0);
     /// // But it can hold at least 5 elements without reallocating
     /// let empty_map_capacity = map.capacity();
     /// assert!(empty_map_capacity >= 5);
     ///
-    /// // Now we insert some 5 elements inside created DHashMap
+    /// // Now we insert some 5 elements inside created DoubleMap
     /// map.insert("One",   1, "a");
     /// map.insert("Two",   2, "b");
     /// map.insert("Three", 3, "c");
     /// map.insert("Four",  4, "d");
     /// map.insert("Five",  5, "e");
     ///
-    /// // We can see that the DHashMap holds 5 elements
+    /// // We can see that the DoubleMap holds 5 elements
     /// assert_eq!(map.len(), 5);
     /// // But its capacity isn't changed
     /// assert_eq!(map.capacity(), empty_map_capacity)
@@ -723,21 +723,21 @@ impl<K1, K2, V, A: Allocator + Clone> DHashMap<K1, K2, V, DefaultHashBuilder, A>
     }
 }
 
-impl<K1, K2, V, S> DHashMap<K1, K2, V, S> {
-    /// Creates an empty [`DHashMap`] which will use the given hash builder to hash
+impl<K1, K2, V, S> DoubleMap<K1, K2, V, S> {
+    /// Creates an empty [`DoubleMap`] which will use the given hash builder to hash
     /// keys.
     ///
     /// The created map has the default initial capacity, witch is equal to 0, so
     /// it will not allocate until it is first inserted into.
     ///
     /// Warning: `hash_builder` is normally use a fixed key by default and that is
-    /// not allow `DHashMaps` to be protected against attacks such as [`HashDoS`].
+    /// not allow `DoubleMaps` to be protected against attacks such as [`HashDoS`].
     /// Users who require HashDoS resistance should explicitly use
     /// [`ahash::RandomState`] or [`std::collections::hash_map::RandomState`]
-    /// as the hasher when creating a [`DHashMap`].
+    /// as the hasher when creating a [`DoubleMap`].
     ///
     /// The `hash_builder` passed should implement the [`BuildHasher`] trait for
-    /// the [`DHashMap`] to be useful, see its documentation for details.
+    /// the [`DoubleMap`] to be useful, see its documentation for details.
     ///
     /// [`HashDoS`]: https://en.wikipedia.org/wiki/Collision_attack
     /// [`std::collections::hash_map::RandomState`]: https://doc.rust-lang.org/std/collections/hash_map/struct.RandomState.html
@@ -745,21 +745,21 @@ impl<K1, K2, V, S> DHashMap<K1, K2, V, S> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
-    /// use double_map::dhash_map::DefaultHashBuilder;
+    /// use double_map::DoubleMap;
+    /// use double_map::shash_map::DefaultHashBuilder;
     ///
     /// let s = DefaultHashBuilder::default();
-    /// let mut map = DHashMap::with_hasher(s);
+    /// let mut map = DoubleMap::with_hasher(s);
     ///
-    /// // The created DHashMap holds none elements
+    /// // The created DoubleMap holds none elements
     /// assert_eq!(map.len(), 0);
     ///
-    /// // The created DHashMap also doesn't allocate memory
+    /// // The created DoubleMap also doesn't allocate memory
     /// assert_eq!(map.capacity(), 0);
     ///
-    /// // Now we insert elements inside created DHashMap
+    /// // Now we insert elements inside created DoubleMap
     /// map.insert("One", 1, 2);
-    /// // We can see that the DHashMap holds 1 element
+    /// // We can see that the DoubleMap holds 1 element
     /// assert_eq!(map.len(), 1);
     /// // And it also allocates some capacity
     /// assert!(map.capacity() > 1);
@@ -772,20 +772,20 @@ impl<K1, K2, V, S> DHashMap<K1, K2, V, S> {
         }
     }
 
-    /// Creates an empty [`DHashMap`] with the specified capacity, using `hash_builder`
+    /// Creates an empty [`DoubleMap`] with the specified capacity, using `hash_builder`
     /// to hash the keys.
     ///
     /// The hash map will be able to hold at least `capacity` elements without
     /// reallocating. If `capacity` is 0, the hash map will not allocate.
     ///
     /// Warning: `hash_builder` normally use a fixed key by default and that does
-    /// not allow the `DHashMaps` to be protected against attacks such as [`HashDoS`].
+    /// not allow the `DoubleMaps` to be protected against attacks such as [`HashDoS`].
     /// Users who require HashDoS resistance should explicitly use
     /// [`ahash::RandomState`] or [`std::collections::hash_map::RandomState`]
-    /// as the hasher when creating a [`DHashMap`].
+    /// as the hasher when creating a [`DoubleMap`].
     ///
     /// The `hash_builder` passed should implement the [`BuildHasher`] trait for
-    /// the [`DHashMap`] to be useful, see its documentation for details.
+    /// the [`DoubleMap`] to be useful, see its documentation for details.
     ///
     /// [`HashDoS`]: https://en.wikipedia.org/wiki/Collision_attack
     /// [`std::collections::hash_map::RandomState`]: https://doc.rust-lang.org/std/collections/hash_map/struct.RandomState.html
@@ -793,26 +793,26 @@ impl<K1, K2, V, S> DHashMap<K1, K2, V, S> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
-    /// use double_map::dhash_map::DefaultHashBuilder;
+    /// use double_map::DoubleMap;
+    /// use double_map::shash_map::DefaultHashBuilder;
     ///
     /// let s = DefaultHashBuilder::default();
-    /// let mut map = DHashMap::with_capacity_and_hasher(5, s);
+    /// let mut map = DoubleMap::with_capacity_and_hasher(5, s);
     ///
-    /// // The created DHashMap holds none elements
+    /// // The created DoubleMap holds none elements
     /// assert_eq!(map.len(), 0);
     /// // But it can hold at least 5 elements without reallocating
     /// let empty_map_capacity = map.capacity();
     /// assert!(empty_map_capacity >= 5);
     ///
-    /// // Now we insert some 5 elements inside the created DHashMap
+    /// // Now we insert some 5 elements inside the created DoubleMap
     /// map.insert("One",   1, "a");
     /// map.insert("Two",   2, "b");
     /// map.insert("Three", 3, "c");
     /// map.insert("Four",  4, "d");
     /// map.insert("Five",  5, "e");
     ///
-    /// // We can see that the DHashMap holds 5 elements
+    /// // We can see that the DoubleMap holds 5 elements
     /// assert_eq!(map.len(), 5);
     /// // But its capacity isn't changed
     /// assert_eq!(map.capacity(), empty_map_capacity)
@@ -826,7 +826,7 @@ impl<K1, K2, V, S> DHashMap<K1, K2, V, S> {
     }
 }
 
-impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
+impl<K1, K2, V, S, A: Allocator + Clone> DoubleMap<K1, K2, V, S, A> {
     /// Returns a reference to the underlying allocator.
     ///
     /// # Examples
@@ -834,11 +834,11 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// ```
     /// # #[cfg(feature = "bumpalo")]
     /// # fn test() {
-    /// use double_map::{DHashMap, BumpWrapper};
+    /// use double_map::{DoubleMap, BumpWrapper};
     /// use bumpalo::Bump;
     ///
     /// let bump = Bump::new();
-    /// let mut map: DHashMap<i8, i8, i8, _, BumpWrapper> = DHashMap::new_in(BumpWrapper(&bump));
+    /// let mut map: DoubleMap<i8, i8, i8, _, BumpWrapper> = DoubleMap::new_in(BumpWrapper(&bump));
     ///
     /// let bumpwrap: &BumpWrapper = map.allocator();
     /// # }
@@ -852,17 +852,17 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
         self.table.allocator()
     }
 
-    /// Creates an empty [`DHashMap`] which will use the given hash builder
+    /// Creates an empty [`DoubleMap`] which will use the given hash builder
     /// to hash keys. It will be allocated with the given allocator.
     ///
     /// The created map has the default initial capacity, witch is equal to 0,
     /// so it will not allocate until it is first inserted into.
     ///
     /// Warning: `hash_builder` normally use a fixed key by default and that does
-    /// not allow the `DHashMaps` to be protected against attacks such as [`HashDoS`].
+    /// not allow the `DoubleMaps` to be protected against attacks such as [`HashDoS`].
     /// Users who require HashDoS resistance should explicitly use
     /// [`ahash::RandomState`] or [`std::collections::hash_map::RandomState`]
-    /// as the hasher when creating a [`DHashMap`].
+    /// as the hasher when creating a [`DoubleMap`].
     ///
     /// [`HashDoS`]: https://en.wikipedia.org/wiki/Collision_attack
     /// [`std::collections::hash_map::RandomState`]: https://doc.rust-lang.org/std/collections/hash_map/struct.RandomState.html
@@ -872,23 +872,23 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// ```
     /// # #[cfg(feature = "bumpalo")]
     /// # fn test() {
-    /// use double_map::{DHashMap, BumpWrapper};
-    /// use double_map::dhash_map::DefaultHashBuilder;
+    /// use double_map::{DoubleMap, BumpWrapper};
+    /// use double_map::shash_map::DefaultHashBuilder;
     /// use bumpalo::Bump;
     ///
     /// let s = DefaultHashBuilder::default();
     /// let bump = Bump::new();
-    /// let mut map = DHashMap::with_hasher_in(s, BumpWrapper(&bump));
+    /// let mut map = DoubleMap::with_hasher_in(s, BumpWrapper(&bump));
     ///
-    /// // The created DHashMap holds none elements
+    /// // The created DoubleMap holds none elements
     /// assert_eq!(map.len(), 0);
     ///
-    /// // The created DHashMap also doesn't allocate memory
+    /// // The created DoubleMap also doesn't allocate memory
     /// assert_eq!(map.capacity(), 0);
     ///
-    /// // Now we insert elements inside created DHashMap
+    /// // Now we insert elements inside created DoubleMap
     /// map.insert("One", 1, 2);
-    /// // We can see that the DHashMap holds 1 element
+    /// // We can see that the DoubleMap holds 1 element
     /// assert_eq!(map.len(), 1);
     /// // And it also allocates some capacity
     /// assert!(map.capacity() > 1);
@@ -906,17 +906,17 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
         }
     }
 
-    /// Creates an empty [`DHashMap`] with the specified capacity, using `hash_builder`
+    /// Creates an empty [`DoubleMap`] with the specified capacity, using `hash_builder`
     /// to hash the keys. It will be allocated with the given allocator.
     ///
     /// The hash map will be able to hold at least `capacity` elements without
     /// reallocating. If `capacity` is 0, the hash map will not allocate.
     ///
     /// Warning: `hash_builder` normally use a fixed key by default and that does
-    /// not allow the `DHashMaps` to be protected against attacks such as [`HashDoS`].
+    /// not allow the `DoubleMaps` to be protected against attacks such as [`HashDoS`].
     /// Users who require HashDoS resistance should explicitly use
     /// [`ahash::RandomState`] or [`std::collections::hash_map::RandomState`]
-    /// as the hasher when creating a [`DHashMap`].
+    /// as the hasher when creating a [`DoubleMap`].
     ///
     /// [`HashDoS`]: https://en.wikipedia.org/wiki/Collision_attack
     /// [`std::collections::hash_map::RandomState`]: https://doc.rust-lang.org/std/collections/hash_map/struct.RandomState.html
@@ -926,28 +926,28 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// ```
     /// # #[cfg(feature = "bumpalo")]
     /// # fn test() {
-    /// use double_map::{DHashMap, BumpWrapper};
-    /// use double_map::dhash_map::DefaultHashBuilder;
+    /// use double_map::{DoubleMap, BumpWrapper};
+    /// use double_map::shash_map::DefaultHashBuilder;
     /// use bumpalo::Bump;
     ///
     /// let s = DefaultHashBuilder::default();
     /// let bump = Bump::new();
-    /// let mut map = DHashMap::with_capacity_and_hasher_in(5, s, BumpWrapper(&bump));
+    /// let mut map = DoubleMap::with_capacity_and_hasher_in(5, s, BumpWrapper(&bump));
     ///
-    /// // The created DHashMap holds none elements
+    /// // The created DoubleMap holds none elements
     /// assert_eq!(map.len(), 0);
     /// // But it can hold at least 5 elements without reallocating
     /// let empty_map_capacity = map.capacity();
     /// assert!(empty_map_capacity >= 5);
     ///
-    /// // Now we insert some 5 elements inside the created DHashMap
+    /// // Now we insert some 5 elements inside the created DoubleMap
     /// map.insert("One",   1, "a");
     /// map.insert("Two",   2, "b");
     /// map.insert("Three", 3, "c");
     /// map.insert("Four",  4, "d");
     /// map.insert("Five",  5, "e");
     ///
-    /// // We can see that the DHashMap holds 5 elements
+    /// // We can see that the DoubleMap holds 5 elements
     /// assert_eq!(map.len(), 5);
     /// // But its capacity isn't changed
     /// assert_eq!(map.capacity(), empty_map_capacity)
@@ -972,11 +972,11 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
-    /// use double_map::dhash_map::DefaultHashBuilder;
+    /// use double_map::DoubleMap;
+    /// use double_map::shash_map::DefaultHashBuilder;
     ///
     /// let hasher = DefaultHashBuilder::default();
-    /// let map: DHashMap<i32, i32, i32> = DHashMap::with_hasher(hasher);
+    /// let map: DoubleMap<i32, i32, i32> = DoubleMap::with_hasher(hasher);
     /// let hasher: &DefaultHashBuilder = map.hasher();
     /// ```
     #[cfg_attr(feature = "inline-more", inline)]
@@ -986,16 +986,16 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
 
     /// Returns the number of elements the map can hold without reallocating.
     ///
-    /// This number is a lower bound; the [`DHashMap`] might be able to hold
+    /// This number is a lower bound; the [`DoubleMap`] might be able to hold
     /// more, but is guaranteed to be able to hold at least this many.
     ///
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
-    /// let map = DHashMap::<i32, &str, &str>::with_capacity(16);
+    /// use double_map::DoubleMap;
+    /// let map = DoubleMap::<i32, &str, &str>::with_capacity(16);
     ///
-    /// // The created DHashMap can hold at least 16 elements
+    /// // The created DoubleMap can hold at least 16 elements
     /// assert!(map.capacity() >= 16);
     /// // But for now it doesn't hold any elements
     /// assert_eq!(map.len(), 0);
@@ -1011,9 +1011,9 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map = DHashMap::new();
+    /// let mut map = DoubleMap::new();
     /// map.insert("a", 1, "One");
     /// map.insert("b", 2, "Two");
     /// map.insert("c", 3, "Three");
@@ -1045,9 +1045,9 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map = DHashMap::new();
+    /// let mut map = DoubleMap::new();
     /// map.insert("a", "One", 1);
     /// map.insert("b", "Two", 2);
     /// map.insert("c", "Three", 3);
@@ -1079,9 +1079,9 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map = DHashMap::new();
+    /// let mut map = DoubleMap::new();
     ///
     /// map.insert("a", "One",   1);
     /// map.insert("b", "Two",   2);
@@ -1120,9 +1120,9 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map = DHashMap::new();
+    /// let mut map = DoubleMap::new();
     /// map.insert("a", 1, "One");
     /// map.insert("b", 2, "Two");
     /// map.insert("c", 3, "Three");
@@ -1161,9 +1161,9 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map = DHashMap::new();
+    /// let mut map = DoubleMap::new();
     /// map.insert("a", 10, 1);
     /// map.insert("b", 20, 2);
     /// map.insert("c", 30, 3);
@@ -1212,17 +1212,17 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::{DHashMap, dhashmap};
+    /// use double_map::{DoubleMap, doublemap};
     ///
-    /// let mut a = DHashMap::new();
-    /// // The created DHashMap doesn't hold any elements
+    /// let mut a = DoubleMap::new();
+    /// // The created DoubleMap doesn't hold any elements
     /// assert_eq!(a.len(), 0);
     /// // We insert one element
     /// a.insert(1, "Breakfast", "Pancakes");
-    /// // And can be sure that DHashMap holds one element
+    /// // And can be sure that DoubleMap holds one element
     /// assert_eq!(a.len(), 1);
     ///
-    /// let map = dhashmap![
+    /// let map = doublemap![
     ///    1, "Breakfast" => "Pancakes",
     ///    2, "Lunch" => "Sandwich",
     /// ];
@@ -1238,14 +1238,14 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut a = DHashMap::new();
-    /// // The created DHashMap doesn't hold any elements, so it's empty
+    /// let mut a = DoubleMap::new();
+    /// // The created DoubleMap doesn't hold any elements, so it's empty
     /// assert!(a.is_empty() && a.len() == 0);
     /// // We insert one element
     /// a.insert(1, "a", "One");
-    /// // And can be sure that DHashMap is not empty but holds one element
+    /// // And can be sure that DoubleMap is not empty but holds one element
     /// assert!(!a.is_empty() && a.len() == 1);
     /// ```
     #[cfg_attr(feature = "inline-more", inline)]
@@ -1264,19 +1264,19 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
     /// // We insert three elements
-    /// let mut a = DHashMap::new();
+    /// let mut a = DoubleMap::new();
     /// a.insert("apple",  1, "a");
     /// a.insert("banana", 2, "b");
     /// a.insert("Cherry", 3, "c");
     ///
-    /// // We can see that DHashMap hold three elements
+    /// // We can see that DoubleMap hold three elements
     /// assert_eq!(a.len(), 3);
     ///
     /// // Also we reserve memory for holding additionally at least 20 elements,
-    /// // so that DHashMap can now hold 23 elements or more
+    /// // so that DoubleMap can now hold 23 elements or more
     /// a.reserve(20);
     /// let capacity_before_drain = a.capacity();
     ///
@@ -1294,7 +1294,7 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// // But map capacity is equal to old one.
     /// assert!(a.capacity() == capacity_before_drain);
     ///
-    /// let mut a = DHashMap::new();
+    /// let mut a = DoubleMap::new();
     /// a.insert(1, "a", "One");
     /// a.insert(2, "b", "Two");
     ///
@@ -1322,9 +1322,9 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map: DHashMap<i32, i32, i32> = (0..8).map(|x| (x, x + 1, x * 100)).collect();
+    /// let mut map: DoubleMap<i32, i32, i32> = (0..8).map(|x| (x, x + 1, x * 100)).collect();
     /// assert_eq!(map.len(), 8);
     ///
     /// map.retain_key1(|&k1, _| k1 % 2 == 0);
@@ -1361,9 +1361,9 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map: DHashMap<i32, i32, i32> = (0..8).map(|x| (x, x + 1, x * 100)).collect();
+    /// let mut map: DoubleMap<i32, i32, i32> = (0..8).map(|x| (x, x + 1, x * 100)).collect();
     /// assert_eq!(map.len(), 8);
     ///
     /// map.retain_key2(|&k2, _| k2 % 2 == 0);
@@ -1400,9 +1400,9 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map: DHashMap<i32, i32, i32> = (0..12).map(|x| (x, x + 1, x * 100)).collect();
+    /// let mut map: DoubleMap<i32, i32, i32> = (0..12).map(|x| (x, x + 1, x * 100)).collect();
     /// assert_eq!(map.len(), 12);
     ///
     /// map.retain_keys(|&k1, &k2, _| (k1 % 3 == 0) && (k2 % 3 == 1));
@@ -1450,12 +1450,12 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map: DHashMap<i32, i32, i32> = (0..8).map(|x| (x, x, x)).collect();
+    /// let mut map: DoubleMap<i32, i32, i32> = (0..8).map(|x| (x, x, x)).collect();
     /// assert_eq!(map.len(), 8);
     ///
-    /// let drained: DHashMap<i32, i32, i32> = map
+    /// let drained: DoubleMap<i32, i32, i32> = map
     ///     .drain_filter(|&k1, &k2, _| (k1 % 3 == 0) && (k2 % 3 == 0))
     ///     .collect();
     ///
@@ -1466,7 +1466,7 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// assert_eq!(first, vec![(1, 1), (2, 2), (4, 4), (5, 5), (7, 7)]);
     /// assert_eq!(second, vec![(0, 0), (3, 3), (6, 6)]);
     ///
-    /// let mut map: DHashMap<i32, i32, i32> = (0..8).map(|x| (x, x + 1, x)).collect();
+    /// let mut map: DoubleMap<i32, i32, i32> = (0..8).map(|x| (x, x + 1, x)).collect();
     /// assert_eq!(map.len(), 8);
     ///
     /// {
@@ -1498,14 +1498,14 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::{DHashMap, dhashmap};
+    /// use double_map::{DoubleMap, doublemap};
     ///
-    /// let mut a = dhashmap![
+    /// let mut a = doublemap![
     ///    1, "Breakfast" => "Pancakes",
     ///    2, "Lunch" => "Sandwich",
     /// ];
     ///
-    /// // We can that see DHashMap holds two elements
+    /// // We can that see DoubleMap holds two elements
     /// assert_eq!(a.len(), 2);
     /// let capacity_before_clearing = a.capacity();
     ///
@@ -1528,9 +1528,9 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::{DHashMap, dhashmap};
+    /// use double_map::{DoubleMap, doublemap};
     ///
-    /// let map = dhashmap![
+    /// let map = doublemap![
     ///     ("a", 1) => "One",
     ///     ("b", 2) => "Two",
     ///     ("c", 3) => "Three",
@@ -1556,9 +1556,9 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::{DHashMap, dhashmap};
+    /// use double_map::{DoubleMap, doublemap};
     ///
-    /// let map = dhashmap![
+    /// let map = doublemap![
     ///     ("a", 1) => 10,
     ///     ("b", 2) => 20,
     ///     ("c", 3) => 30,
@@ -1579,7 +1579,7 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     }
 }
 
-impl<K1, K2, V, S, A> DHashMap<K1, K2, V, S, A>
+impl<K1, K2, V, S, A> DoubleMap<K1, K2, V, S, A>
 where
     K1: Eq + Hash,
     K2: Eq + Hash,
@@ -1587,7 +1587,7 @@ where
     A: Allocator + Clone,
 {
     /// Reserves capacity for at least `additional` more elements to be inserted
-    /// in the `DHashMap<K1, K2, V>`. The collection may reserve more space to avoid
+    /// in the `DoubleMap<K1, K2, V>`. The collection may reserve more space to avoid
     /// frequent reallocations.
     ///
     /// # Panics
@@ -1599,15 +1599,15 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
-    /// let mut a = DHashMap::<&str, i128, &str>::new();
+    /// use double_map::DoubleMap;
+    /// let mut a = DoubleMap::<&str, i128, &str>::new();
     /// a.insert("apple",  1, "a");
     /// a.insert("banana", 2, "b");
     /// a.insert("cherry", 3, "c");
     ///
     /// // We reserve space for additional 10 elements
     /// a.reserve(10);
-    /// // And can see that created DHashMap can hold at least 13 elements
+    /// // And can see that created DoubleMap can hold at least 13 elements
     /// assert!(a.capacity() >= 13);
     /// ```
     #[cfg_attr(feature = "inline-more", inline)]
@@ -1620,7 +1620,7 @@ where
     }
 
     /// Tries to reserve capacity for at least `additional` more elements to be inserted
-    /// in the given `DHashMap<K1, K2, V>`. The collection may reserve more space to avoid
+    /// in the given `DoubleMap<K1, K2, V>`. The collection may reserve more space to avoid
     /// frequent reallocations.
     ///
     /// # Errors
@@ -1631,9 +1631,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map: DHashMap<&str, isize, isize> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, isize, isize> = DoubleMap::new();
     /// // Map is empty and doesn't allocate memory
     /// assert_eq!(map.capacity(), 0);
     ///
@@ -1646,9 +1646,9 @@ where
     /// is returned:
     /// ```
     /// # fn test() {
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     /// use double_map::TryReserveError;
-    /// let mut map: DHashMap<i32, i32, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<i32, i32, i32> = DoubleMap::new();
     ///
     /// match map.try_reserve(isize::MAX as usize) {
     ///     Err(error) => match error {
@@ -1677,15 +1677,15 @@ where
     /// and possibly leaving some space in accordance with the resize policy.
     ///
     /// Note that in general case the capacity is not *guaranteed* to shrink,
-    /// but a zero-length DHashMap should generally shrink to capacity zero.
+    /// but a zero-length DoubleMap should generally shrink to capacity zero.
     ///
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
-    /// let mut a = DHashMap::<i32, &str, &str>::with_capacity(16);
+    /// use double_map::DoubleMap;
+    /// let mut a = DoubleMap::<i32, &str, &str>::with_capacity(16);
     ///
-    /// // This DHashMap can hold at least 16 elements
+    /// // This DoubleMap can hold at least 16 elements
     /// let capacity_before_shrink = a.capacity();
     /// assert!(capacity_before_shrink >= 16);
     ///
@@ -1724,9 +1724,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map: DHashMap<i32, i32, i32> = DHashMap::with_capacity(100);
+    /// let mut map: DoubleMap<i32, i32, i32> = DoubleMap::with_capacity(100);
     /// map.insert(1, 2, 3);
     /// map.insert(4, 5, 6);
     /// map.insert(7, 8, 9);
@@ -1775,10 +1775,10 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
-    /// use double_map::dhash_map::ErrorKind;
+    /// use double_map::DoubleMap;
+    /// use double_map::shash_map::ErrorKind;
     ///
-    /// let mut letters = DHashMap::new();
+    /// let mut letters = DoubleMap::new();
     ///
     /// for ch in "a short treatise on fungi".chars() {
     ///     if let Ok(entry) = letters.entry(ch.clone(), ch) {
@@ -1883,10 +1883,10 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
-    /// use double_map::dhash_map::ErrorKind;
+    /// use double_map::DoubleMap;
+    /// use double_map::shash_map::ErrorKind;
     ///
-    /// let mut words: DHashMap<String, String, usize>  = DHashMap::new();
+    /// let mut words: DoubleMap<String, String, usize>  = DoubleMap::new();
     ///
     /// let source = ["zebra", "horse", "zebra", "zebra"];
     ///
@@ -1980,9 +1980,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map = DHashMap::new();
+    /// let mut map = DoubleMap::new();
     /// map.insert(1, "a", "One");
     /// assert_eq!(map.get_key1(&1), Some(&"One"));
     /// assert_eq!(map.get_key1(&2), None);
@@ -2009,9 +2009,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map = DHashMap::new();
+    /// let mut map = DoubleMap::new();
     /// map.insert(1, "a", "One");
     /// assert_eq!(map.get_key2(&"a"), Some(&"One"));
     /// assert_eq!(map.get_key2(&"b"), None);
@@ -2044,9 +2044,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::{DHashMap, dhashmap};
+    /// use double_map::{DoubleMap, doublemap};
     ///
-    /// let map = dhashmap! {
+    /// let map = doublemap! {
     ///     1, "One" => String::from("Eins"),
     ///     2, "Two" => String::from("Zwei"),
     ///     3, "Three" => String::from("Drei"),
@@ -2087,9 +2087,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map = DHashMap::new();
+    /// let mut map = DoubleMap::new();
     /// map.insert(1, 10, "a");
     /// assert_eq!(map.get_key1_value(&1), Some((&1, &10, &"a")));
     /// assert_eq!(map.get_key1_value(&2), None);
@@ -2116,9 +2116,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map = DHashMap::new();
+    /// let mut map = DoubleMap::new();
     /// map.insert(1, 10, "a");
     /// assert_eq!(map.get_key2_value(&10), Some((&1, &10, &"a")));
     /// assert_eq!(map.get_key2_value(&20), None);
@@ -2152,9 +2152,9 @@ where
     /// # Example
     ///
     /// ```
-    /// use double_map::{DHashMap, dhashmap};
+    /// use double_map::{DoubleMap, doublemap};
     ///
-    /// let map = dhashmap! {
+    /// let map = doublemap! {
     ///     1, "One"   => "Zebra",
     ///     2, "Two"   => "Horse",
     ///     3, "Three" => "Pony",
@@ -2238,9 +2238,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map = DHashMap::new();
+    /// let mut map = DoubleMap::new();
     /// map.insert(1, 10, "a");
     ///
     /// let (k1, k2, v) = map.get_key1_value_mut(&1).unwrap();
@@ -2274,9 +2274,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map = DHashMap::new();
+    /// let mut map = DoubleMap::new();
     /// map.insert(1, 10, "a");
     ///
     /// let (k1, k2, v) = map.get_key2_value_mut(&10).unwrap();
@@ -2317,9 +2317,9 @@ where
     /// # Example
     ///
     /// ```
-    /// use double_map::{DHashMap, dhashmap};
+    /// use double_map::{DoubleMap, doublemap};
     ///
-    /// let mut map = dhashmap! {
+    /// let mut map = doublemap! {
     ///     1, "One"   => "Zebra",
     ///     2, "Two"   => "Horse",
     ///     3, "Three" => "Pony",
@@ -2365,9 +2365,9 @@ where
     /// # Example
     ///
     /// ```
-    /// use double_map::{DHashMap, dhashmap};
+    /// use double_map::{DoubleMap, doublemap};
     ///
-    /// let map = dhashmap! {
+    /// let map = doublemap! {
     ///     1, "One" => String::from("Eins"),
     ///     2, "Two" => String::from("Zwei"),
     ///     3, "Three" => String::from("Drei"),
@@ -2394,9 +2394,9 @@ where
     /// # Example
     ///
     /// ```
-    /// use double_map::{DHashMap, dhashmap};
+    /// use double_map::{DoubleMap, doublemap};
     ///
-    /// let map = dhashmap! {
+    /// let map = doublemap! {
     ///     1, "One" => String::from("Eins"),
     ///     2, "Two" => String::from("Zwei"),
     ///     3, "Three" => String::from("Drei"),
@@ -2428,9 +2428,9 @@ where
     /// # Example
     ///
     /// ```
-    /// use double_map::{DHashMap, dhashmap};
+    /// use double_map::{DoubleMap, doublemap};
     ///
-    /// let map = dhashmap! {
+    /// let map = doublemap! {
     ///     1, "One" => String::from("Eins"),
     ///     2, "Two" => String::from("Zwei"),
     ///     3, "Three" => String::from("Drei"),
@@ -2467,9 +2467,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map = DHashMap::new();
+    /// let mut map = DoubleMap::new();
     /// map.insert(1, "a", "One");
     /// if let Some(x) = map.get_mut_key1(&1) {
     ///     *x = "First";
@@ -2498,9 +2498,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map = DHashMap::new();
+    /// let mut map = DoubleMap::new();
     /// map.insert(1, "a", "One");
     /// if let Some(x) = map.get_mut_key2(&"a") {
     ///     *x = "First";
@@ -2534,9 +2534,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::{DHashMap, dhashmap};
+    /// use double_map::{DoubleMap, doublemap};
     ///
-    /// let mut  map = dhashmap! {
+    /// let mut  map = doublemap! {
     ///     1, "One" => String::from("One"),
     ///     2, "Two" => String::from("Two"),
     ///     3, "Three" => String::from("Three"),
@@ -2638,9 +2638,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut libraries = DHashMap::new();
+    /// let mut libraries = DoubleMap::new();
     /// libraries.insert("Bogazkoy archives", "Boğazkale", "1900 B.C.");
     /// libraries.insert("Library of Ashurbanipal", "Mosul", "668 B.C.");
     /// libraries.insert("Library of Alexandria", "Alexandria", "285 B.C.");
@@ -2681,9 +2681,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut libraries = DHashMap::new();
+    /// let mut libraries = DoubleMap::new();
     /// libraries.insert("Bogazkoy archives", "Boğazkale", "1900 B.C.");
     /// libraries.insert("Library of Ashurbanipal", "Mosul", "668 B.C.");
     /// libraries.insert("Library of Alexandria", "Alexandria", "285 B.C.");
@@ -2731,9 +2731,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut libraries = DHashMap::new();
+    /// let mut libraries = DoubleMap::new();
     /// libraries.insert("Bogazkoy archives", "Boğazkale", "1900 B.C.");
     /// libraries.insert("Library of Ashurbanipal", "Mosul", "668 B.C.");
     /// libraries.insert("Library of Alexandria", "Alexandria", "285 B.C.");
@@ -2790,7 +2790,7 @@ where
     /// Returns an array of length `N` with the results of each query. `None`
     /// will be returned if any of the keys are missing.
     ///
-    /// For a safe alternative see [`get_many_mut_key1`](`DHashMap::get_many_mut_key1`).
+    /// For a safe alternative see [`get_many_mut_key1`](`DoubleMap::get_many_mut_key1`).
     ///
     /// # Safety
     ///
@@ -2802,9 +2802,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut libraries = DHashMap::new();
+    /// let mut libraries = DoubleMap::new();
     /// libraries.insert("Bogazkoy archives", "Boğazkale", "1900 B.C.");
     /// libraries.insert("Library of Ashurbanipal", "Mosul", "668 B.C.");
     /// libraries.insert("Library of Alexandria", "Alexandria", "285 B.C.");
@@ -2844,7 +2844,7 @@ where
     /// Returns an array of length `N` with the results of each query. `None`
     /// will be returned if any of the keys are missing.
     ///
-    /// For a safe alternative see [`get_many_mut_key2`](`DHashMap::get_many_mut_key2`).
+    /// For a safe alternative see [`get_many_mut_key2`](`DoubleMap::get_many_mut_key2`).
     ///
     /// # Safety
     ///
@@ -2856,9 +2856,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut libraries = DHashMap::new();
+    /// let mut libraries = DoubleMap::new();
     /// libraries.insert("Bogazkoy archives", "Boğazkale", "1900 B.C.");
     /// libraries.insert("Library of Ashurbanipal", "Mosul", "668 B.C.");
     /// libraries.insert("Library of Alexandria", "Alexandria", "285 B.C.");
@@ -2894,7 +2894,7 @@ where
     /// Returns an array of length `N` with the results of each query. `None`
     /// will be returned if any of the keys are missing.
     ///
-    /// For a safe alternative see [`get_many_mut_keys`](`DHashMap::get_many_mut_keys`).
+    /// For a safe alternative see [`get_many_mut_keys`](`DoubleMap::get_many_mut_keys`).
     ///
     /// # Safety
     ///
@@ -2905,16 +2905,16 @@ where
     /// In other words this `get_many_unchecked_mut_keys` method return array of values
     /// `[&'_ mut V; N]` only if each of given two keys' `(&Q1, &Q2)` tuples exist and
     /// refer to the same `value`. For more information see
-    /// [`get_keys_value_mut`](DHashMap::get_keys_value_mut) method.
+    /// [`get_keys_value_mut`](DoubleMap::get_keys_value_mut) method.
     ///
     /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
     ///
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut libraries = DHashMap::new();
+    /// let mut libraries = DoubleMap::new();
     /// libraries.insert("Bogazkoy archives", "Boğazkale", "1900 B.C.");
     /// libraries.insert("Library of Ashurbanipal", "Mosul", "668 B.C.");
     /// libraries.insert("Library of Alexandria", "Alexandria", "285 B.C.");
@@ -2965,9 +2965,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut libraries = DHashMap::new();
+    /// let mut libraries = DoubleMap::new();
     /// libraries.insert("Bogazkoy archives", "Boğazkale", "1900 B.C.");
     /// libraries.insert("Library of Ashurbanipal", "Mosul", "668 B.C.");
     /// libraries.insert("Library of Alexandria", "Alexandria", "285 B.C.");
@@ -3017,9 +3017,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut libraries = DHashMap::new();
+    /// let mut libraries = DoubleMap::new();
     /// libraries.insert("Bogazkoy archives", "Boğazkale", "1900 B.C.");
     /// libraries.insert("Library of Ashurbanipal", "Mosul", "668 B.C.");
     /// libraries.insert("Library of Alexandria", "Alexandria", "285 B.C.");
@@ -3075,9 +3075,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut libraries = DHashMap::new();
+    /// let mut libraries = DoubleMap::new();
     /// libraries.insert("Bogazkoy archives", "Boğazkale", "1900 B.C.");
     /// libraries.insert("Library of Ashurbanipal", "Mosul", "668 B.C.");
     /// libraries.insert("Library of Alexandria", "Alexandria", "285 B.C.");
@@ -3141,7 +3141,7 @@ where
     /// Returns an array of length `N` with the results of each query.
     /// `None` will be returned if any of the keys are missing.
     ///
-    /// For a safe alternative see [`get_many_key1_value_mut`](`DHashMap::get_many_key1_value_mut`).
+    /// For a safe alternative see [`get_many_key1_value_mut`](`DoubleMap::get_many_key1_value_mut`).
     ///
     /// # Safety
     ///
@@ -3153,9 +3153,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut libraries = DHashMap::new();
+    /// let mut libraries = DoubleMap::new();
     /// libraries.insert("Bogazkoy archives", "Boğazkale", "1900 B.C.");
     /// libraries.insert("Library of Ashurbanipal", "Mosul", "668 B.C.");
     /// libraries.insert("Library of Alexandria", "Alexandria", "285 B.C.");
@@ -3202,7 +3202,7 @@ where
     /// Returns an array of length `N` with the results of each query.
     /// `None` will be returned if any of the keys are missing.
     ///
-    /// For a safe alternative see [`get_many_key2_value_mut`](`DHashMap::get_many_key2_value_mut`).
+    /// For a safe alternative see [`get_many_key2_value_mut`](`DoubleMap::get_many_key2_value_mut`).
     ///
     /// # Safety
     ///
@@ -3214,9 +3214,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut libraries = DHashMap::new();
+    /// let mut libraries = DoubleMap::new();
     /// libraries.insert("Bogazkoy archives", "Boğazkale", "1900 B.C.");
     /// libraries.insert("Library of Ashurbanipal", "Mosul", "668 B.C.");
     /// libraries.insert("Library of Alexandria", "Alexandria", "285 B.C.");
@@ -3259,7 +3259,7 @@ where
     /// Returns an array of length `N` with the results of each query.
     /// `None` will be returned if any of the keys are missing.
     ///
-    /// For a safe alternative see [`get_many_keys_value_mut`](`DHashMap::get_many_keys_value_mut`).
+    /// For a safe alternative see [`get_many_keys_value_mut`](`DoubleMap::get_many_keys_value_mut`).
     ///
     /// # Safety
     ///
@@ -3270,16 +3270,16 @@ where
     /// In other words this `get_many_keys_value_unchecked_mut` method return array of
     /// values `[(&'_ K1, &'_ K2, &'_ mut V); N]` only if each of given two keys'
     /// `(&Q1, &Q2)` tuples exist and refer to the same `value`. For more information see
-    /// [`get_keys_value_mut`](DHashMap::get_keys_value_mut) method.
+    /// [`get_keys_value_mut`](DoubleMap::get_keys_value_mut) method.
     ///
     /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
     ///
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut libraries = DHashMap::new();
+    /// let mut libraries = DoubleMap::new();
     /// libraries.insert("Bogazkoy archives", "Boğazkale", "1900 B.C.");
     /// libraries.insert("Library of Ashurbanipal", "Mosul", "668 B.C.");
     /// libraries.insert("Library of Alexandria", "Alexandria", "285 B.C.");
@@ -3476,9 +3476,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
-    /// use double_map::dhash_map::{InsertError, ErrorKind};
-    /// let mut map = DHashMap::new();
+    /// use double_map::DoubleMap;
+    /// use double_map::shash_map::{InsertError, ErrorKind};
+    /// let mut map = DoubleMap::new();
     ///
     /// // Returns None if keys are vacant
     /// assert_eq!(map.insert(1, "a", "One"), None);
@@ -3591,15 +3591,15 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map1 = DHashMap::new();
+    /// let mut map1 = DoubleMap::new();
     /// assert_eq!(map1.insert(1, "a", "pony"), None);
     /// assert_eq!(map1.insert(2, "b", "horse"), None);
     /// assert_eq!(map1.insert(3, "c", "zebra"), None);
     /// assert_eq!(map1.len(), 3);
     ///
-    /// let mut map2 = DHashMap::new();
+    /// let mut map2 = DoubleMap::new();
     ///
     /// for (k1, k2, value) in map1.into_iter() {
     ///     map2.insert_unique_unchecked(k1, k2, value);
@@ -3658,11 +3658,11 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
-    /// use double_map::dhash_map::{TryInsertError, OccupiedError, InsertError, ErrorKind};
+    /// use double_map::DoubleMap;
+    /// use double_map::shash_map::{TryInsertError, OccupiedError, InsertError, ErrorKind};
     ///
     ///
-    /// let mut map = DHashMap::new();
+    /// let mut map = DoubleMap::new();
     ///
     /// // Returns mutable reference to the value if keys are vacant
     /// let value = map.try_insert(1, "a", "One").unwrap();
@@ -3755,12 +3755,12 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::{DHashMap, dhashmap};
+    /// use double_map::{DoubleMap, doublemap};
     ///
-    /// let mut map = DHashMap::new();
+    /// let mut map = DoubleMap::new();
     /// map.insert(1, "One", "Pony");
     ///
-    /// // We can see that DHashMap holds one elements
+    /// // We can see that DoubleMap holds one elements
     /// assert_eq!(map.len(), 1);
     ///
     /// // We remove element with key `K1` from the map and get corresponding value
@@ -3794,12 +3794,12 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::{DHashMap, dhashmap};
+    /// use double_map::{DoubleMap, doublemap};
     ///
-    /// let mut map = DHashMap::new();
+    /// let mut map = DoubleMap::new();
     /// map.insert(1, "One", "Pony");
     ///
-    /// // We can see that DHashMap holds one elements
+    /// // We can see that DoubleMap holds one elements
     /// assert_eq!(map.len(), 1);
     ///
     /// // We remove element with key `K1` from the map and get corresponding value
@@ -3834,16 +3834,16 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::{DHashMap, dhashmap};
+    /// use double_map::{DoubleMap, doublemap};
     ///
     /// // We create map with three elements
-    /// let mut map = dhashmap! {
+    /// let mut map = doublemap! {
     ///     1, "One"   => "Pony",
     ///     2, "Two"   => "Horse",
     ///     3, "Three" => "Zebra",
     /// };
     ///
-    /// // We can see that DHashMap holds three elements
+    /// // We can see that DoubleMap holds three elements
     /// assert_eq!(map.len(), 3);
     ///
     /// // We remove element from the map and get corresponding value
@@ -3888,12 +3888,12 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::{DHashMap, dhashmap};
+    /// use double_map::{DoubleMap, doublemap};
     ///
-    /// let mut map = DHashMap::new();
+    /// let mut map = DoubleMap::new();
     /// map.insert(1, "One", "Pony");
     ///
-    /// // We can see that DHashMap holds one elements
+    /// // We can see that DoubleMap holds one elements
     /// assert_eq!(map.len(), 1);
     ///
     /// // We remove element with key `K1` from the map and get corresponding value
@@ -3933,12 +3933,12 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::{DHashMap, dhashmap};
+    /// use double_map::{DoubleMap, doublemap};
     ///
-    /// let mut map = DHashMap::new();
+    /// let mut map = DoubleMap::new();
     /// map.insert(1, "One", "Pony");
     ///
-    /// // We can see that DHashMap holds one elements
+    /// // We can see that DoubleMap holds one elements
     /// assert_eq!(map.len(), 1);
     ///
     /// // We remove element with key `K1` from the map and get corresponding value
@@ -3970,16 +3970,16 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::{DHashMap, dhashmap};
+    /// use double_map::{DoubleMap, doublemap};
     ///
     /// // We create map with three elements
-    /// let mut map = dhashmap! {
+    /// let mut map = doublemap! {
     ///     1, "One"   => "Pony",
     ///     2, "Two"   => "Horse",
     ///     3, "Three" => "Zebra",
     /// };
     ///
-    /// // We can see that DHashMap holds three elements
+    /// // We can see that DoubleMap holds three elements
     /// assert_eq!(map.len(), 3);
     ///
     /// // We remove element from the map and get corresponding value
@@ -4014,8 +4014,8 @@ where
     }
 }
 
-impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
-    /// Creates a raw entry builder for the [`DHashMap`].
+impl<K1, K2, V, S, A: Allocator + Clone> DoubleMap<K1, K2, V, S, A> {
+    /// Creates a raw entry builder for the [`DoubleMap`].
     ///
     /// Raw entries provide the lowest level of control for searching and
     /// manipulating a map. They must be manually initialized with a hash and
@@ -4030,13 +4030,13 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// * Using custom comparison logic without newtype wrappers
     ///
     /// Because raw entries provide much more low-level control, it's much easier
-    /// to put the `DHashMap` into an inconsistent state which, while memory-safe,
+    /// to put the `DoubleMap` into an inconsistent state which, while memory-safe,
     /// will cause the map to produce seemingly random results. Higher-level and
     /// more foolproof APIs like `entry` should be preferred when possible.
     ///
     /// In particular, the hash used to initialized the raw entry must still be
     /// consistent with the hash of the key that is ultimately stored in the entry.
-    /// This is because implementations of `DHashMap` may need to recompute hashes
+    /// This is because implementations of `DoubleMap` may need to recompute hashes
     /// when resizing, at which point only the keys are available.
     ///
     /// Raw entries give mutable access to the keys. This must not be used
@@ -4070,9 +4070,9 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     ///
     /// ```
     /// use core::hash::{BuildHasher, Hash};
-    /// use double_map::dhash_map::{DHashMap, ErrorKind, RawEntryMut};
+    /// use double_map::shash_map::{DoubleMap, ErrorKind, RawEntryMut};
     ///
-    /// let mut map = DHashMap::new();
+    /// let mut map = DoubleMap::new();
     /// map.extend([("a", "one", 100), ("b", "two", 200), ("c", "three", 300)]);
     ///
     /// fn compute_hash<K: Hash + ?Sized, S: BuildHasher>(hash_builder: &S, key: &K) -> u64 {
@@ -4186,7 +4186,7 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
         RawEntryBuilderMut { map: self }
     }
 
-    /// Creates a raw immutable entry builder for the [`DHashMap`].
+    /// Creates a raw immutable entry builder for the [`DoubleMap`].
     ///
     /// Raw entries provide the lowest level of control for searching and
     /// manipulating a map. They must be manually initialized with a hash and
@@ -4201,15 +4201,15 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// `get` should be preferred.
     ///
     /// Immutable raw entries have very limited use; you might instead
-    /// want [`raw_entry_mut`](DHashMap::raw_entry_mut).
+    /// want [`raw_entry_mut`](DoubleMap::raw_entry_mut).
     ///
     /// # Examples
     ///
     /// ```
     /// use core::hash::{BuildHasher, Hash};
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map: DHashMap<usize, &str, usize> = DHashMap::new();
+    /// let mut map: DoubleMap<usize, &str, usize> = DoubleMap::new();
     /// map.extend([(1, "a", 100), (2, "b", 200), (3, "c", 300)]);
     ///
     /// fn compute_hash<K: Hash + ?Sized, S: BuildHasher>(hash_builder: &S, key: &K) -> u64 {
@@ -4247,7 +4247,7 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
         RawEntryBuilder { map: self }
     }
 
-    /// Returns a mutable reference to the [`RawTable`] used underneath [`DHashMap`].
+    /// Returns a mutable reference to the [`RawTable`] used underneath [`DoubleMap`].
     /// This function is only available if the `raw` feature of the crate is enabled.
     ///
     /// # Note
@@ -4256,19 +4256,19 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// unsafe functions or blocks.
     ///
     /// `RawTable` API gives the lowest level of control under the map that can be useful
-    /// for extending the HashMap's API, but may lead to *[undefined behavior]*.
+    /// for extending the DoubleMap's API, but may lead to *[undefined behavior]*.
     ///
-    /// [`DHashMap`]: struct.DHashMap.html
-    /// [`RawTable`]: raw/struct.RawTable.html
+    /// [`DoubleMap`]: struct.DoubleMap.html
+    /// [`RawTable`]: crate::raw::RawTable
     /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
     ///
     /// # Examples
     ///
     /// ```
     /// use core::hash::{BuildHasher, Hash};
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map = DHashMap::new();
+    /// let mut map = DoubleMap::new();
     /// map.extend([(1, "a", 10), (2, "b", 20), (3, "c", 30)]);
     /// assert_eq!(map.len(), 3);
     ///
@@ -4276,7 +4276,7 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
     /// // However, if you want to remove the value from the map by hash and value, and you
     /// // know exactly that the value is unique, then you can create a function like this:
     /// fn remove_by_hash<K1, K2, V, S, F>(
-    ///     map: &mut DHashMap<K1, K2, V, S>,
+    ///     map: &mut DoubleMap<K1, K2, V, S>,
     ///     hash2: u64,
     ///     is_match2: F,
     /// ) -> Option<(K1, K2, V)>
@@ -4318,7 +4318,7 @@ impl<K1, K2, V, S, A: Allocator + Clone> DHashMap<K1, K2, V, S, A> {
 /// [partial equivalence relations](https://en.wikipedia.org/wiki/Partial_equivalence_relation).
 ///
 /// `x.eq(y)` can also be written `x == y`, and `x.ne(y)` can be written `x != y`.
-impl<K1, K2, V, S, A> PartialEq for DHashMap<K1, K2, V, S, A>
+impl<K1, K2, V, S, A> PartialEq for DoubleMap<K1, K2, V, S, A>
 where
     K1: Eq + Hash,
     K2: Eq + Hash,
@@ -4332,15 +4332,15 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::{DHashMap, dhashmap};
+    /// use double_map::{DoubleMap, doublemap};
     ///
-    /// let mut map1: DHashMap<i32, &str, &str> = dhashmap!{
+    /// let mut map1: DoubleMap<i32, &str, &str> = doublemap!{
     ///     1, "a" => "One",
     ///     2, "b" => "Two",
     ///     3, "c" => "Three",
     /// };
     ///
-    /// let mut map2: DHashMap<i32, &str, &str> = dhashmap!{
+    /// let mut map2: DoubleMap<i32, &str, &str> = doublemap!{
     ///     1, "a" => "One",
     ///     2, "b" => "Two",
     ///     3, "c" => "Three",
@@ -4363,7 +4363,7 @@ where
     }
 }
 
-impl<K1, K2, V, S, A> Eq for DHashMap<K1, K2, V, S, A>
+impl<K1, K2, V, S, A> Eq for DoubleMap<K1, K2, V, S, A>
 where
     K1: Eq + Hash,
     K2: Eq + Hash,
@@ -4373,7 +4373,7 @@ where
 {
 }
 
-impl<K1, K2, V, S, A> Debug for DHashMap<K1, K2, V, S, A>
+impl<K1, K2, V, S, A> Debug for DoubleMap<K1, K2, V, S, A>
 where
     K1: Debug,
     K2: Debug,
@@ -4387,27 +4387,27 @@ where
     }
 }
 
-/// Creates an empty `DHashMap<K1, K2, V, S, A>`, with the `Default` value
+/// Creates an empty `DoubleMap<K1, K2, V, S, A>`, with the `Default` value
 /// for the hasher and allocator.
-impl<K1, K2, V, S, A> Default for DHashMap<K1, K2, V, S, A>
+impl<K1, K2, V, S, A> Default for DoubleMap<K1, K2, V, S, A>
 where
     S: Default,
     A: Default + Allocator + Clone,
 {
-    /// Creates an empty `DHashMap<K1, K2, V, S, A>`, with the `Default` value
+    /// Creates an empty `DoubleMap<K1, K2, V, S, A>`, with the `Default` value
     /// for the hasher and allocator.
     ///
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     /// use std::collections::hash_map::RandomState;
     ///
-    /// // You can specify all types of HashMap, including hasher and allocator.
+    /// // You can specify all types of `DoubleMap`, including hasher and allocator.
     /// // Created map is empty and don't allocate memory
-    /// let map: DHashMap<u32, String, String> = Default::default();
+    /// let map: DoubleMap<u32, String, String> = Default::default();
     /// assert_eq!(map.capacity(), 0);
-    /// let map: DHashMap<u32, String, String, RandomState> = DHashMap::default();
+    /// let map: DoubleMap<u32, String, String, RandomState> = DoubleMap::default();
     /// assert_eq!(map.capacity(), 0);
     /// ```
     #[cfg_attr(feature = "inline-more", inline)]
@@ -4416,9 +4416,9 @@ where
     }
 }
 
-/// Get a reference to the value through indexing operations (`DHashMap[index]`)
+/// Get a reference to the value through indexing operations (`DoubleMap[index]`)
 /// in immutable contexts.
-impl<K1, K2, Q1: ?Sized, V, S, A> Index<&Q1> for DHashMap<K1, K2, V, S, A>
+impl<K1, K2, Q1: ?Sized, V, S, A> Index<&Q1> for DoubleMap<K1, K2, V, S, A>
 where
     K1: Eq + Hash,
     K2: Eq + Hash,
@@ -4437,14 +4437,14 @@ where
     ///
     /// # Panics
     ///
-    /// Panics if the key is not present in the `DHashMap`.
+    /// Panics if the key is not present in the `DoubleMap`.
     ///
     /// # Examples
     ///
     /// ```
-    /// use double_map::{DHashMap, dhashmap};
+    /// use double_map::{DoubleMap, doublemap};
     ///
-    /// let map = dhashmap!{
+    /// let map = doublemap!{
     ///     1, "a" => "One",
     ///     2, "b" => "Two",
     /// };
@@ -4458,18 +4458,18 @@ where
     }
 }
 
-/// Create a new [`DHashMap<K1, K2, V, DefaultHashBuilder, A>`]
+/// Create a new [`DoubleMap<K1, K2, V, DefaultHashBuilder, A>`]
 /// from an array list of sequentially given keys and values.
 // The default hasher is used to match the std implementation signature
 #[cfg(feature = "ahash")]
 impl<K1, K2, V, A, const N: usize> From<[(K1, K2, V); N]>
-    for DHashMap<K1, K2, V, DefaultHashBuilder, A>
+    for DoubleMap<K1, K2, V, DefaultHashBuilder, A>
 where
     K1: Eq + Hash,
     K2: Eq + Hash,
     A: Default + Allocator + Clone,
 {
-    /// Create a new [`DHashMap<K1, K2, V, DefaultHashBuilder, A>`]
+    /// Create a new [`DoubleMap<K1, K2, V, DefaultHashBuilder, A>`]
     /// from an array list of sequentially given keys and values.
     ///
     /// You can specify the type of `allocator`
@@ -4477,10 +4477,10 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let map1 = DHashMap::from([(1, 2, 3), (4, 5, 6)]);
-    /// let map2: DHashMap<_, _, _> = [(1, 2, 3), (4, 5, 6)].into();
+    /// let map1 = DoubleMap::from([(1, 2, 3), (4, 5, 6)]);
+    /// let map2: DoubleMap<_, _, _> = [(1, 2, 3), (4, 5, 6)].into();
     /// assert_eq!(map1, map2);
     /// ```
     fn from(arr: [(K1, K2, V); N]) -> Self {
@@ -4488,16 +4488,16 @@ where
     }
 }
 
-/// Creates an new `DHashMap<K1, K2, V, S, A>` from an iterator, with the
+/// Creates an new `DoubleMap<K1, K2, V, S, A>` from an iterator, with the
 /// `Default` value for the hasher and allocator.
-impl<K1, K2, V, S, A> FromIterator<(K1, K2, V)> for DHashMap<K1, K2, V, S, A>
+impl<K1, K2, V, S, A> FromIterator<(K1, K2, V)> for DoubleMap<K1, K2, V, S, A>
 where
     K1: Eq + Hash,
     K2: Eq + Hash,
     S: BuildHasher + Default,
     A: Default + Allocator + Clone,
 {
-    /// Creates an new `DHashMap<K1, K2, V, S, A>` from an iterator, with the
+    /// Creates an new `DoubleMap<K1, K2, V, S, A>` from an iterator, with the
     /// `Default` value for the hasher and allocator.
     ///
     /// You can specify the type of `hasher` and `allocator`
@@ -4505,7 +4505,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     /// use std::collections::hash_map::RandomState;
     ///
     /// let mut number = 0;
@@ -4514,19 +4514,19 @@ where
     ///     (number, number, number * 10)
     /// }).take(5);
     /// // You can specify hasher
-    /// let map: DHashMap<_, _, _, RandomState> = DHashMap::from_iter(some_iter.clone());
+    /// let map: DoubleMap<_, _, _, RandomState> = DoubleMap::from_iter(some_iter.clone());
     /// assert_eq!(map.get_key1(&1), Some(&10));
     /// assert_eq!(map.get_key1(&5), Some(&50));
     /// assert_eq!(map.get_key1(&6), None);
     ///
     /// let some_vec: Vec<_> = some_iter.collect();
-    /// let map: DHashMap<_, _, _, RandomState> = DHashMap::from_iter(some_vec);
+    /// let map: DoubleMap<_, _, _, RandomState> = DoubleMap::from_iter(some_vec);
     /// assert_eq!(map.get_key1(&1), Some(&10));
     /// assert_eq!(map.get_key1(&5), Some(&50));
     /// assert_eq!(map.get_key1(&6), None);
     ///
     /// let some_arr = [(1, 1, 10), (2, 2, 20), (3, 3, 30), (4, 4, 40), (5, 5, 50)];
-    /// let map: DHashMap<_, _, _> = DHashMap::from_iter(some_arr);
+    /// let map: DoubleMap<_, _, _> = DoubleMap::from_iter(some_arr);
     /// assert_eq!(map.get_key1(&1), Some(&10));
     /// assert_eq!(map.get_key1(&5), Some(&50));
     /// assert_eq!(map.get_key1(&6), None);
@@ -4545,7 +4545,7 @@ where
 
 /// Inserts all new keys and values from the iterator and replaces values
 /// with existing keys with new values returned from the iterator.
-impl<K1, K2, V, S, A> Extend<(K1, K2, V)> for DHashMap<K1, K2, V, S, A>
+impl<K1, K2, V, S, A> Extend<(K1, K2, V)> for DoubleMap<K1, K2, V, S, A>
 where
     K1: Eq + Hash,
     K2: Eq + Hash,
@@ -4553,15 +4553,15 @@ where
     A: Allocator + Clone,
 {
     /// Inserts all new keys and values from the iterator to existing
-    /// `DHashMap<K1, K2, V, S, A>`. Replace values with existing
+    /// `DoubleMap<K1, K2, V, S, A>`. Replace values with existing
     /// keys with new values returned from the iterator.
     ///
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map = DHashMap::new();
+    /// let mut map = DoubleMap::new();
     /// map.insert(1, 10, 1000);
     ///
     /// let some_iter = [(1, 10, 100), (2, 20, 200)].into_iter();
@@ -4577,8 +4577,8 @@ where
     /// map.extend(some_arr);
     /// let old_map_len = map.len();
     ///
-    /// // You can also extend from another `DHashMap`
-    /// let mut new_map = DHashMap::new();
+    /// // You can also extend from another `DoubleMap`
+    /// let mut new_map = DoubleMap::new();
     /// new_map.extend(map);
     /// assert_eq!(new_map.len(), old_map_len);
     ///
@@ -4640,7 +4640,7 @@ where
 
 /// Inserts all new keys and values from the iterator and replaces values
 /// with existing keys with new values returned from the iterator.
-impl<'a, K1, K2, V, S, A> Extend<(&'a K1, &'a K2, &'a V)> for DHashMap<K1, K2, V, S, A>
+impl<'a, K1, K2, V, S, A> Extend<(&'a K1, &'a K2, &'a V)> for DoubleMap<K1, K2, V, S, A>
 where
     K1: Eq + Hash + Copy,
     K2: Eq + Hash + Copy,
@@ -4649,7 +4649,7 @@ where
     A: Allocator + Clone,
 {
     /// Inserts all new keys and values from the iterator to existing
-    /// `DHashMap<K1, K2, V, S, A>`. Replace values with existing
+    /// `DoubleMap<K1, K2, V, S, A>`. Replace values with existing
     /// keys with new values returned from the iterator.
     /// The keys and values must implement [`Copy`] trait.
     ///
@@ -4658,9 +4658,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map = DHashMap::new();
+    /// let mut map = DoubleMap::new();
     /// map.insert(1, 10, 1000);
     ///
     /// let arr = [(1, 10, 100), (2, 20, 200)];
@@ -4676,8 +4676,8 @@ where
     /// let some_arr = [(5, 50, 500), (6, 60, 600)];
     /// map.extend(some_arr.iter().map(|(k1, k2, v)| (k1, k2, v)));
     ///
-    /// // You can also extend from another HashMap
-    /// let mut new_map = DHashMap::new();
+    /// // You can also extend from another `DoubleMap`
+    /// let mut new_map = DoubleMap::new();
     /// new_map.extend(&map);
     /// assert_eq!(new_map.len(), map.len());
     ///
@@ -4716,7 +4716,7 @@ where
 
 /// Inserts all new key-values from the iterator and replaces values with existing
 /// keys with new values returned from the iterator.
-impl<'a, K1, K2, V, S, A> Extend<&'a (K1, K2, V)> for DHashMap<K1, K2, V, S, A>
+impl<'a, K1, K2, V, S, A> Extend<&'a (K1, K2, V)> for DoubleMap<K1, K2, V, S, A>
 where
     K1: Eq + Hash + Copy,
     K2: Eq + Hash + Copy,
@@ -4725,7 +4725,7 @@ where
     A: Allocator + Clone,
 {
     /// Inserts all new keys and values from the iterator to existing
-    /// `DHashMap<K1, K2, V, S, A>`. Replace values with existing
+    /// `DoubleMap<K1, K2, V, S, A>`. Replace values with existing
     /// keys with new values returned from the iterator.
     /// The keys and values must implement [`Copy`] trait.
     ///
@@ -4734,9 +4734,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map = DHashMap::new();
+    /// let mut map = DoubleMap::new();
     /// map.insert(1, 10, 1000);
     ///
     /// let arr = [(1, 10, 100), (2, 20, 200)];
@@ -4786,7 +4786,7 @@ where
     }
 }
 
-impl<K1, K2, V, S, A: Allocator + Clone> IntoIterator for DHashMap<K1, K2, V, S, A> {
+impl<K1, K2, V, S, A: Allocator + Clone> IntoIterator for DoubleMap<K1, K2, V, S, A> {
     type Item = (K1, K2, V);
     type IntoIter = IntoIter<K1, K2, V, A>;
 
@@ -4799,9 +4799,9 @@ impl<K1, K2, V, S, A: Allocator + Clone> IntoIterator for DHashMap<K1, K2, V, S,
     /// # Examples
     ///
     /// ```
-    /// use double_map::{DHashMap, dhashmap};
+    /// use double_map::{DoubleMap, doublemap};
     ///
-    /// let mut map = dhashmap!{
+    /// let mut map = doublemap!{
     ///     1, "a" => "One",
     ///     2, "b" => "Two",
     ///     3, "c" => "Three",
@@ -4822,30 +4822,30 @@ impl<K1, K2, V, S, A: Allocator + Clone> IntoIterator for DHashMap<K1, K2, V, S,
     }
 }
 
-impl<'a, K1, K2, V, S, A: Allocator + Clone> IntoIterator for &'a DHashMap<K1, K2, V, S, A> {
+impl<'a, K1, K2, V, S, A: Allocator + Clone> IntoIterator for &'a DoubleMap<K1, K2, V, S, A> {
     type Item = (&'a K1, &'a K2, &'a V);
     type IntoIter = Iter<'a, K1, K2, V>;
 
     /// Creates an iterator visiting all keys-value tuples in arbitrary order.
     /// The iterator element is tuple of type `(&'a K1, &'a K2, &'a V)`.
     ///
-    /// Return the same `Iter` struct as by the [`iter`] method on [`DHashMap`].
+    /// Return the same `Iter` struct as by the [`iter`] method on [`DoubleMap`].
     ///
-    /// [`iter`]: struct.DHashMap.html#method.iter
-    /// [`DHashMap`]: struct.DHashMap.html
+    /// [`iter`]: struct.DoubleMap.html#method.iter
+    /// [`DoubleMap`]: struct.DoubleMap.html
     ///
     /// # Examples
     ///
     /// ```
-    /// use double_map::{DHashMap, dhashmap};
+    /// use double_map::{DoubleMap, doublemap};
     ///
-    /// let mut map_one = dhashmap!{
+    /// let mut map_one = doublemap!{
     ///     "a", 1 => "One",
     ///     "b", 2 => "Two",
     ///     "c", 3 => "Three",
     /// };
     /// assert_eq!(map_one.len(), 3);
-    /// let mut map_two = DHashMap::new();
+    /// let mut map_two = DoubleMap::new();
     ///
     /// for (key1, key2, value) in &map_one {
     ///     println!("Key1: {}, key2: {}, value: {}", key1, key2, value);
@@ -4860,7 +4860,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> IntoIterator for &'a DHashMap<K1, K
     }
 }
 
-impl<'a, K1, K2, V, S, A: Allocator + Clone> IntoIterator for &'a mut DHashMap<K1, K2, V, S, A> {
+impl<'a, K1, K2, V, S, A: Allocator + Clone> IntoIterator for &'a mut DoubleMap<K1, K2, V, S, A> {
     type Item = (&'a K1, &'a K2, &'a mut V);
     type IntoIter = IterMut<'a, K1, K2, V>;
 
@@ -4869,17 +4869,17 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> IntoIterator for &'a mut DHashMap<K
     /// of type `(&'a K1, &'a K2, &'a mut V)`.
     ///
     /// Return the same `IterMut` struct as by the [`iter_mut`] method on
-    /// [`DHashMap`].
+    /// [`DoubleMap`].
     ///
-    /// [`iter_mut`]: struct.DHashMap.html#method.iter_mut
-    /// [`DHashMap`]: struct.DHashMap.html
+    /// [`iter_mut`]: struct.DoubleMap.html#method.iter_mut
+    /// [`DoubleMap`]: struct.DoubleMap.html
     ///
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map = DHashMap::<_, _, _>::from([("a", "One", 1), ("b", "Two", 2), ("c", "Three", 3)]);
+    /// let mut map = DoubleMap::<_, _, _>::from([("a", "One", 1), ("b", "Two", 2), ("c", "Three", 3)]);
     ///
     /// assert_eq!(map.len(), 3);
     ///
@@ -4903,7 +4903,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> IntoIterator for &'a mut DHashMap<K
     }
 }
 
-/// Create a [`DHashMap<K1, K2, V, DefaultHashBuilder, Global>`]
+/// Create a [`DoubleMap<K1, K2, V, DefaultHashBuilder, Global>`]
 /// from a list of sequentially given keys and values.
 ///
 /// Input data list must follow one of these rules:
@@ -4913,20 +4913,20 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> IntoIterator for &'a mut DHashMap<K
 /// Last comma separator can be omitted.
 /// If this macros is called without arguments, i.e. like
 /// ```
-/// # use double_map::{DHashMap, dhashmap};
-/// let map: DHashMap<i32, String, String>  = dhashmap![];
+/// # use double_map::{DoubleMap, doublemap};
+/// let map: DoubleMap<i32, String, String>  = doublemap![];
 /// ```
-/// it is equivalent to [`DHashMap::new()`] function
+/// it is equivalent to [`DoubleMap::new()`] function
 ///
 /// # Examples
 ///
 /// ```
-/// use double_map::{DHashMap, dhashmap};
+/// use double_map::{DoubleMap, doublemap};
 ///
-/// // Calling macros without arguments is equivalent to DHashMap::new() function
-/// let _map0: DHashMap<i32, i32, i32> = dhashmap![];
+/// // Calling macros without arguments is equivalent to DoubleMap::new() function
+/// let _map0: DoubleMap<i32, i32, i32> = doublemap![];
 ///
-/// let map = dhashmap!{
+/// let map = doublemap!{
 ///     1, "a" => "One",
 ///     2, "b" => "Two", // last comma separator can be omitted
 /// };
@@ -4936,7 +4936,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> IntoIterator for &'a mut DHashMap<K
 /// assert_eq!(map.get_key2(&"a"), Some(&"One"));
 /// assert_eq!(map.get_key2(&"b"), Some(&"Two"));
 ///
-/// let map2 = dhashmap!{
+/// let map2 = doublemap!{
 ///     (3, "c") => "Three",
 ///     (4, "d") => "Four" // last comma separator can be omitted
 /// };
@@ -4949,12 +4949,12 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> IntoIterator for &'a mut DHashMap<K
 // The default hasher is used to match the std implementation signature
 #[cfg(feature = "ahash")]
 #[macro_export]
-macro_rules! dhashmap {
-    () => (DHashMap::new());
+macro_rules! doublemap {
+    () => (DoubleMap::new());
     ($($key1:expr, $key2:expr => $value:expr),+ $(,)?) => (
-        DHashMap::<_, _, _>::from_iter([$(($key1, $key2, $value)),+])
+        DoubleMap::<_, _, _>::from_iter([$(($key1, $key2, $value)),+])
     );
     ($(($key1:expr, $key2:expr) => $value:expr),+ $(,)?) => (
-        DHashMap::<_, _, _>::from_iter([$(($key1, $key2, $value)),+])
+        DoubleMap::<_, _, _>::from_iter([$(($key1, $key2, $value)),+])
     );
 }

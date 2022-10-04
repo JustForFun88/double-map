@@ -1,20 +1,20 @@
 use super::*;
 
-/// An owning iterator over the values of a `DHashMap` in arbitrary order.
+/// An owning iterator over the values of a `DoubleMap` in arbitrary order.
 /// The iterator element type is `V`.
 ///
-/// This `struct` is created by the [`into_values`] method on [`DHashMap`].
+/// This `struct` is created by the [`into_values`] method on [`DoubleMap`].
 /// See its documentation for more. The map cannot be used after calling that method.
 ///
-/// [`into_values`]: struct.DHashMap.html#method.into_values
-/// [`DHashMap`]: struct.DHashMap.html
+/// [`into_values`]: struct.DoubleMap.html#method.into_values
+/// [`DoubleMap`]: struct.DoubleMap.html
 ///
 /// # Examples
 ///
 /// ```
-/// use double_map::{dhashmap, DHashMap};
+/// use double_map::{doublemap, DoubleMap};
 ///
-/// let map = dhashmap! {
+/// let map = doublemap! {
 ///     1, "one" => "a",
 ///     2, "two" => "b",
 ///     3, "three" => "c",

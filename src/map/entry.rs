@@ -2,17 +2,17 @@ use super::*;
 
 /// A view into a single entry in a map, which may either be vacant or occupied.
 ///
-/// This `enum` is constructed from the [`entry`] method on [`DHashMap`].
+/// This `enum` is constructed from the [`entry`] method on [`DoubleMap`].
 ///
-/// [`DHashMap`]: struct.DHashMap.html
-/// [`entry`]: struct.DHashMap.html#method.entry
+/// [`DoubleMap`]: struct.DoubleMap.html
+/// [`entry`]: struct.DoubleMap.html#method.entry
 ///
 /// # Examples
 ///
 /// ```
-/// use double_map::dhash_map::{DHashMap, Entry, OccupiedEntry};
+/// use double_map::shash_map::{DoubleMap, Entry, OccupiedEntry};
 ///
-/// let mut map = DHashMap::new();
+/// let mut map = DoubleMap::new();
 /// map.extend([(1, "a", 10), (2, "b", 20), (3, "c", 30)]);
 /// assert_eq!(map.len(), 3);
 ///
@@ -35,7 +35,7 @@ use super::*;
 /// // Nonexistent key (or_insert_with)
 /// map.entry(6, "f").unwrap().or_insert_with(|| 6);
 ///
-/// println!("Our DHashMap: {:?}", map);
+/// println!("Our DoubleMap: {:?}", map);
 ///
 /// let mut vec: Vec<_> = map.iter().map(|(&k1, &k2, &v)| (k1, k2, v)).collect();
 /// // The `Iter` iterator produces items in arbitrary order, so the
@@ -62,8 +62,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, Entry};
-    /// let mut map: DHashMap<i32, &str, i32> = [(1, "a", 100), (2, "b", 200)].into();
+    /// use double_map::shash_map::{DoubleMap, Entry};
+    /// let mut map: DoubleMap<i32, &str, i32> = [(1, "a", 100), (2, "b", 200)].into();
     ///
     /// match map.entry(1, "a") {
     ///     Ok(Entry::Occupied(_)) => {}
@@ -76,8 +76,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, Entry};
-    /// let mut map: DHashMap<i32, &str, i32> = DHashMap::new();
+    /// use double_map::shash_map::{DoubleMap, Entry};
+    /// let mut map: DoubleMap<i32, &str, i32> = DoubleMap::new();
     ///
     /// match map.entry(1, "a") {
     ///     Ok(Entry::Vacant(_)) => {}
@@ -102,9 +102,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> Entry<'a, K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map: DHashMap<i32, &str, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<i32, &str, i32> = DoubleMap::new();
     /// let entry = map.entry(1, "horseyland").unwrap().insert(37);
     ///
     /// assert_eq!(entry.key1(), &1);
@@ -133,9 +133,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> Entry<'a, K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, u32, i32> = DoubleMap::new();
     ///
     /// // nonexistent key
     /// match map.entry("poneyland", 0) {
@@ -171,9 +171,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> Entry<'a, K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map: DHashMap<&str, u32, String> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, u32, String> = DoubleMap::new();
     /// let s = "hoho".to_owned();
     ///
     /// // nonexistent key
@@ -216,9 +216,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> Entry<'a, K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map: DHashMap<&str, usize, u64> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, usize, u64> = DoubleMap::new();
     ///
     /// // nonexistent key
     /// match map.entry("poneyland", 0) {
@@ -269,9 +269,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> Entry<'a, K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map: DHashMap<&str, usize, u64> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, usize, u64> = DoubleMap::new();
     ///
     /// // nonexistent key
     /// match map.entry("poneyland", 10) {
@@ -322,9 +322,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> Entry<'a, K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map: DHashMap<&str, usize, u64> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, usize, u64> = DoubleMap::new();
     ///
     /// // nonexistent key
     /// match map.entry("poneyland", 10) {
@@ -369,9 +369,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> Entry<'a, K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, u32, i32> = DoubleMap::new();
     ///
     /// // It is VacantEntry
     /// match map.entry("poneyland", 0) {
@@ -411,9 +411,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> Entry<'a, K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, u32, i32> = DoubleMap::new();
     ///
     /// // It is VacantEntry
     /// match map.entry("poneyland", 10) {
@@ -454,9 +454,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> Entry<'a, K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, u32, i32> = DoubleMap::new();
     ///
     /// // It is VacantEntry
     /// match map.entry("poneyland", 10) {
@@ -497,9 +497,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> Entry<'a, K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map: DHashMap<&str, u32, u32> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, u32, u32> = DoubleMap::new();
     ///
     /// let _ = map
     ///     .entry("poneyland", 1)
@@ -532,9 +532,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> Entry<'a, K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, Entry};
+    /// use double_map::shash_map::{DoubleMap, Entry};
     ///
-    /// let mut map: DHashMap<&str, i32, String> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, i32, String> = DoubleMap::new();
     ///
     /// let entry = map
     ///     .entry("poneyland", 1)
@@ -605,9 +605,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> Entry<'a, K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, Entry};
+    /// use double_map::shash_map::{DoubleMap, Entry};
     ///
-    /// let mut map: DHashMap<&str, i32, String> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, i32, String> = DoubleMap::new();
     ///
     /// let entry = map
     ///     .entry("poneyland", 1)
@@ -678,9 +678,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> Entry<'a, K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, Entry};
+    /// use double_map::shash_map::{DoubleMap, Entry};
     ///
-    /// let mut map: DHashMap<&str, i32, String> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, i32, String> = DoubleMap::new();
     ///
     /// let entry = map
     ///     .entry("poneyland", 1)
@@ -753,9 +753,9 @@ impl<'a, K1, K2, V: Default, S, A: Allocator + Clone> Entry<'a, K1, K2, V, S, A>
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let mut map: DHashMap<&str, i32, Option<u32>> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, i32, Option<u32>> = DoubleMap::new();
     ///
     /// // nonexistent key
     /// map.entry("poneyland", 1).unwrap().or_default();
@@ -783,7 +783,7 @@ impl<'a, K1, K2, V: Default, S, A: Allocator + Clone> Entry<'a, K1, K2, V, S, A>
     }
 }
 
-/// A view into an occupied entry in a `DHashMap`.
+/// A view into an occupied entry in a `DoubleMap`.
 /// It is part of the [`Entry`] enum.
 ///
 /// [`Entry`]: enum.Entry.html
@@ -791,9 +791,9 @@ impl<'a, K1, K2, V: Default, S, A: Allocator + Clone> Entry<'a, K1, K2, V, S, A>
 /// # Examples
 ///
 /// ```
-/// use double_map::dhash_map::{DHashMap, Entry, OccupiedEntry};
+/// use double_map::shash_map::{DoubleMap, Entry, OccupiedEntry};
 ///
-/// let mut map = DHashMap::new();
+/// let mut map = DoubleMap::new();
 /// map.extend([(1, "a", 10), (2, "b", 20), (3, "c", 30)]);
 ///
 /// let _entry_o: OccupiedEntry<_, _, _, _> = map.entry(1, "a").unwrap().insert(100);
@@ -830,7 +830,7 @@ pub struct OccupiedEntry<'a, K1, K2, V, S, A: Allocator + Clone = Global> {
     pub(super) key2: Option<K2>,
     pub(super) data_bucket: DataBucket<(K1, K2, V)>,
     pub(super) pointer_bucket: PointerBucket<DataBucket<(K1, K2, V)>>,
-    pub(super) table: &'a mut DHashMap<K1, K2, V, S, A>,
+    pub(super) table: &'a mut DoubleMap<K1, K2, V, S, A>,
 }
 
 unsafe impl<K1, K2, V, S, A> Send for OccupiedEntry<'_, K1, K2, V, S, A>
@@ -872,9 +872,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> OccupiedEntry<'a, K1, K2, V, S, A> 
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, Entry};
+    /// use double_map::shash_map::{DoubleMap, Entry};
     ///
-    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, u32, i32> = DoubleMap::new();
     /// map.insert("poneyland", 0, 12);
     ///
     /// match map.entry("poneyland", 0) {
@@ -894,9 +894,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> OccupiedEntry<'a, K1, K2, V, S, A> 
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, Entry};
+    /// use double_map::shash_map::{DoubleMap, Entry};
     ///
-    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, u32, i32> = DoubleMap::new();
     /// map.insert("poneyland", 0, 12);
     ///
     /// match map.entry("poneyland", 0) {
@@ -917,9 +917,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> OccupiedEntry<'a, K1, K2, V, S, A> 
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, Entry};
+    /// use double_map::shash_map::{DoubleMap, Entry};
     ///
-    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, u32, i32> = DoubleMap::new();
     /// map.insert("poneyland", 0, 12);
     ///
     /// match map.entry("poneyland", 0) {
@@ -941,10 +941,10 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> OccupiedEntry<'a, K1, K2, V, S, A> 
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, Entry};
+    /// use double_map::shash_map::{DoubleMap, Entry};
     ///
     /// // So lets create some map and insert some element
-    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, u32, i32> = DoubleMap::new();
     /// map.insert("poneyland", 0, 10);
     /// map.insert("bearland", 1, 11);
     ///
@@ -981,9 +981,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> OccupiedEntry<'a, K1, K2, V, S, A> 
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, Entry};
+    /// use double_map::shash_map::{DoubleMap, Entry};
     ///
-    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, u32, i32> = DoubleMap::new();
     /// map.insert("poneyland", 0, 12);
     ///
     /// match map.entry("poneyland", 0) {
@@ -1006,9 +1006,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> OccupiedEntry<'a, K1, K2, V, S, A> 
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, Entry};
+    /// use double_map::shash_map::{DoubleMap, Entry};
     ///
-    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, u32, i32> = DoubleMap::new();
     /// map.insert("poneyland", 0, 12);
     /// assert_eq!(map.get_key1("poneyland"), Some(&12));
     /// assert_eq!(map.get_key2(&0), Some(&12));
@@ -1040,9 +1040,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> OccupiedEntry<'a, K1, K2, V, S, A> 
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, Entry};
+    /// use double_map::shash_map::{DoubleMap, Entry};
     ///
-    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, u32, i32> = DoubleMap::new();
     /// map.insert("poneyland", 0, 12);
     /// assert_eq!(map.get_key1("poneyland"), Some(&12));
     /// assert_eq!(map.get_key2(&0), Some(&12));
@@ -1076,9 +1076,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> OccupiedEntry<'a, K1, K2, V, S, A> 
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, Entry};
+    /// use double_map::shash_map::{DoubleMap, Entry};
     ///
-    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, u32, i32> = DoubleMap::new();
     /// map.insert("poneyland", 0, 12);
     /// assert_eq!(map.get_key1("poneyland"), Some(&12));
     /// assert_eq!(map.get_key2(&0), Some(&12));
@@ -1109,10 +1109,10 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> OccupiedEntry<'a, K1, K2, V, S, A> 
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, Entry};
+    /// use double_map::shash_map::{DoubleMap, Entry};
     ///
     /// // So lets create some map and insert some element
-    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, u32, i32> = DoubleMap::new();
     /// map.insert("poneyland", 0, 10);
     /// map.insert("bearland", 1, 11);
     ///
@@ -1156,10 +1156,10 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> OccupiedEntry<'a, K1, K2, V, S, A> 
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, Entry};
+    /// use double_map::shash_map::{DoubleMap, Entry};
     /// use std::rc::Rc;
     ///
-    /// let mut map: DHashMap<Rc<String>, Rc<String>, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<Rc<String>, Rc<String>, i32> = DoubleMap::new();
     /// let key1_first = Rc::new("First key".to_string());
     /// let key2_first = Rc::new("Second key".to_string());
     ///
@@ -1206,10 +1206,10 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> OccupiedEntry<'a, K1, K2, V, S, A> 
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, Entry};
+    /// use double_map::shash_map::{DoubleMap, Entry};
     /// use std::rc::Rc;
     ///
-    /// let mut map: DHashMap<Rc<String>, usize, usize> = DHashMap::with_capacity(6);
+    /// let mut map: DoubleMap<Rc<String>, usize, usize> = DoubleMap::with_capacity(6);
     /// let mut keys_one: Vec<Rc<String>> = Vec::with_capacity(6);
     /// let mut keys_two: Vec<Rc<String>> = Vec::with_capacity(6);
     ///
@@ -1232,7 +1232,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> OccupiedEntry<'a, K1, K2, V, S, A> 
     ///         && keys_two.iter().all(|key| Rc::strong_count(key) == 2)
     /// );
     ///
-    /// fn reclaim_memory(map: &mut DHashMap<Rc<String>, usize, usize>, keys: &[Rc<String>]) {
+    /// fn reclaim_memory(map: &mut DoubleMap<Rc<String>, usize, usize>, keys: &[Rc<String>]) {
     ///     for (index, key) in keys.iter().enumerate() {
     ///         if let Ok(Entry::Occupied(entry)) = map.entry(key.clone(), index) {
     ///             // Replaces the entry's key with our version of it in `keys`.
@@ -1258,10 +1258,10 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> OccupiedEntry<'a, K1, K2, V, S, A> 
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, Entry};
+    /// use double_map::shash_map::{DoubleMap, Entry};
     /// use std::rc::Rc;
     ///
-    /// let mut map: DHashMap<usize, Rc<String>, usize> = DHashMap::with_capacity(6);
+    /// let mut map: DoubleMap<usize, Rc<String>, usize> = DoubleMap::with_capacity(6);
     /// let mut keys_one: Vec<Rc<String>> = Vec::with_capacity(6);
     /// let mut keys_two: Vec<Rc<String>> = Vec::with_capacity(6);
     ///
@@ -1284,7 +1284,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> OccupiedEntry<'a, K1, K2, V, S, A> 
     ///         && keys_two.iter().all(|key| Rc::strong_count(key) == 2)
     /// );
     ///
-    /// fn reclaim_memory(map: &mut DHashMap<usize, Rc<String>, usize>, keys: &[Rc<String>]) {
+    /// fn reclaim_memory(map: &mut DoubleMap<usize, Rc<String>, usize>, keys: &[Rc<String>]) {
     ///     for (index, key) in keys.iter().enumerate() {
     ///         if let Ok(Entry::Occupied(entry)) = map.entry(index, key.clone()) {
     ///             // Replaces the entry's key with our version of it in `keys`.
@@ -1310,10 +1310,10 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> OccupiedEntry<'a, K1, K2, V, S, A> 
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, Entry};
+    /// use double_map::shash_map::{DoubleMap, Entry};
     /// use std::rc::Rc;
     ///
-    /// let mut map: DHashMap<Rc<String>, Rc<String>, usize> = DHashMap::with_capacity(6);
+    /// let mut map: DoubleMap<Rc<String>, Rc<String>, usize> = DoubleMap::with_capacity(6);
     /// let mut keys_one: Vec<Rc<String>> = Vec::with_capacity(6);
     /// let mut keys_two: Vec<Rc<String>> = Vec::with_capacity(6);
     ///
@@ -1336,7 +1336,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> OccupiedEntry<'a, K1, K2, V, S, A> 
     ///         && keys_two.iter().all(|key| Rc::strong_count(key) == 3)
     /// );
     ///
-    /// fn reclaim_memory(map: &mut DHashMap<Rc<String>, Rc<String>, usize>, keys: &[Rc<String>]) {
+    /// fn reclaim_memory(map: &mut DoubleMap<Rc<String>, Rc<String>, usize>, keys: &[Rc<String>]) {
     ///     for key in keys {
     ///         if let Ok(Entry::Occupied(entry)) = map.entry(key.clone(), key.clone()) {
     ///             // Replaces the entry's keys with our version of it in `keys`.
@@ -1361,9 +1361,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> OccupiedEntry<'a, K1, K2, V, S, A> 
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, Entry};
+    /// use double_map::shash_map::{DoubleMap, Entry};
     ///
-    /// let mut map: DHashMap<i32, &str, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<i32, &str, i32> = DoubleMap::new();
     /// map.insert(1, "poneyland", 42);
     ///
     /// let entry = match map.entry(1, "poneyland") {
@@ -1440,9 +1440,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> OccupiedEntry<'a, K1, K2, V, S, A> 
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, Entry};
+    /// use double_map::shash_map::{DoubleMap, Entry};
     ///
-    /// let mut map: DHashMap<i32, &str, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<i32, &str, i32> = DoubleMap::new();
     /// map.insert(1, "poneyland", 42);
     ///
     /// let entry = match map.entry(1, "poneyland") {
@@ -1519,9 +1519,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> OccupiedEntry<'a, K1, K2, V, S, A> 
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, Entry};
+    /// use double_map::shash_map::{DoubleMap, Entry};
     ///
-    /// let mut map: DHashMap<i32, &str, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<i32, &str, i32> = DoubleMap::new();
     /// map.insert(1, "poneyland", 42);
     ///
     /// let entry = match map.entry(1, "poneyland") {
@@ -1593,7 +1593,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> OccupiedEntry<'a, K1, K2, V, S, A> 
     }
 }
 
-/// A view into a vacant entry in a `DHashMap`.
+/// A view into a vacant entry in a `DoubleMap`.
 /// It is part of the [`Entry`] enum.
 ///
 /// [`Entry`]: enum.Entry.html
@@ -1601,9 +1601,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> OccupiedEntry<'a, K1, K2, V, S, A> 
 /// # Examples
 ///
 /// ```
-/// use double_map::dhash_map::{DHashMap, Entry, VacantEntry};
+/// use double_map::shash_map::{DoubleMap, Entry, VacantEntry};
 ///
-/// let mut map = DHashMap::<i32, &str, i32>::new();
+/// let mut map = DoubleMap::<i32, &str, i32>::new();
 ///
 /// let entry_v: VacantEntry<_, _, _, _> = match map.entry(1, "a").unwrap() {
 ///     Entry::Vacant(view) => view,
@@ -1628,7 +1628,7 @@ pub struct VacantEntry<'a, K1, K2, V, S, A: Allocator + Clone = Global> {
     pub(super) key1: K1,
     pub(super) hash2: u64,
     pub(super) key2: K2,
-    pub(super) table: &'a mut DHashMap<K1, K2, V, S, A>,
+    pub(super) table: &'a mut DoubleMap<K1, K2, V, S, A>,
 }
 
 impl<K1: Debug, K2: Debug, V, S, A: Allocator + Clone> Debug for VacantEntry<'_, K1, K2, V, S, A> {
@@ -1647,9 +1647,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> VacantEntry<'a, K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, Entry};
+    /// use double_map::shash_map::{DoubleMap, Entry};
     ///
-    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, u32, i32> = DoubleMap::new();
     ///
     /// match map.entry("poneyland", 0) {
     ///     Ok(Entry::Vacant(vac_entry)) => assert_eq!(vac_entry.key1(), &"poneyland"),
@@ -1667,9 +1667,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> VacantEntry<'a, K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, Entry};
+    /// use double_map::shash_map::{DoubleMap, Entry};
     ///
-    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, u32, i32> = DoubleMap::new();
     ///
     /// match map.entry("poneyland", 0) {
     ///     Ok(Entry::Vacant(vac_entry)) => assert_eq!(vac_entry.key2(), &0),
@@ -1687,9 +1687,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> VacantEntry<'a, K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, Entry};
+    /// use double_map::shash_map::{DoubleMap, Entry};
     ///
-    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, u32, i32> = DoubleMap::new();
     ///
     /// match map.entry("poneyland", 0) {
     ///     Ok(Entry::Vacant(vac_entry)) => {
@@ -1708,9 +1708,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> VacantEntry<'a, K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, Entry};
+    /// use double_map::shash_map::{DoubleMap, Entry};
     ///
-    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, u32, i32> = DoubleMap::new();
     ///
     /// match map.entry("poneyland", 0) {
     ///     Ok(Entry::Vacant(v)) => assert_eq!(v.into_key1(), "poneyland"),
@@ -1727,9 +1727,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> VacantEntry<'a, K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, Entry};
+    /// use double_map::shash_map::{DoubleMap, Entry};
     ///
-    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, u32, i32> = DoubleMap::new();
     ///
     /// match map.entry("poneyland", 0) {
     ///     Ok(Entry::Vacant(v)) => assert_eq!(v.into_key2(), 0),
@@ -1746,9 +1746,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> VacantEntry<'a, K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, Entry};
+    /// use double_map::shash_map::{DoubleMap, Entry};
     ///
-    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, u32, i32> = DoubleMap::new();
     ///
     /// match map.entry("poneyland", 0) {
     ///     Ok(Entry::Vacant(v)) => assert_eq!(v.into_keys(), ("poneyland", 0)),
@@ -1766,9 +1766,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> VacantEntry<'a, K1, K2, V, S, A> {
     /// # Examples
     ///
     /// ```
-    /// use double_map::dhash_map::{DHashMap, Entry};
+    /// use double_map::shash_map::{DoubleMap, Entry};
     ///
-    /// let mut map: DHashMap<&str, u32, i32> = DHashMap::new();
+    /// let mut map: DoubleMap<&str, u32, i32> = DoubleMap::new();
     ///
     /// match map.entry("poneyland", 0) {
     ///     Ok(Entry::Vacant(vacant_entry)) => {

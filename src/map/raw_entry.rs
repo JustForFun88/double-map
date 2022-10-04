@@ -1,19 +1,19 @@
 use super::*;
 
-/// A builder for computing where in a [`DHashMap`] a tuple of
+/// A builder for computing where in a [`DoubleMap`] a tuple of
 /// keys and value `(K1, K2, V)` would be stored.
 ///
-/// See the [`DHashMap::raw_entry`] docs for usage examples.
+/// See the [`DoubleMap::raw_entry`] docs for usage examples.
 ///
-/// [`DHashMap::raw_entry`]: struct.DHashMap.html#method.raw_entry
+/// [`DoubleMap::raw_entry`]: struct.DoubleMap.html#method.raw_entry
 ///
 /// # Examples
 ///
 /// ```
 /// use core::hash::{BuildHasher, Hash};
-/// use double_map::dhash_map::{DHashMap, RawEntryBuilder};
+/// use double_map::shash_map::{DoubleMap, RawEntryBuilder};
 ///
-/// let mut map = DHashMap::new();
+/// let mut map = DoubleMap::new();
 /// map.extend([(1, 10, 100), (2, 20, 200), (3, 30, 300)]);
 ///
 /// fn compute_hash<K: Hash + ?Sized, S: BuildHasher>(hash_builder: &S, key: &K) -> u64 {
@@ -45,7 +45,7 @@ use super::*;
 /// }
 /// ```
 pub struct RawEntryBuilder<'a, K1, K2, V, S, A: Allocator + Clone = Global> {
-    pub(super) map: &'a DHashMap<K1, K2, V, S, A>,
+    pub(super) map: &'a DoubleMap<K1, K2, V, S, A>,
 }
 
 impl<K1, K2, V, S, A> Debug for RawEntryBuilder<'_, K1, K2, V, S, A>
@@ -63,9 +63,9 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawEntryBuilder<'a, K1, K2, V, S, A
     /// # Examples
     ///
     /// ```
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
-    /// let map: DHashMap<&str, u32, u32> = [("a", 10, 100), ("b", 20, 200)].into();
+    /// let map: DoubleMap<&str, u32, u32> = [("a", 10, 100), ("b", 20, 200)].into();
     /// assert_eq!(
     ///     map.raw_entry().from_keys(&"a", &10),
     ///     Some((&"a", &10, &100))
@@ -92,7 +92,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawEntryBuilder<'a, K1, K2, V, S, A
     ///
     /// ```
     /// use core::hash::{BuildHasher, Hash};
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
     /// fn compute_hash<K: Hash + ?Sized, S: BuildHasher>(hash_builder: &S, key: &K) -> u64 {
     ///     use core::hash::Hasher;
@@ -101,7 +101,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawEntryBuilder<'a, K1, K2, V, S, A
     ///     state.finish()
     /// }
     ///
-    /// let map: DHashMap<&str, u32, u32> = [("a", 10, 100), ("b", 20, 200)].into();
+    /// let map: DoubleMap<&str, u32, u32> = [("a", 10, 100), ("b", 20, 200)].into();
     /// let key1 = "a";
     /// let hash1 = compute_hash(map.hasher(), &key1);
     /// let key2 = 10;
@@ -134,7 +134,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawEntryBuilder<'a, K1, K2, V, S, A
     ///
     /// ```
     /// use core::hash::{BuildHasher, Hash};
-    /// use double_map::DHashMap;
+    /// use double_map::DoubleMap;
     ///
     /// fn compute_hash<K: Hash + ?Sized, S: BuildHasher>(hash_builder: &S, key: &K) -> u64 {
     ///     use core::hash::Hasher;
@@ -143,7 +143,7 @@ impl<'a, K1, K2, V, S, A: Allocator + Clone> RawEntryBuilder<'a, K1, K2, V, S, A
     ///     state.finish()
     /// }
     ///
-    /// let map: DHashMap<&str, u32, u32> = [("a", 10, 100), ("b", 20, 200)].into();
+    /// let map: DoubleMap<&str, u32, u32> = [("a", 10, 100), ("b", 20, 200)].into();
     /// let key1 = "a";
     /// let hash1 = compute_hash(map.hasher(), &key1);
     /// let key2 = 10;
